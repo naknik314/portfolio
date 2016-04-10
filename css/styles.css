@@ -183,3 +183,10 @@ ul.mytools li, .desktop {
     }
     
 }
+body.thankyou h1 {
+font-family: "Handee", sans-serif;	
+}
+body.thankyou p {
+font-family: "Open Sans", sans-serif;	
+}
+}
