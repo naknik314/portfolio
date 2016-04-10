@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="../device-mockups/device-mockups2.css" rel="stylesheet">
+<title>Decorhub Mobile</title>
+<style>
+body {
+min-width:380px;
+max-width:420px;
+margin:auto;
+min-height:620px;
+background-color:bisque;
+}
+body,#header, #footer {
+font-family:sans-serif;	
+}
+    button {
+        border-radius:10px;
+        background-color:saddlebrown;
+    }
+    button a {
+        color:bisque;
+    }
+    @media (max-width:380px) {
+        iframe {
+          margin-left:-7px;
+            max-height:520px;
+        }
+                body {
+            margin-left:-30px;
+            max-height:480px;
+        }
+    }
+</style>
+</head>
+<body>
+<center><div id="header"><button><h2><a href="decorhub-mobile/index.html">VIEW on Mobile</a></h2></button></div>
+<div class="device-mockup" data-device="iphone5" data-orientation="portrait" data-color="black">
+    <div class="device">
+        <div class="screen">
+            <!-- PUT CONTENTS HERE -->
+            <iframe src="decorhub-mobile/index.html" width="105%" height="100%"></iframe>
+        </div>
+        <div class="button">
+            <!-- You can hook the "home button" to some JavaScript events or just remove it -->
+        </div>
+    </div>
+</div>
+</center>
+</body>
+
+
+</html>

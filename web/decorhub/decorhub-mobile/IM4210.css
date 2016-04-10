@@ -1,0 +1,142 @@
+@charset "utf-8";
+/* CSS Document */
+header {
+background-color: #8c735b;
+font: 'Bookman Old Style';
+}
+
+header img {
+ margin-top: 20px;   
+}
+    body {
+background-color: #eae0cb;
+font-family: Futura, sans-serif;
+color: #A06739;
+width: 320px;
+}
+
+#content {
+background-color:#ccd6ce;
+font-style:normal;
+color:#ccd6ce;
+align-content:space-around;	
+height:'275px'; 
+width:'275px';
+float:left;
+}
+
+.images{
+height:'275px'; 
+width:'275px';
+align:left;
+background-color:#ccd6ce;
+border-color:#ccd6ce;
+border-width: medium;
+padding-right: 2em;
+}
+
+img {
+	float:top;
+    border-color: #ccd6ce;
+    border-width: medium;
+}
+
+.btn {
+	float: center;
+	height:'150px'; 
+	width: '200px';
+	padding: .5em;
+	border-color:#ccd6ce;
+    border-width: medium;
+	background-color:#f2c9b9;
+	font-style:normal;
+	color:#5d5d5f;
+	font-size:24px;
+	margin: .2em;
+}
+
+.text {
+    font-family: futura, sans-serif;
+    font-size: '14px';
+    color:#a06739;
+	padding: .5em;
+}
+.item {
+	float: left;
+	height:'300px'; 
+	width: '250px';
+	padding: .5em;
+    border-color: #ccd6ce;
+    border-width: medium;
+}
+.itemtxt {
+height: '100px';
+width: '100px';
+background-color: #ccd6ce;
+}
+
+nav {
+	font-family: Corbel, sans-serif;
+	color:#5d5d5f;
+    font-size: '10px';
+}
+a:link {
+ color:#5d5d5f;   
+}
+
+a:visited {
+  color:#999;    
+}
+
+ html {
+  height: 100%;
+  margin: auto;
+  width: 320px;
+}
+.img1{
+  float:left;
+-webkit-filter: grayscale(100%);
+    margin-left:3px;
+}
+.img2{
+  float:left;
+    -webkit-filter: sepia(100%);
+    margin-left:3px;
+}
+.img3{
+  float:left; 
+    -webkit-filter: brightness(50%);
+    margin-left:3px;
+    
+}
+.img4{
+  float:left; 
+    -webkit-filter: opacity(25%);
+    margin-left:3px;
+}
+.img5{
+  float:left;
+margin-left:3px;
+    
+}
+.img6{
+  float:left; 
+   -webkit-filter: contrast(50%); 
+    margin-left:3px;
+}
+.img7{
+  float:left; 
+    -webkit-filter: grayscale(100%) contrast(200%);
+    margin-left:3px;
+}
+.img8{
+  float:left;
+    -webkit-filter: blur(1px);
+    margin-left:3px;
+}
+.img9{
+  float:left;
+    -webkit-filter: contrast(200%);
+    margin-left:3px;
+    
+}
