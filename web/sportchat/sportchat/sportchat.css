@@ -1,0 +1,71 @@
+@charset "UTF-8";
+/* CSS Document */
+* {
+font-family: sans-serif;	
+}
+body {
+	color: #FFF;
+}
+a:link {
+	color: #26325A;
+	text-decoration:none;
+}
+a:hover {
+text-decoration: underline;	
+}
+
+a:visited {
+color: #252A3A;	
+}
+
+.icon {
+	width: 30px;
+}
+.threadbg {
+width:100%;	
+}
+
+li.item-content, .content-block-inner, li.list-block-search, li.accordion-item {
+	background-color: #FFF;
+	color: #26325A;
+}
+
+.thread {
+font-weight: bold;
+font-size: 1.2rem;
+}
+.button {
+	font-weight: bold;
+	margin: 5px;
+	padding-bottom: 5px;
+}
+#thread1, #thread2 {
+font-style:italic;
+font-weight:bold;
+margin-bottom:-15px;
+}
+
+.thread-title {
+font-size: 1.5rem;
+}
+
+.logo {
+width: 75px;	
+}
+
+.navbar, .toolbar-inner {
+background-color: #26325A;
+}
+body, .page-content {
+background-color: #535B73;	
+}
+.page-content {
+padding-top: 20px;	
+}
+form.searchbar {
+background-color: gray;	
+}
+
+.facebook-name a {
+	text-align: center !important;
+}

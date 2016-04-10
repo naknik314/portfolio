@@ -1,0 +1,81 @@
+<html>
+<head>
+<meta name='viewport' content='width-device-width, initial-scale=1.0'>
+<link href="RWD.css" rel='stylesheet'>
+<style>
+.circle {
+border:10px #F99006 solid;
+ border-radius:50%;
+color:black;
+width:75px;
+height:75px;
+text-align: center;
+font-weight: 600;
+display: inline-block;
+}
+.screenshot,.circle {
+ background-color:#FFF;   
+}
+.screenshot {
+ border-radius: 10px;
+}
+#green {
+border:10px #248C22 solid;
+}
+#red {
+border:10px #D2342B solid;
+}
+body {
+font-family: sans-serif;    
+}
+span {
+ font-size: 2rem;   
+}
+.sitebox {
+border: 1px dashed #C0D0C6;
+background-color: white;
+border-radius: 10px;
+width: 90%;
+}
+.screenshot, .sitebox {
+max-width:750px;    
+}
+.screenshots img {
+max-width: 800px;
+min-width:260px;
+}
+.mobile {
+max-width:240px;	
+}
+p {
+ width: 70%;
+margin: auto;
+}
+</style>
+<!-- Pagespeed: https://developers.google.com/speed/pagespeed/insights !-->
+</head>
+<body>
+<div id='site-wrapper'>
+<div id='page-wrapper'>
+<div id='page-content'>
+<center>
+<h2>Reponsive Re-Design</h2>
+<br>
+<div class='sitebox'><h3>Original Site</h3><h4>Average PageSpeed Stats for Mobile</h4>
+<div class='circle'><br>Speed<br><span>73%</span></div>&nbsp;&nbsp;&nbsp;
+<div class='circle' id='red'><br>Usability<br><span>56%</span></div><br><br><p>The goal is to choose a layout from a non-responsive site, and turn it into a responsive site that can be displayed in mobile devices. The Original site is displayed too small on a mobile device which forces the user to pan and zoom to tap links that are too close together.</p>
+<br><div class='screenshot'><img class='mobile' src='Images/Screen%20Shot%202015-06-12%20at%209.32.49%20PM.png'><img class='mobile' src='Images/Screen%20Shot%202015-06-12%20at%209.33.16%20PM.png'><img class='mobile' src='Images/Screen%20Shot%202015-06-12%20at%209.33.38%20PM.png'></div>
+</div>
+<br>
+<div class='sitebox'>
+<h3>Responsive Site<a href='indexRWD.html'>&nbsp;(View)</a></h3><h4>Average PageSpeed Stats for Mobile</h4>
+<div class='circle'><br>Speed<br><span>72%</span></div>&nbsp;&nbsp;&nbsp;
+<div class='circle' id='green'><br>Usability<br><span>97%</span></div><br><br><p>Improvements: A menu bar was added on the top. By adding extra Javascript the Speed was slightly decreased by 1%, but the Usability increased by over 30%. The viewport was also matched to adjust to the device width, which makes it display well on mobile devices and tablets</p> 
+<br>
+<div class='screenshot'><img class='mobile' src='Images/Screen%20Shot%202015-06-12%20at%205.28.48%20PM.png'><img class='mobile' src='Images/Screen%20Shot%202015-06-12%20at%205.52.13%20PM.png'><img class='mobile' src='Images/Screen%20Shot%202015-06-12%20at%206.04.03%20PM.png'><img src="Images/ipadp.jpg" width=80%><img src="Images/ipadl.png" width=90%></div></center>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

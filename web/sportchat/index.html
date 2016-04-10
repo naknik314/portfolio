@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="../device-mockups/device-mockups2.css" rel="stylesheet">
+<title>SportChat Demo</title>
+<style>
+body {
+min-width:320px;
+max-width:480px;
+margin:auto;
+background-image:url(sportchat/images/blue-72877.jpg);
+background-repeat:repeat;
+}
+body,#header, #footer {
+font-family:sans-serif;	
+}
+#footer {
+background-color:#26325A;
+width:100%;
+padding:5px;
+border-radius: 5px;
+}
+#header,#footer {
+color:#FFF;	
+}
+li {
+list-style-image: url("sportchat/images/whistle_42374.png");
+list-style-position:inside;	
+}
+    a {
+        color:white;
+    }
+</style>
+</head>
+<body>
+<center><div id="header"><h2>SportChat Demo</h2><a href="sportchat/index.html">View Desktop Version</a></div>
+<div class="device-mockup" data-device="iphone5" data-orientation="portrait" data-color="black">
+    <div class="device">
+        <div class="screen">
+            <!-- PUT CONTENTS HERE -->
+            <iframe src="sportchat/index.html" width="100%" height="100%"></iframe>
+        </div>
+        <div class="button">
+            <!-- You can hook the "home button" to some JavaScript events or just remove it -->
+        </div>
+    </div>
+</div>
+</center>
+<div id="footer"><ul><li>10+ sports forums</li><li>Discover other fans</li><li> Comment about teams, players and the game.</li></ul></div>
+</body>
+
+
+</html>
