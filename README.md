@@ -1,3 +1,3 @@
 # My Portfolio
 
-Here is my website with HTML, CSS, JS and PHP code.
+Here is my website with HTML, CSS and JS code.
