@@ -1,0 +1,185 @@
+@charset "UTF-8";
+/* CSS Document */
+html {
+    background-image: url(../img/bg.png);
+  background-repeat:repeat;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+body {
+font-family: 'Open Sans',sans-serif;
+margin-top: 50px;
+font-size:1.3rem;
+font-weight:300;
+}
+h2,h3,.navbar,.footer {
+    font-family:'Handlee',sans-serif;
+}
+
+.container {
+	width: 90%;
+	padding-right: 15px;
+	padding-top: 15px;
+	padding-bottom: 15px;
+	padding-left: 15px;
+	margin-right: auto;
+	margin-left: auto;
+	background-color: white;
+}
+
+.footer {
+    border-top:2px solid white;
+    text-align:center;
+    align-content:center;
+    clear:both;
+}
+
+.navbar {
+	height: 25px;
+    font-weight:bold;
+    border-bottom:2px solid white;
+    padding:5px;
+}
+.navbar, .footer {
+    font-size:1.2rem;
+    background-color:#899AB4;
+    width: 94%;
+    margin:auto;
+}
+.navbar a, .navbar,.footer {
+color:#223C40;
+    text-align:center;
+}
+.navbar a {
+    text-decoration:none;
+    padding:5px;
+}
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+.container .navbar {
+	color: #0A3570;
+}
+.content {
+font-size: 12px;
+color: hsla(0,0%,0%,1)
+}
+
+.homelist {
+ list-style-type: none;   
+}
+span.required {
+    color:red;
+}
+div.thumbnail {
+    border: 1px solid #CCE0EC;
+    border-radius:50%;
+    width:200px;
+    height:200px;
+    padding:10px;
+    text-align:center;
+    float:left;
+    background-color:white;
+}
+img.thumbnail-wide {
+    width:150px;
+    height:100px;
+    padding-top:40px;
+}
+img.thumbnail-long {
+    width:150px;
+    height:200px;
+}
+img.thumbnail-square {
+    width:150px;
+    height:150px;
+    padding-top:30px;
+}
+img.thumbnail-half-wide {
+    width:150px;
+    height:50px;
+    padding-top:70px;
+}
+img.thumbnail-half-long {
+    width:90px;
+    height:150px;
+    padding-top:30px;
+}
+
+.thumbnail-wide,.thumbnail-long,.thumbnail-square {
+    margin:1%;
+}
+div.icon {
+    width:30px;
+    display:inline-block;
+}
+#photoshop {
+    width: 40px;
+    height: 40px;
+    background: url(../img/adobe_icons.png) 190 222;
+}
+
+#dreamweaver {
+    width: 40px;
+    height: 40px;
+    background: url(../img/adobe_icons.png) 190 980;
+}
+#illustrator {
+    width: 40px;
+    height: 40px;
+    background: url(../img/adobe_icons.png) 430 623;
+}
+#flash {
+    width: 40px;
+    height: 40px;
+    background: url(../img/adobe_icons.png) 479 624;
+}
+#indesign {
+    width: 40px;
+    height: 40px;
+    background: url(../img/adobe_icons.png) 235 311;
+}
+#premierepro {
+    width: 40px;
+    height: 40px;
+    background: url(../img/adobe_icons.png) 908 222;
+}
+#dreamweaver, #premierepro {
+    margin-left:40px;
+}
+#flash {
+    margin-left:-40px;
+}
+.invisible {
+    display:none;
+}
+.visible {
+    display:block;
+}
+ul.mytools li, .desktop {
+   list-style-type: none;
+}
+#plusminus {
+    border:2px solid black;
+    font-size:1rem;
+    border-radius:50%;
+    display:inline-block;
+}
+@media (max-width:589px){
+    #plusminus {
+      display:inline-block !important;  
+    }
+    .desktop {
+        display:none;
+    }
+}
+
+@media (min-width:590px){
+    #plusminus {
+      display:none !important;  
+    }
+    
+}
