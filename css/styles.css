@@ -27,6 +27,7 @@ h2,h3,.navbar,.footer {
 	margin-right: auto;
 	margin-left: auto;
 	background-color: white;
+	opacity:.8;
 }
 
 .footer {
