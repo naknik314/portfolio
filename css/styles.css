@@ -84,6 +84,7 @@ div.thumbnail {
     text-align:center;
     float:left;
     background-color:white;
+    opacity:1;
 }
 img.thumbnail-wide {
     width:150px;
