@@ -45,7 +45,7 @@ h2,h3,.navbar,.footer {
 }
 .navbar, .footer {
     font-size:1.2rem;
-    background-color:#899AB4;
+    background-color:gray;
     width: 100%;
     margin:auto;
 }
