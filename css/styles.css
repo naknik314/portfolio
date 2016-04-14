@@ -45,7 +45,7 @@ h2,h3,.navbar,.footer {
 }
 .navbar, .footer {
     font-size:1.2rem;
-    background-color:gray;
+    background-color:white;
     width: 100%;
     margin:auto;
 }
@@ -76,7 +76,7 @@ span.required {
     color:red;
 }
 div.thumbnail {
-    border: 1px solid #CCE0EC;
+    border: 2px solid gray;
     border-radius:50%;
     width:200px;
     height:200px;
