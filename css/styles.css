@@ -19,7 +19,7 @@ h2,h3,.navbar,.footer {
 }
 
 .container {
-	width: 90%;
+	width: 100%;
 	padding-right: 15px;
 	padding-top: 15px;
 	padding-bottom: 15px;
@@ -46,7 +46,7 @@ h2,h3,.navbar,.footer {
 .navbar, .footer {
     font-size:1.2rem;
     background-color:#899AB4;
-    width: 94%;
+    width: 100%;
     margin:auto;
 }
 .navbar a, .navbar,.footer {
