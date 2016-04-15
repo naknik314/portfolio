@@ -35,6 +35,7 @@ h2,h3,.navbar,.footer {
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
+  color:white;
 }
 
 .footer {
