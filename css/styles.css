@@ -29,6 +29,9 @@ h2,h3,.navbar,.footer {
 	background-color: white;
 	opacity:.8;
 }
+#about {
+	background-image: url(../img/about.jpg);
+}
 
 .footer {
     border-top:2px solid white;
