@@ -31,6 +31,10 @@ h2,h3,.navbar,.footer {
 }
 #about {
 	background-image: url(../img/about.jpg);
+	-webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
 }
 
 .footer {
