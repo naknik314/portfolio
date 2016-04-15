@@ -38,6 +38,11 @@ h2,h3,.navbar,.footer {
   color:white;
 }
 
+#about p {
+	text-align:left;
+	max-width:450px;
+}
+
 .footer {
     border-top:2px solid white;
     text-align:center;
