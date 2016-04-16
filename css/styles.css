@@ -43,6 +43,15 @@ h2,h3,.navbar,.footer {
 	max-width:550px;
 }
 
+#contact {
+background-image: url(../img/contact.jpg);
+	-webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+  color:white;	
+}
+
 .footer {
     border-top:2px solid white;
     text-align:center;
