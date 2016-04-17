@@ -210,9 +210,9 @@ ul.mytools li, .desktop {
     
 }
 body.thankyou h1 {
-font-family: "Handee", sans-serif;	
+font-family: "Handee", sans-serif !important;	
 }
 body.thankyou p {
-font-family: "Open Sans", sans-serif;	
+font-family: "Open Sans", sans-serif !important;	
 }
 }
