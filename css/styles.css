@@ -63,6 +63,7 @@ background-image: url(../img/contact.jpg);
     font-weight:bold;
     border-bottom:2px solid white;
     padding:5px;
+    position:fixed;
 }
 .navbar, .footer {
     font-size:1.2rem;
