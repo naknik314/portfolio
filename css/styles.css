@@ -29,7 +29,7 @@ h2,h3,.navbar,.footer {
 	opacity:.5;
 }
 .wrapper {
-	margin-top:25px;
+	margin: 25px auto 0;
 }
 #about {
 	background-image: url(../img/about.jpg);
@@ -65,9 +65,10 @@ background-image: url(../img/contact.jpg);
 	height: 25px;
     font-weight:bold;
     border-bottom:2px solid white;
-    padding:5px;
+    padding-left:5px;
+    padding-right:5px;
     position:fixed;
-    top:0px;
+    top:0;
 }
 .navbar, .footer {
     font-size:1.2rem;
