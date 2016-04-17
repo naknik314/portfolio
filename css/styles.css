@@ -28,6 +28,9 @@ h2,h3,.navbar,.footer {
 	background-color: white;
 	opacity:.5;
 }
+.wrapper {
+	margin-top:10px;
+}
 #about {
 	background-image: url(../img/about.jpg);
 	-webkit-background-size: cover;
