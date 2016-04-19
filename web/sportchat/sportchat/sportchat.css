@@ -17,7 +17,9 @@ text-decoration: underline;
 a:visited {
 color: #252A3A;	
 }
-
+a.about-link {
+	color:white;
+}
 .icon {
 	width: 30px;
 }
