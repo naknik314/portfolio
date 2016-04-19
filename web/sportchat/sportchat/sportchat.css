@@ -7,7 +7,7 @@ body {
 	color: #FFF;
 }
 a:link {
-	color: #26325A;
+	color: #990000;
 	text-decoration:none;
 }
 a:hover {
@@ -54,10 +54,10 @@ width: 75px;
 }
 
 .navbar, .toolbar-inner {
-background-color: #26325A;
+background-color: #990000;
 }
 body, .page-content {
-background-color: #535B73;	
+background-color: #333;	
 }
 .page-content {
 padding-top: 20px;	
