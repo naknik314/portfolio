@@ -138,6 +138,9 @@ img.thumbnail-half-long {
 .thumbnail-wide,.thumbnail-long,.thumbnail-square {
     margin:1%;
 }
+#coffeehouse {
+	background-color:#4D2E29;
+}
 div.icon {
     width:30px;
     display:inline-block;
