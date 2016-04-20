@@ -6,6 +6,9 @@ font-family: sans-serif;
 body {
 	color: #FFF;
 }
+div.login-screen-title {
+	font-family:'Russo One',sans-serif;
+}
 a:link {
 	color: #990000;
 	text-decoration:none;
