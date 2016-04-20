@@ -53,7 +53,7 @@ h6 {
 img {
 	border-width: 0px;
 }
-div#menu_bar > div.navbar.navbar-default {
+.container-fluid {
 	background-color:lightblue;
 }
 #site-wrapper {
