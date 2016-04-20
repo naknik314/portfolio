@@ -1,6 +1,5 @@
 @charset "utf-8";
 /* CSS Document */
-
 body,td,th {
 	font-size: 12px;
 	color: #333;
@@ -53,7 +52,9 @@ h6 {
 }
 img {
 	border-width: 0px;
-
+}
+div#menu_bar > div.navbar.navbar-default {
+	background-color:lightblue;
 }
 #site-wrapper {
     width: 100%;
