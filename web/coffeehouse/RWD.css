@@ -54,7 +54,7 @@ img {
 	border-width: 0px;
 }
 .container-fluid {
-	background-color:lightblue;
+	background-color:lightblue !important;
 }
 #site-wrapper {
     width: 100%;
