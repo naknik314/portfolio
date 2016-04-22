@@ -113,7 +113,8 @@ div.thumbnail {
 img.thumbnail-wide {
     width:210px;
     height:40px;
-    padding-top:40px;
+    margin-left:-3px;
+    padding-top:70px;
 }
 img.thumbnail-long {
     width:150px;
