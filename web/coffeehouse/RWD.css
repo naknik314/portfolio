@@ -8,7 +8,7 @@ body,td,th {
 nav.navbar.navbar-default {
  border: 1px solid #9ECFE0;
 }
-span.glyphicon.glyphicon-chevron-left, span.glyphicon.glyphicon-chevron-right {
+span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-control, span.glyphicon.glyphicon-chevron-right {
 background-image:none;	
 }
 span.glyphicon.glyphicon-chevron-left {
