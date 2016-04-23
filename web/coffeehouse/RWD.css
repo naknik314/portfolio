@@ -5,6 +5,9 @@ body,td,th {
 	color: #333;
 //	float: left;
 }
+nav.navbar.navbar-default {
+ border: 1px solid #9ECFE0;
+}
 body {
 	margin: 0 auto;
 //	width: 1000px;
