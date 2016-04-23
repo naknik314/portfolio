@@ -8,6 +8,10 @@ body,td,th {
 nav.navbar.navbar-default {
  border: 1px solid #9ECFE0;
 }
+ul#menu_nav.nav.navbar-nav >li.active {
+	background-color:#32100D;
+	color:white;
+}
 body {
 	margin: 0 auto;
 //	width: 1000px;
