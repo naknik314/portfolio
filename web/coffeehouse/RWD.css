@@ -8,6 +8,15 @@ body,td,th {
 nav.navbar.navbar-default {
  border: 1px solid #9ECFE0;
 }
+span.glyphicon.glyphicon-chevron-left, span.glyphicon.glyphicon-chevron-right {
+background-image:none;	
+}
+span.glyphicon.glyphicon-chevron-left {
+right:20%;	
+}
+span.glyphicon.glyphicon-chevron-right {
+left:20%;	
+}
 ul#menu_nav.nav.navbar-nav >li.active {
 	background-color:#32100D;
 	color:white;
