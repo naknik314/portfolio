@@ -12,7 +12,8 @@ span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-
 background-image:none;	
 }
 span.glyphicon.glyphicon-chevron-left {
-right:20%;	
+right:20%;
+margin-left:10px;
 }
 span.glyphicon.glyphicon-chevron-right {
 left:20%;	
