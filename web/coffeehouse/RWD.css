@@ -9,8 +9,8 @@ nav.navbar.navbar-default {
  border: 1px solid #9ECFE0;
 }
 .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a {
-	background-image:none;
-	background-color:#32100D;
+	background-image:none !important;
+	background-color:#32100D !important;
 	color:white !important;
 }
 span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-control, span.glyphicon.glyphicon-chevron-right {
