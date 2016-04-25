@@ -14,7 +14,7 @@ font-family: Futura, sans-serif;
 color: #A06739;
 width: 320px;
 }
-.heading {
+h2.heading {
 	margin:10px 0;
 }
 #content {
