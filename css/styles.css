@@ -19,7 +19,6 @@ h2,h3,.navbar,.footer {
 button {
   color: black;
   cursor: pointer;
-  line-height: 45px;
   max-width: 160px;
   position: relative;
   text-transform: uppercase;
