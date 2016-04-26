@@ -16,9 +16,12 @@ font-weight:300;
 h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
-button.top-title, button.middle-title, button.bottom-title {
+button.top-nav {
 	border:none;
-	font-family:"Handee", sans-serif;
+	font-family:"Handee", sans-serif;	
+}
+button.top-title, button.middle-title, button.bottom-title {
+width:30%;
 }
 .container {
 	width: 100%;
