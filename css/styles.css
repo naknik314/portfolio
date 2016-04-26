@@ -20,6 +20,38 @@ button.top-nav {
 width:30%;
 background-color:white;		
 }
+.top-nav {
+  border: 1px solid;
+  overflow: hidden;
+  position: relative;
+}
+.top-nav span {
+  z-index: 20;
+}
+.top-nav:after {
+  background: #fff;
+  content: "";
+  height: 155px;
+  left: -75px;
+  opacity: .2;
+  position: absolute;
+  top: -50px;
+  width: 50px;
+  -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+          transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+  -webkit-transform: rotate(35deg);
+      -ms-transform: rotate(35deg);
+          transform: rotate(35deg);
+  z-index: -10;
+}
+
+.top-nav:hover:after {
+  left: 120%;
+  -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+          transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+
 button.top-title, button.middle-title, button.bottom-title {
 font-size:1rem;
 border:none;
