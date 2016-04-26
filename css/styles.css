@@ -17,11 +17,9 @@ h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
 button {
-  color: #fff;
+  color: black;
   cursor: pointer;
-  display: block;
-  font-size: 16px;
-  font-weight: 400;
+  display: inline-block;
   line-height: 45px;
   max-width: 160px;
   margin: 0 auto 2em;
