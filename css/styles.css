@@ -17,12 +17,13 @@ h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
 button.top-nav {
-	border:none;
-	font-family:"Handee", sans-serif;	
+width:30%;
+background-color:white;		
 }
 button.top-title, button.middle-title, button.bottom-title {
-width:30%;
-background-color:white;
+font-size:1rem;
+border:none;
+font-family:"Handee","Open Sans", sans-serif;
 }
 .container {
 	width: 100%;
