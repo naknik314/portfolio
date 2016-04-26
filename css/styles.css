@@ -19,7 +19,6 @@ h2,h3,.navbar,.footer {
 button {
   color: black;
   cursor: pointer;
-  display: inline-block;
   line-height: 45px;
   max-width: 160px;
   margin: 0 auto 2em;
