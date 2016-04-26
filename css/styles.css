@@ -27,7 +27,7 @@ font-family:"Handee","Open Sans", sans-serif;
 }
 
 button.top-title img, button.middle-title img, button.bottom-title img {
-	text-align:center !important;
+	width:20%;
 }
 .container {
 	width: 100%;
