@@ -29,15 +29,15 @@ button.top-nav {
 width:30%;
 background-color:white;		
 }
-.top-nav {
+button.top-nav {
   border: 1px solid;
   overflow: hidden;
   position: relative;
 }
-.top-nav span {
+button.top-nav span {
   z-index: 20;
 }
-.top-nav:after {
+button.top-nav:after {
   background: #fff;
   content: "";
   height: 155px;
@@ -54,7 +54,7 @@ background-color:white;
   z-index: -10;
 }
 
-.top-nav:hover:after {
+button.top-nav:hover:after {
   left: 120%;
   -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
           transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
