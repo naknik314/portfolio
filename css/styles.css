@@ -22,6 +22,7 @@ button.top-nav {
 }
 button.top-title, button.middle-title, button.bottom-title {
 width:30%;
+background-color:white;
 }
 .container {
 	width: 100%;
