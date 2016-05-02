@@ -1,28 +1,11 @@
-/* CSE 190 M, Spring 2008, Lab 2, Journal
-   A starter CSS file that gives basic styles to various elements
-   for aesthetic purposes. 
-   
-   NOTE: This file does NOT need changing for the lab.
-*/
-
 a {
 	color: #245F5F;
 	text-decoration: none;
 }
 
-aside a:link { color: #CC3C8E; }
-aside a:visited { color: #000; }
-aside a:hover { color: #733454; }
-aside a:active {color: #B2F511; }
-
 blockquote {
 	font-style: italic;
 }
-
-body {
-	font-family: "Georgia", sans-serif;
-}
-
 
 h1, h2 {
 	font-weight: normal;
@@ -41,21 +24,11 @@ ul {
 	margin: 2px 10px 2px 5px;
 }
 
-body{
-background-image: url(bg.jpg);
-background-size:cover;
-}
-span{
+span.date{
   border-bottom: 2px dashed #1E7F85;  
 }
-#main {
-  border-top: 15px solid rgba(255,255,255,.9);
-position: relative;
-border-radius: 10px;
-background-image: url(bg.jpg);
-background-repeat:repeat-x;
-}
-#content {
+
+.content {
  border: 4px solid white;
 /* "Invalid", but works in IE 6-8 */
 filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#ECF8F6, endColorstr=#FFF);
@@ -74,34 +47,7 @@ color: #1964A8;
 border-radius: 10px;
 
 }
-aside {
- border: 5px solid white;
-/* "Invalid", but works in IE 6-8 */
-filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0, startColorstr=#FEF7FA, endColorstr=#FFF);
 
-/* Valid, works in IE 8-9 */
-background-color: #FFF;
-background: linear-gradient(#FEF7FA, white);
-background: webkit-linear-gradient(#FEF7FA, white);
-background: moz-linear-gradient(#FEF7FA, white);
-background: o-linear-gradient(#FEF7FA, white);
-width: 170px;
-position: absolute;
-top:95px;
-border-radius: 10px;
-}
-aside li {
- padding: 2px;
-margin-left: 5px;
-}
-aside h1, aside li, aside a{
- color: #CC3C8E;   
-}
-
-#main{
-background-color: rgba(255,255,255,.7);
-    background-color:white;
-}
 #header h1, #subhead h2 {
      text-align:right;
     color: #CC3C8E;
@@ -122,6 +68,7 @@ background: linear-gradient(to left,#FEF7FA, white);
 background: webkit-linear-gradient(to left,#FEF7FA, white);
 background: moz-linear-gradient(to left,#FEF7FA, white);
 background: o-linear-gradient(to left,#FEF7FA, white);
+    opacity:.9;
 }
 #header{
 border: 5px solid white;
@@ -131,3 +78,153 @@ border-radius: 10px;
 #header img {
   top:-100px;  
 }
+
+div#title, span.nutrition{
+float:right;
+    overflow:hidden;
+}
+
+body {
+	background-image:url(bg.jpg);
+    background-size:contain;
+    background-repeat:repeat;
+    font-family:"Century Gothic",sans-serif;
+    
+}
+
+	.tabs {
+		width: 100%;
+		margin: 100px auto;
+        
+	}
+
+		input {
+			opacity: 0;
+		}
+
+		label {
+			cursor: pointer;
+			background: linear-gradient(to top, #FEF7FA, white);
+			color: #CC3C8E;
+			border-radius: 3px 3px 0px 0px;
+			padding: 1.5% 3%;
+			float: left;
+			margin-right: 1px;
+            font-family:"Century Gothic",sans-serif;
+            border:2px solid #CC3C8E;
+		}
+
+			label:hover {
+				background-color:#ECF8F6;
+			}
+
+			input:checked + label {
+/* "Invalid", but works in IE 6-8 */
+filter: progid: DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FFF, endColorstr=#ECF8F6);
+/* Valid, works in IE 8-9 */
+background-color: #FFF;
+background: linear-gradient(to top, #ECF8F6, white);
+				color: #1964A8;
+                border-top:2px solid #1964A8;
+                border-left:2px solid #1964A8;
+                border-right:2px solid #1964A8;
+                border-bottom:2px solid #ECF8F6;
+                font-weight:bold;
+			}
+
+		.tabs input:nth-of-type(1):checked ~ .panels .panel:first-child,
+		.tabs input:nth-of-type(2):checked ~ .panels .panel:nth-child(2),
+		.tabs input:nth-of-type(3):checked ~ .panels .panel:nth-child(3),
+		.tabs input:nth-of-type(4):checked ~ .panels .panel:last-child {
+			opacity: 1;
+			-webkit-transition: .3s;
+		}
+
+		.panels {
+			float: left;
+			clear: both;
+			position: relative;
+			width: 100%;
+			background: #fff;
+			border-radius: 0 0px 0px 0px;
+			min-height: 315px;
+            
+
+		}
+
+			.panel {
+				width: 100%;
+				opacity: 0;
+				position: absolute;
+				background: #ECF8F6;
+				border-radius: 0 0px 0px 0px;
+				padding: 4%;
+				box-sizing: border-box;
+                font-family: 'Century Gothic',sans-serif;
+			}
+
+				.panel h2 {
+					margin: 0;
+					font-family: 'Century Gothic',sans-serif;
+				}
+
+#cut-diamond {
+    border-style: solid;
+    border-color: transparent transparent black transparent;
+    border-width: 0 25px 25px 25px;
+    height: 0;
+    width: 50px;
+    position: relative;
+    margin: 20px 0 50px 0;
+}
+#cut-diamond:after {
+    content: "";
+    position: absolute;
+    top: 25px;
+    left: -25px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-color: black transparent transparent transparent;
+    border-width: 70px 50px 0 50px;
+}
+    .item,.item2 {
+	margin: 10px;
+	cursor:pointer;
+}
+    .item,.item2, .panel .heading {
+        width:80%;
+        margin:auto;
+    }
+    .item span, .item2 span {
+        float:right;
+        margin-right:10px;
+        margin-top:10px;
+        overflow:hidden;
+        font-size:1.5rem;
+    }
+
+.checked {
+	background-image:url('http://gilliscoaching.com/wp-content/uploads/2014/08/check-mark-2-256.png');
+	z-index:99;
+	background-position:top center;
+	background-repeat:no-repeat;
+}
+
+.checked img{
+	position: relative;
+	z-index:-1;
+}
+
+.x {
+	background-image:url('https://cdn3.iconfinder.com/data/icons/iconic-1/28/x-128.png');
+	z-index:99;
+	background-position:top center;
+	background-repeat:no-repeat;
+    
+}
+.x img{
+	position: relative;
+	z-index:-1;
+    margin-top:10px;
+    }
