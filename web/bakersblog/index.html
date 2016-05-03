@@ -1,33 +1,33 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
-<head>
-	<title>Baker's Blog</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-	<!-- This links to a stylesheet that gives basic formatting to your page; you do not need to modify this. -->
-	<link rel="stylesheet" type="text/css" href="http://www.cs.washington.edu/education/courses/190m/09sp/labs/2-journal/journal_basic.css" title="style" />
-	
-	<!-- This is linking to your stylesheet, journal_layout.css -->
-	<link rel="stylesheet" type="text/css" href="blog.css" title="style" />
-</head>
-
+<html>
+<link href='blog.css' rel='stylesheet'>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
 <body>
-<div id='main'>
-<aside>
-    <h1>Friends</h1>
-<ul>
-	<li><a href="#">Steven the Vegan</a></li>
-	<li><a href="#">Julia Child</a></li>
-	<li><a href="#" title="#">Chef Matthews</a></li>
-</ul>
-</aside>
-<div id='header'>
+    <div id='header'>
+    <img src="blog.png" style="float:left; overflow:hidden;"><div id='title'>
     <!--<img style="position:absolute; top:5px; margin-top:-10px; overflow:hidden;" src="blog.jpg" width='150px' height='100px'>!-->
 	<h1>The Baker's Blog</h1>
 	<div id='subhead'><h2>So fresh and so clean</h2></div>
 </div>
-    <div id='content'>
-	<h2><span>05/21/15:</span> Spatulas</h2>
+<center><div class='embed'><br></div></center>
+<article class="tabs">
+
+		<input checked id="one" name="tabs" type="radio">
+	    <label for="one">Blog</label>
+
+	    <input id="two" name="tabs" type="radio" value="Two">
+	    <label for="two">My Go-To Snacks</label>
+
+	    <input id="three" name="tabs" type="radio">
+	    <label for="three">Inspiring Chefs</label>
+
+	    <input id="four" name="tabs" type="radio">
+	    <label for="four">Featured Recipe</label>
+
+	    <div class="panels">
+
+		    <div class="panel">
+    <div class='content'>
+	<h2><span class="date">05/21/15:</span> Spatulas</h2>
 	<p>
 		<img id='spatula' src="http://www.cs.washington.edu/education/courses/190m/09sp/labs/2-journal/images/spatula.gif" alt="Much-needed spatula" />
 	</p>
@@ -35,8 +35,9 @@
 	<p>
 		Yesterday I went to the store and got some much-needed <a href="http://www.youtube.com/watch?v=2XbCWmY0eqY">spatulas</a>! (What better way to say I love myself than to buy myself a spatula?)
 	</p>
-</div><div id='content'>
-	<h2><span>05/20/15:</span> Cookie Monster Cupcakes</h2>
+</div>
+                    <div class='content'>
+	<h2><span class="date">05/20/15:</span> Cookie Monster Cupcakes</h2>
 	<p>
 		<img id='cookie' src="http://www.cs.washington.edu/education/courses/190m/09sp/labs/2-journal/images/cookiemonster.jpg" alt="Cookie Monster: in cupcake form!" />
 	</p>
@@ -51,9 +52,60 @@
 </div>
 </div>
 
+		    <div class="panel">
+                <div class='content'>
+                <div class="heading">
+                		    	<h2>My Go-To Snacks</h2>
+		    	<p>These are my top favorites. Let me warn you, I do have <i>some</i> guilty pleasures listed here, but you gotta live a little, right?</p>
+                    </div>
+<div class='item2'><img src='http://www.hellawella.com/sites/hellawella.com/files/2012/09/Eats_FriedFood.jpg' alt='pic' width="300"><span class="nutrition">120 cal<br>5g sugar<br></span></div><br>
+<div class='item'><img src='http://www.hellawella.com/sites/hellawella.com/files/2012/09/Eats_FriedFood.jpg' alt='pic' width="300"><span>500 cal</span></div><br>
+                    </div>
+		    </div>
+
+		    <div class="panel">
+                <div class="content">
+		    	<h2>Inspiring Chefs</h2>
+		    	<p>Not all of them have to be bakers. Some of the more important things I have learned in my job have come from both inside and outside the kitchen.</p>
+
+		    	<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris vel leo sem. Sed nec quam sit amet lorem volutpat ullamcorper ut sed massa. Sed vel felis velit. Nullam et turpis sed dui auctor vehicula quis a dui.</p>
+
+		    	<p>Aliquam vitae leo et sapien volutpat accumsan quis eget turpis. Etiam ac metus vitae purus semper pretium. Curabitur id nisl nisl. Cras ut massa sed dolor ullamcorper consequat ut sed dolor.</p>
+            </div>
+		    </div>
+
+		    <div class="panel">
+                <div class="content">
+		    	<h2>Featured Recipe</h2>
+		    	<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris vel leo sem. Sed nec quam sit amet lorem volutpat ullamcorper ut sed massa. Sed vel felis velit. Nullam et turpis sed dui auctor vehicula quis a dui.</p>
+
+		    	<p>Aliquam vitae leo et sapien volutpat accumsan quis eget turpis. Etiam ac metus vitae purus semper pretium. Curabitur id nisl nisl. Cras ut massa sed dolor ullamcorper consequat ut sed dolor.</p>
+		    </div>
 </div>
+		</div>
+
+    </article>
+</div>
+<script> 
+$(document).ready(function(){ 
+	$('.item').hover(function() {
+		$(this).css({'border':'2px solid #000000'},{'border-radius':'3px'});
+        $(this).animate({'opacity':0.5},2000);
+		$(this).toggleClass('checked');	
+	});	
+	$('.item2').hover(function() {
+		$(this).css({'border':'2px solid #000000'});
+		$(this).toggleClass('x');
+    });
+    $('.item').click(function() {
+        alert('I would actually recommend this item');
+		        $(this).animate({'opacity':0.5},2000);
+	});
+	$('.item2').click(function() {
+        alert('Well, I DID warn you...just do a little extra at the gym and you should be fine!');
+		        $(this).animate({'opacity':0.5},2000);
+	});
+});
+</script>
 </body>
-
 </html>
-
-
