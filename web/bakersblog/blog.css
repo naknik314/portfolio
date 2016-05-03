@@ -110,6 +110,15 @@ body {
 			text-align:right;
 			color:white;
 		}
+		div#15percent {
+			width:15%;
+		}
+			div#55percent {
+			width:55%;
+		}
+			div#35percent {
+			width:35%;
+		}
 
 		label {
 			cursor: pointer;
