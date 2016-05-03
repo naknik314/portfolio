@@ -118,7 +118,7 @@ overflow: hidden;
 <div class='fakebody'>
 <div class='fixedtop'><center><br><ul class='meta'>
 <li>
-    <a href='#'><b>Articles</b></a>
+    <a href='javascript:void(0)' id="articles"><b>Articles</b></a>
 </li>
 <li>
     <a href='#'><b>Treasures</b></a>
@@ -127,19 +127,33 @@ overflow: hidden;
 <article>
 <a href='#'><img src='chest-145752_640.png' alt='treasure chest' width='30%'></a>
 <div class='preview'>
+ <div id='article'></div>
 <h2>10 Lost Treasures</h2>
 <p class='post_info'><a href='#'>LostTreasures</a> on 5/27/15 </p>
 <div class='body'>
 <p>Here is a list of treasures rumored within the past 200 years that may have stood the test of time.</p>
 <p>Even though some have yet to be discovered, they are part of legends from long ago.</p>
-   
-<a class='continue' href='#'><b>Continue</b></a>
+ <br>  
+<a id="continue" class='continue' href='#'><b>Continue</b></a>
+<div id="content"></div>
 &nbsp;<br>
 </div>
 </div>
 </article>
 </div>
 <div class='fixedbottom'><center><br><img src='facebook-icon.png'>&nbsp;<img src='Instagram-Icon-30x30.png'>&nbsp;<img src='share-tw.png'><br>&nbsp;<br>&nbsp;<br>&nbsp;<br>&nbsp;<br>&nbsp;</center></div>
-
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript">
+      $(document).ready(function() { 
+              $('#articles').click(function() {
+               $('#article').load('articles.html');
+       });
+       
+       $('#continue').click(function() {
+               $('#content').load('treasures.html');
+       });
+                //jquery code will go here
+      }); //end document ready
+</script>
 </body>
 </html>
