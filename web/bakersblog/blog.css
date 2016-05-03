@@ -107,6 +107,7 @@ body {
 		div.bar {
 			background-color:#1964A8;
 			border-radius:3px;
+			text-align:right;
 			color:white;
 		}
 
