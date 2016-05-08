@@ -8,9 +8,7 @@ font: 'Bookman Old Style';
 header img {
  margin-top: 20px;   
 }
-div.pdf {
-	margin-top:10px !important;
-}
+
     body {
 background-color: #eae0cb;
 font-family: Futura, sans-serif;
@@ -18,7 +16,7 @@ color: #A06739;
 width: 320px;
 }
 h2.heading, div.pdf {
-	margin:10px 0;
+	margin:10px 0 !important;
 }
 #content {
 background-color:#ccd6ce;
