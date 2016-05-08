@@ -8,8 +8,8 @@ font: 'Bookman Old Style';
 header img {
  margin-top: 20px;   
 }
-.pdf {
-	margin-top:10px;
+div.pdf {
+	margin-top:10px !important;
 }
     body {
 background-color: #eae0cb;
