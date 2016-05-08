@@ -8,6 +8,9 @@ font: 'Bookman Old Style';
 header img {
  margin-top: 20px;   
 }
+.pdf {
+	margin-top:10px;
+}
     body {
 background-color: #eae0cb;
 font-family: Futura, sans-serif;
