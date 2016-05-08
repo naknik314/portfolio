@@ -15,7 +15,7 @@ font-family: Futura, sans-serif;
 color: #A06739;
 width: 320px;
 }
-h2.heading, div.pdf {
+h3.heading, div.pdf {
 	margin:10px 0 !important;
 }
 #content {
