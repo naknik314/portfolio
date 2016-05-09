@@ -94,7 +94,7 @@ button.top-title img, button.middle-title img, button.bottom-title img {
 	opacity:.8;
 }
 .wrapper {
-	margin: 25px auto 0;
+	margin: 35px auto 0;
 }
 #about {
 	background-image: url(../img/about.jpg);
@@ -127,7 +127,7 @@ background-image: url(../img/contactme.jpg);
 }
 
 .navbar {
-	height: 25px;
+	height: 35px;
     font-weight:bold;
     border-bottom:2px solid white;
     padding-left:5px;
