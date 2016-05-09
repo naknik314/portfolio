@@ -18,9 +18,9 @@ h2,h3,.navbar,.footer {
 }
 div#logo img {
 	width:35px;
-	height:30px;
+	height:25px;
 	position:relative;
-	top:12px;
+	top:10px;
 }
 div#logo {
 border-radius:50%;
