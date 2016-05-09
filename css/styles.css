@@ -19,6 +19,7 @@ h2,h3,.navbar,.footer {
 div#logo img {
 	width:25px;
 	height:20px;
+	float:left;
 	position:relative;
 	top:9px;
 }
