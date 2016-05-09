@@ -17,9 +17,14 @@ h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
 div#logo img {
-	width:75px;
-	height:60px;
-	background-color:#1961A4;
+	width:35px;
+	height:40px;
+	
+}
+div#logo {
+border-radius:50%;
+background-color:#1961A4;
+width:45px;
 }
 button {
   color: black;
@@ -157,9 +162,7 @@ color: hsla(0,0%,0%,1)
 span.required {
     color:red;
 }
-div#logo {
-border-radius:50%;	
-}
+
 div.thumbnail {
     border: 2px solid gray;
     border-radius:50%;
