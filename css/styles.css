@@ -109,7 +109,7 @@ button.top-title img, button.middle-title img, button.bottom-title img {
 	max-width:550px;
 }
 div#about.container.middle, div#contact.container.bottom {
-	margin-top:85px;
+	padding-top:85px;
 }
 
 #contact {
