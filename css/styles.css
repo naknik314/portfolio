@@ -16,6 +16,10 @@ font-weight:300;
 h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
+div#logo img {
+	width:75px;
+	height:60px;
+}
 button {
   color: black;
   cursor: pointer;
