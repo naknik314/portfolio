@@ -19,7 +19,6 @@ h2,h3,.navbar,.footer {
 div#logo img {
 	width:25px;
 	height:20px;
-	float:left;
 	position:relative;
 	top:9px;
 }
@@ -28,6 +27,7 @@ border-radius:50%;
 background-color:#2C71A7;
 width:30px;
 height:35px;
+float:left;
 }
 button {
   color: black;
