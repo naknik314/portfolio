@@ -188,6 +188,11 @@ img.thumbnail-half-long {
     height:150px;
     padding-top:30px;
 }
+img.thumbnail-half-square {
+    width:75px;
+    height:75px;
+    padding-top:30px;
+}
 
 .thumbnail-wide,.thumbnail-long,.thumbnail-square {
     margin:1%;
