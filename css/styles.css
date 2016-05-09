@@ -108,6 +108,9 @@ button.top-title img, button.middle-title img, button.bottom-title img {
 	text-align:left;
 	max-width:550px;
 }
+div#about.container.middle, div#contact.container.bottom {
+	margin-top:85px;
+}
 
 #contact {
 background-image: url(../img/contactme.jpg);
