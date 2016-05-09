@@ -17,14 +17,18 @@ h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
 div#logo img {
-	width:35px;
-	height:40px;
+	width:55px;
+	height:45px;
+	position:relative;
+	top:10px;
+	
 	
 }
 div#logo {
 border-radius:50%;
 background-color:#1961A4;
-width:45px;
+width:65px;
+height:75px;
 }
 button {
   color: black;
