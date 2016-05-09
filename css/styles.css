@@ -40,8 +40,7 @@ button {
 button.top-nav {
 width:30%;
 background-color:white;		
-}
-button.top-nav {
+margin-top:10px;
   border: 1px solid;
   overflow: hidden;
   position: relative;
