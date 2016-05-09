@@ -17,12 +17,10 @@ h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
 div#logo img {
-	width:55px;
-	height:45px;
+	width:45px;
+	height:35px;
 	position:relative;
-	top:10px;
-	
-	
+	top:20px;
 }
 div#logo {
 border-radius:50%;
