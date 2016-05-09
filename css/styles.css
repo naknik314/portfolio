@@ -17,16 +17,16 @@ h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
 div#logo img {
-	width:25px;
-	height:20px;
+	width:35px;
+	height:30px;
 	position:relative;
-	top:9px;
+	top:12px;
 }
 div#logo {
 border-radius:50%;
 background-color:#2C71A7;
-width:30px;
-height:35px;
+width:50px;
+height:55px;
 }
 button {
   color: black;
@@ -93,7 +93,7 @@ button.top-title img, button.middle-title img, button.bottom-title img {
 	opacity:.8;
 }
 .wrapper {
-	margin: 85px auto 0;
+	margin: 95px auto 0;
 }
 #about {
 	background-image: url(../img/about.jpg);
@@ -126,7 +126,7 @@ background-image: url(../img/contactme.jpg);
 }
 
 .navbar {
-	height: 85px;
+	height: 95px;
     font-weight:bold;
     border-bottom:2px solid white;
     padding-left:5px;
