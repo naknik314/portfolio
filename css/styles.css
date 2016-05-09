@@ -19,6 +19,7 @@ h2,h3,.navbar,.footer {
 div#logo img {
 	width:75px;
 	height:60px;
+	background-color:#1961A4;
 }
 button {
   color: black;
