@@ -21,6 +21,9 @@ body h1 {
 h3.heading, div.pdf {
 	margin:10px 0 !important;
 }
+div.grid {
+	margin-bottom:10px !important;
+}
 #content {
 background-color:#ccd6ce;
 font-style:normal;
