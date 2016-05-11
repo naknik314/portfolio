@@ -1,13 +1,5 @@
 @charset "UTF-8";
 /* CSS Document */
-html {
-    background-image: url(../img/bg.jpg);
-  background-repeat:repeat;
-  -webkit-background-size: cover;
-  -moz-background-size: cover;
-  -o-background-size: cover;
-  background-size: cover;
-}
 body {
 font-family: 'Open Sans',sans-serif;
 font-size:1.3rem;
@@ -136,6 +128,11 @@ background-image: url(../img/contactme.jpg);
     padding-right:5px;
     position:fixed;
     top:0;
+        background-image: url(../img/bg.jpg);
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
 }
 .navbar, .footer {
     font-size:1.2rem;
