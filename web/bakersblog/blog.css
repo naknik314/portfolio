@@ -58,8 +58,12 @@ border-radius: 10px;
 #main,#bottom{
   margin: 0% 10%;  
 }
-#spatula, #cookie{
+#spatula, #cookie, #recipe{
 float: right;    
+}
+#recipe {
+	width:150px;
+	height:200px;
 }
 #header,#subhead {
 /* "Invalid", but works in IE 6-8 */
