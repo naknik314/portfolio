@@ -158,7 +158,7 @@ overflow: hidden;
       $(document).ready(function() { 
               $('#articles').click(function() {
                $('#article').load('articles.html');
-               if $("#article").hasClass('closed'){
+               if ($("#article").hasClass('closed')){
                 $("#article").toggleClass('open');
                } else {
                 $("#article").toggleClass('closed');
