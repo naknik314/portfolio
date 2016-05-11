@@ -119,13 +119,13 @@ body {
 			color:white;
 			margin:auto;
 		}
-		div#15percent.bar {
+		div#fifteen.bar {
 			width:15% !important;
 		}
-			div#55percent.bar {
+			div#fiftyfive.bar {
 			width:55% !important;
 		}
-			div#35percent.bar {
+			div#thirtyfive.bar {
 			width:35% !important;
 		}
 
