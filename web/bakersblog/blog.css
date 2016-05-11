@@ -80,6 +80,7 @@ background: o-linear-gradient(to left,#FEF7FA, white);
 #header{
 border: 5px solid white;
 border-radius: 10px;
+width:100% !important;
 }
 
 #header img {
@@ -116,6 +117,7 @@ body {
 			border-radius:3px;
 			text-align:right;
 			color:white;
+			margin:auto;
 		}
 		div#15percent.bar {
 			margin-right:85% !important;
