@@ -117,6 +117,7 @@ background-image: url(../img/contactme.jpg);
     text-align:center;
     align-content:center;
     clear:both;
+    border:2px solid white;
 }
 
 .navbar {
