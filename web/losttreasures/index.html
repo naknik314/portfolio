@@ -160,8 +160,10 @@ overflow: hidden;
                $('#article').load('articles.html');
                if ($("#article").hasClass('closed')){
                 $("#article").toggleClass('open');
+                $("#article").removeClass('closed');
                } else {
                 $("#article").toggleClass('closed');
+                 $("#article").removeClass('open');
                }
        });
        
