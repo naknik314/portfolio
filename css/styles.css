@@ -175,7 +175,7 @@ div.thumbnail {
     float:left;
     background-color:white;
     opacity:1;
-    margin:1%;
+    margin:.5%;
 }
 img.thumbnail-wide {
     width:210px;
