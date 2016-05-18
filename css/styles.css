@@ -99,6 +99,7 @@ button.top-title img, button.middle-title img, button.bottom-title img {
 #about p {
 	text-align:left;
 	max-width:550px;
+	margin-left:3%;
 }
 div#portfolio.container,div#about.container, div#contact.container {
 	margin-top:70px;
