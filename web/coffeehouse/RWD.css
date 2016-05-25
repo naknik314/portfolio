@@ -27,6 +27,10 @@ ul#menu_nav.nav.navbar-nav >li.active {
 	background-color:#32100D;
 	color:white;
 }
+div.AccordionPanelContent ul li {
+	margin-right:100px;
+	list-style-type:none;
+}
 body {
 	margin: 0 auto;
 //	width: 1000px;
