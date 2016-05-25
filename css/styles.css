@@ -13,6 +13,11 @@ div#logo img {
 	height:25px;
 	position:relative;
 	top:14px;
+	visibility:hidden;
+}
+h2.logotype{
+	color:white;
+	margin-top:-15px;
 }
 div#logo {
 border-radius:50%;
