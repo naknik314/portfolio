@@ -134,6 +134,7 @@ background-image: url(../img/contactme.jpg);
     padding-right:5px;
     position:fixed;
     top:0;
+    z-index:2;
 }
 .navbar, .footer {
     font-size:1.2rem;
