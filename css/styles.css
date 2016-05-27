@@ -46,7 +46,7 @@ button.top-nav span {
   z-index: 20;
 }
 button.top-nav:after {
-  background: #2C71A7;
+  background: lightgray;
   content: "";
   height: 155px;
   left: -75px;
