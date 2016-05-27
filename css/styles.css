@@ -75,7 +75,7 @@ border:none;
 font-family:"Handlee","Open Sans", sans-serif;
 }
 
-button.top-title img, button.middle-title img, button.bottom-title img {
+button.bottom-title img {
 	width:20%;
 }
 .container {
