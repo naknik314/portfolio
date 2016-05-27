@@ -46,7 +46,7 @@ button.top-nav span {
   z-index: 20;
 }
 button.top-nav:after {
-  background: #fff;
+  background: #2C71A7;
   content: "";
   height: 155px;
   left: -75px;
@@ -72,7 +72,7 @@ button.top-nav:hover:after {
 button.top-title, button.middle-title, button.bottom-title {
 font-size:1rem;
 border:none;
-font-family:"Handee","Open Sans", sans-serif;
+font-family:"Handlee","Open Sans", sans-serif;
 }
 
 button.top-title img, button.middle-title img, button.bottom-title img {
