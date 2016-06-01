@@ -13,6 +13,9 @@ nav.navbar.navbar-default {
 	background-color:#32100D !important;
 	color:white !important;
 }
+button.navbar-toggle {
+	background-color:#32100D;
+}
 span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-control, span.glyphicon.glyphicon-chevron-right {
 background-image:none;	
 }
