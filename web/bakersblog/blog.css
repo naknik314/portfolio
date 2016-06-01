@@ -194,7 +194,7 @@ background: linear-gradient(to top, #ECF8F6, white);
 					font-family: 'Century Gothic',sans-serif;
 				}
 
-img#cookie {
+img#cookie, img#spatula {
     width:210px;
 }
     .item,.item2 {
