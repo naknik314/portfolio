@@ -113,26 +113,5 @@
 
     </article>
 </div>
-<script> 
-$(document).ready(function(){ 
-	$('.item').hover(function() {
-		$(this).css({'border':'2px solid #000000'},{'border-radius':'3px'});
-        $(this).animate({'opacity':0.5},2000);
-		$(this).toggleClass('checked');	
-	});	
-	$('.item2').hover(function() {
-		$(this).css({'border':'2px solid #000000'});
-		$(this).toggleClass('x');
-    });
-    $('.item').click(function() {
-        alert('I would actually recommend this item');
-		        $(this).animate({'opacity':0.5},2000);
-	});
-	$('.item2').click(function() {
-        alert('Well, I DID warn you...just do a little extra at the gym and you should be fine!');
-		        $(this).animate({'opacity':0.5},2000);
-	});
-});
-</script>
 </body>
 </html>
