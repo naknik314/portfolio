@@ -58,8 +58,11 @@ border-radius: 10px;
 	.content {
 		margin-left:0;
 	}
-	label {
-		padding:1.5% 0;
+	
+}
+@media(max-width:480px){
+	img#pastries {
+		width:100%;
 	}
 }
 #header h1, #subhead h2 {
