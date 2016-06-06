@@ -114,6 +114,14 @@ button.top-title img {
 div#portfolio.container,div#about.container, div#contact.container {
 	margin-top:70px;
 }
+@media(max-width:757px){
+	#about p {
+		max-width:350px;
+	}
+}
+div#portfolio.container,div#about.container, div#contact.container {
+	margin-top:70px;
+}
 
 #contact {
 background-image: url(../img/contactme.jpg);
