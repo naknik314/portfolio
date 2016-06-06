@@ -16,7 +16,11 @@ h1, h2 {
 .indent {
 	margin-left:15px;
 }
-
+img#pastries {
+	float:left; 
+	overflow:hidden;
+	width:40%;
+}
 img {
 	border-style: none;
 	padding: 5px;
