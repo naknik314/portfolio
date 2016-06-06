@@ -64,7 +64,9 @@ border-radius: 10px;
 	img#pastries, div#title {
 		width:100%;
 	}
-
+input#one, input#two, input#three, input#four {
+	display:none;
+}
 }
 #header h1, #subhead h2 {
      text-align:right;
