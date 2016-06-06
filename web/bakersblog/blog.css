@@ -73,7 +73,14 @@ input#one, input#two, input#three, input#four {
 label {
 	margin-top:10px;
 }
+img#spatula, img#cookie, img#recipe{
+	width:100%;
 }
+img#recipe{
+	height:100%;
+}
+}
+
 #header h1, #subhead h2 {
      text-align:right;
     color: #CC3C8E;
