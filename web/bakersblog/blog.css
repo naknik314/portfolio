@@ -58,6 +58,9 @@ border-radius: 10px;
 	.content {
 		margin-left:0;
 	}
+	label {
+		padding:1.5% 0;
+	}
 }
 #header h1, #subhead h2 {
      text-align:right;
