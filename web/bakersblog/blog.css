@@ -61,9 +61,10 @@ border-radius: 10px;
 	
 }
 @media(max-width:559px){
-	img#pastries {
+	img#pastries, div#title {
 		width:100%;
 	}
+
 }
 #header h1, #subhead h2 {
      text-align:right;
