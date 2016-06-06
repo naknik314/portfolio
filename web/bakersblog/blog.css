@@ -50,7 +50,11 @@ color: #1964A8;
 border-radius: 10px;
 
 }
-
+@media(max-width:767px){
+	.content {
+		margin-left:0;
+	}
+}
 #header h1, #subhead h2 {
      text-align:right;
     color: #CC3C8E;
