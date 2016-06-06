@@ -67,6 +67,9 @@ border-radius: 10px;
 input#one, input#two, input#three, input#four {
 	display:none;
 }
+#header {
+	height:170px;
+}
 }
 #header h1, #subhead h2 {
      text-align:right;
