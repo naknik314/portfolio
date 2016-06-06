@@ -106,6 +106,11 @@ button.top-title img {
 	max-width:550px;
 	margin-left:3%;
 }
+@media(max-width:1039px){
+	#about p {
+		max-width:450px;
+	}
+}
 div#portfolio.container,div#about.container, div#contact.container {
 	margin-top:70px;
 }
