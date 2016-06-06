@@ -74,7 +74,7 @@ label {
 	margin-top:10px;
 }
 img#spatula, img#cookie, img#recipe{
-	width:100%;
+	width:100% !important;
 }
 img#recipe{
 	height:100%;
