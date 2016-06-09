@@ -185,10 +185,10 @@ span.required {
 }
 
 div.thumbnail {
-    border: 2px solid gray;
+    border: 2px solid white;
     border-radius:50%;
-    width:200px;
-    height:200px;
+    width:150px;
+    height:150px;
     padding:10px;
     text-align:center;
     float:left;
@@ -197,10 +197,10 @@ div.thumbnail {
     margin:.5%;
 }
 img.thumbnail-wide {
-    width:210px;
-    height:40px;
+    width:160px;
+    height:30px;
     margin-left:-3px;
-    padding-top:70px;
+    padding-top:60px;
 }
 img.thumbnail-long {
     width:150px;
@@ -214,7 +214,7 @@ img.thumbnail-square {
 img.thumbnail-half-wide {
     width:150px;
     height:50px;
-    padding-top:70px;
+    padding-top:50px;
 }
 img.thumbnail-half-long {
     width:90px;
