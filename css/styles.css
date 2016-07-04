@@ -209,7 +209,7 @@ img.thumbnail-long {
 img.thumbnail-square {
     width:150px;
     height:150px;
-    padding-top:30px;
+    padding-top:0px;
 }
 img.thumbnail-half-wide {
     width:150px;
