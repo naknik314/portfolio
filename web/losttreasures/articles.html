@@ -1,4 +1,12 @@
 <html>
-<h2>More Articles</h2><div class="preview stub"><h3 class="subtitle">Native American Treasures<br>under a Walmart?&nbsp;<a href='#' class="stub">Read More</a></h3><div class="body"></div></div>
-<div class="preview stub"><h3 class="subtitle">Fisher recovers a shipwreck<br> in the Keys&nbsp;<a href='#' class="stub">Read More</a></h3><div class="body"></div></div>
+<h2>More Articles</h2><div class="preview stub"><h3 class="subtitle">Native American Treasures<br>under a Walmart?&nbsp;<a href='#' id="native" class="stub">Read More</a></h3><div class="body"></div></div>
+<div class="preview stub"><h3 class="subtitle">Fisher recovers a shipwreck<br> in the Keys&nbsp;<a href='#' id="shipwreck" class="stub">Read More</a></h3><div class="body"></div></div>
+ <script>
+       $('#native').click(function() {
+               $('#content').load('morearticles1.html');
+               $('#continue').hide();
+               $("#sand").toggleClass('open');
+                $("#sand").removeClass('closed');
+       });
+       </script>
 </html>
