@@ -11,7 +11,8 @@
                 $("#sand").removeClass('closed');
        });
        $('#shipwreck').click(function() {
-               $('#content').hide();
+                $('#title').load('shipwrecktitle.html');
+               $('#subtitle').load('shipwrecksubtitle.html');
                $('#content').load('morearticles2.html');
                $('#continue').hide();
                $("#sand").toggleClass('open');
