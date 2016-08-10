@@ -92,8 +92,8 @@ img#recipe{
 float: right;    
 }
 #recipe {
-	width:150px;
-	height:165px;
+	width:120px;
+	height:125px;
 }
 #header,#subhead {
 /* "Invalid", but works in IE 6-8 */
