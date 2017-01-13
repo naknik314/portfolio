@@ -111,6 +111,9 @@ background: o-linear-gradient(to left,#FEF7FA, white);
 border: 5px solid white;
 border-radius: 10px;
 width:100% !important;
+position:absolute;
+top:0;
+left:0;
 }
 
 #header img {
