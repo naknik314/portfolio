@@ -323,3 +323,6 @@ body.thankyou p {
 font-family: "Open Sans", sans-serif !important;	
 }
 }
+i.fa.fa-angle-double-up.icon {
+	height:30px;
+}
