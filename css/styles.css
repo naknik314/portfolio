@@ -5,6 +5,10 @@ font-family: 'Open Sans',sans-serif;
 font-size:1.3rem;
 font-weight:300;
 }
+body#terms {
+width:95%;
+margin:auto;
+}
 h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
