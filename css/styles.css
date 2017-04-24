@@ -98,6 +98,17 @@ button.top-title img {
 	background-color: white;
 	opacity:.8;
 }
+
+.inner-container {
+display:table;
+margin:auto;
+}
+
+@media (min-width:960px){
+.inner-container {
+width:920px;
+}
+}
 .wrapper {
 	margin: 95px auto 0;
 }
