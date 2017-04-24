@@ -109,6 +109,11 @@ margin:auto;
 width:920px;
 }
 }
+@media (min-width:560px) and (max-width:959px){
+.inner-container {
+width:600px;
+}
+}
 .wrapper {
 	margin: 95px auto 0;
 }
