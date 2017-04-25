@@ -10,6 +10,14 @@ margin-right:0;
 .text-center {
 text-align:center !important;	
 }
+
+.button-link {
+background-color:white;
+color:black;
+display:block;
+border-radius:5px;
+}
+
 body#terms {
 width:95%;
 margin:auto;
