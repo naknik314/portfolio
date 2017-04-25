@@ -9,6 +9,11 @@ body {
 div.login-screen-title {
 	font-family:'Russo One',sans-serif;
 }
+
+#toolbar {
+position:fixed;	
+}
+
 a:link {
 	color: #990000;
 	text-decoration:none;
