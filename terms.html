@@ -17,7 +17,7 @@
         font-variant:small-caps;
         font-family:'Handlee';
     }
-    #terms li:before, #terms ul.sublist li {
+    #terms li:before, #terms ul.sublist li:before {
         font-family: 'FontAwesome';
         float: left;
         margin-left: -1.5em;
@@ -27,8 +27,12 @@
         content:"\f0a4";
     }
     
-     #terms ul.sublist {
+     #terms ul.sublist li:before {
         content:"\f121" !important;
+    }
+    
+    #terms ul.sublist li {
+     margin-left:1.5em;   
     }
     
     #terms li {
