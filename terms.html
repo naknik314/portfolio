@@ -43,10 +43,20 @@
       position:relative;  
     }
     
-    @media(min-width:500px){
-    .background-icon-desktop {
-      position: absolute;
+   .background-icon {
+    position: absolute;
     opacity: .05;
+    }
+    
+        @media(max-width:499px){
+    .background-icon {
+        top:-20%;
+        font-size:5rem;
+    }        
+    }
+    
+    @media(min-width:500px){
+    .background-icon {
         right:35%;
         top:0;
         font-size:12rem;
@@ -63,7 +73,7 @@
 <ul class="mainlist">
     <li><h3>Client/Web Designer Relationship</h3>       
         <ul class="sublist">
-            <i class="fa fa-handshake-o background-icon-desktop" style="top:-60px" aria-hidden="true"></i>
+            <i class="fa fa-handshake-o background-icon" style="top:-60px" aria-hidden="true"></i>
     <li>
 <span class="bold-terms">Web Designer</span> is working as an <i>independent contractor</i> for <span class="bold-terms">Client</span>, not an <i>employee</i>. </li>
             </ul></li></ul>
@@ -71,7 +81,7 @@
     <ul class="mainlist">
     <li><h3>Web Hosting</h3>
         <ul class="sublist">
-             <i class="fa fa-server background-icon-desktop" aria-hidden="true"></i>
+             <i class="fa fa-server background-icon" aria-hidden="true"></i>
     <li>All web hosting and domain accounts have a separate third-party subscription with a domain/hosting provider. </li>
      <li>  
         <span class="bold-terms">Client</span> may choose to setup their own domain/hosting service, <i>or</i> <span class="bold-terms">Web Designer</span> may setup domain and/or hosting for <span class="bold-terms">Client</span>, which would then be billed as a maintenance expense. </li>
@@ -83,7 +93,7 @@
        
 
         <ul class="sublist">
-             <i class="fa fa-clock-o background-icon-desktop" aria-hidden="true"></i>
+             <i class="fa fa-clock-o background-icon" aria-hidden="true"></i>
     <li>The project timeline is determined by the <span class="bold-terms">Client</span> contributing to the workflow with prompt responses, as well as the <span class="bold-terms">Web Designer</span> receiving content for the website in a timely manner.Any delays in approvals or responses from the <span class="bold-terms">Client</span> will significantly affect the projected timeline, with the possibility of the original deadline being postponed. </li>
     <li>By agreeing to these terms, <span class="bold-terms">Client</span> acknowledges their responsibility in keeping the project on-schedule. On the other hand, if the <span class="bold-terms">Web Designer</span> is unable to meet project deadlines, the project timeline and subsequent payments will be adjusted accordingly.
 </li>
@@ -92,14 +102,14 @@
     
 <ul class="mainlist"><li><h3>Maintenance</h3>  
     <ul class="sublist">
-    <i class="fa fa-wrench background-icon-desktop top-spacing30" aria-hidden="true"></i>  
+    <i class="fa fa-wrench background-icon top-spacing30" aria-hidden="true"></i>  
 <li>
 Maintenance done <i>during</i> the project timeline will be billed at the completion of the project unless noted otherwise. Any payment for maintenance done <i>after</i> the completion of the project, will be due on a weekly basis at the standard hourly rate.</li>
     </ul></li> </ul>
     
 <ul class="mainlist"><li><h3>Third-party services or subscriptions</h3>
     <ul class="sublist">
-<i class="fa fa-users background-icon-desktop top-spacing30" aria-hidden="true"></i>
+<i class="fa fa-users background-icon top-spacing30" aria-hidden="true"></i>
     <li>
 Invoices for subscriptions <i>(ex: stock photography)</i> and/or additional materials and services authorized by <span class="bold-terms">Client</span> for the project are due before said subscriptions/materials are purchased. </li>
     <li>Third-party Subscriptions/services will continue to be billed to <span class="bold-terms">Client</span> on a recurring basis (if applicable) until termination of project, or until <span class="bold-terms">Client</span> determines that subscription/service will be canceled, whichever is sooner.
@@ -108,7 +118,7 @@ Invoices for subscriptions <i>(ex: stock photography)</i> and/or additional mate
     </ul>
     
 <ul class="mainlist"><li><h3>Custom Assets</h3>
-    <i class="fa fa-file-image-o background-icon-desktop" style="top:60px" aria-hidden="true"></i>
+    <i class="fa fa-file-image-o background-icon" style="top:60px" aria-hidden="true"></i>
     <ul class="sublist">
     <li>
 At the request of <span class="bold-terms">Client</span>, <span class="bold-terms">Web Designer</span> may create custom graphics including but not limited to <i>(animated GIFS, graphics, etc)</i>. Payment for these customized assets are due before assets are created.
@@ -117,7 +127,7 @@ At the request of <span class="bold-terms">Client</span>, <span class="bold-term
     
 <ul class="mainlist"><li><h3>Ownership</h3>
     <ul class="sublist">
-        <i class="fa fa-copyright background-icon-desktop" aria-hidden="true"></i>
+        <i class="fa fa-copyright background-icon" aria-hidden="true"></i>
 
     <li>
 <span class="bold-terms">Web Designer</span> retains ownership of all custom assets, custom web templates, and all other ("original content") created for <span class="bold-terms">Client</span> by <span class="bold-terms">Web Designer</span>.</li>
@@ -129,7 +139,7 @@ At the request of <span class="bold-terms">Client</span>, <span class="bold-term
 <ul class="mainlist"> 
     <li><h3>Browser-Compatibility<br></h3>      
     <ul class="sublist">
-         <i class="fa fa-mouse-pointer background-icon-desktop" aria-hidden="true"></i>   
+         <i class="fa fa-mouse-pointer background-icon" aria-hidden="true"></i>   
 <li>
 The Web browsers accounted for are the most recent versions of: 
 <ul class="sublist">
@@ -144,7 +154,7 @@ The Web browsers accounted for are the most recent versions of:
     
 <ul class="mainlist"><li><h3>E-Commerce Laws</h3>
     <ul class="sublist">
-      <i class="fa fa-balance-scale background-icon-desktop" aria-hidden="true"></i>
+      <i class="fa fa-balance-scale background-icon" aria-hidden="true"></i>
     <li>
 <span class="bold-terms">Client</span> is solely responsible for complying with appropriate laws or taxes relating to their use of an e-commerce website. </li>
     <li><span class="bold-terms">Web Designer</span> is not responsible for any costs, fees, suits, claims, penalties or otherwise, related to <span class="bold-terms">Client's</span> use of their e-commerce website.
@@ -154,7 +164,7 @@ The Web browsers accounted for are the most recent versions of:
     
 <ul class="mainlist"><li><h3>Payments</h3>
     <ul class="sublist">
-        <i class="fa fa-usd background-icon-desktop" aria-hidden="true"></i>
+        <i class="fa fa-usd background-icon" aria-hidden="true"></i>
 <li>
 Work begins once the 1st payment is recieved. Payments will <i>only</i> be processed thru Paypal <i class="fa fa-paypal" aria-hidden="true"></i>. </li>
         <li>
@@ -166,7 +176,7 @@ All invoices are due as soon as they are recieved. If <span class="bold-terms">W
  <ul class="mainlist">   
 <li><h3>Termination</h3>
     <ul class="sublist">
-        <i class="fa fa-ban background-icon-desktop top-spacing30" aria-hidden="true"></i>
+        <i class="fa fa-ban background-icon top-spacing30" aria-hidden="true"></i>
     <li>
 If <span class="bold-terms">Client</span> terminates this agreement, all prior work done by <span class="bold-terms">Web Designer</span> up until the termination date will be billed to <span class="bold-terms">Client</span>. Once Agreement is terminated, <span class="bold-terms">Web Designer</span> will no longer be responsible for providing additional services to <span class="bold-terms">Client</span>.
 </li>
@@ -179,7 +189,7 @@ If the agreement is terminated because of <span class="bold-terms">Web Designer'
  <ul class="mainlist">   
 <li><h3>Severability</h3>
     <ul class="sublist">
-        <i class="fa fa-pencil-square-o background-icon-desktop top-spacing30" aria-hidden="true"></i>
+        <i class="fa fa-pencil-square-o background-icon top-spacing30" aria-hidden="true"></i>
 <li>
 If any term of this Agreement is to any extent illegal, otherwise invalid, or incapable of being enforced, such term shall be excluded to the extent of such invalidity or unenforceability; all other terms hereof shall remain 
 in full force and effect; and, to the extent permitted and possible, the invalid or unenforceable term shall be deemed replaced by a term that is valid and enforceable and that comes closest to expressing the intention of such invalid or unenforceable term.</li>
@@ -189,7 +199,7 @@ in full force and effect; and, to the extent permitted and possible, the invalid
     <ul class="mainlist">
 <li><h3>Questions</h3>
     <ul class="sublist">
-    <i class="fa fa-question background-icon-desktop" aria-hidden="true"></i>
+    <i class="fa fa-question background-icon" aria-hidden="true"></i>
 
 <li>
 Ideally we <i>all</i> want things to work out perfectly, but if there are any questions or concerns, please send a message so that we can figure something out.
