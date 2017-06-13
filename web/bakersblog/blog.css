@@ -77,12 +77,6 @@ right:0;
 position:absolute;	
 }
 
-@media(max-width:920px) {
-	#restaurant-banner {
-		margin-left:50px;
-	}	
-}
-
 @media(max-width:767px){
 	.content {
 		margin-left:0;
