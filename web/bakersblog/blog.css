@@ -77,6 +77,14 @@ position:absolute;
 		margin-left:0;
 	}
 	
+		.panel {
+		margin-top:0;
+	}
+	
+		#restaurant-banner {
+		display:none;
+	}
+	
 }
 @media(max-width:559px){
 	img#pastries, div#title {
