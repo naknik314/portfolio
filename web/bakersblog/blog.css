@@ -72,9 +72,9 @@ right:0;
 position:absolute;	
 }
 
-@media(max-width:900px) {
+@media(max-width:920px) {
 	#restaurant-banner {
-		margin-left:0;
+		margin-left:50px;
 	}	
 }
 
