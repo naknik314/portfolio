@@ -58,6 +58,7 @@ border-radius: 10px;
 #restaurant-banner {
 	bottom:90px;
 	left:10px;
+	margin-left:100px;
 }
 
 #restaurant-banner a {
@@ -72,7 +73,7 @@ position:absolute;
 }
 
 @media(max-width:767px){
-	.content {
+	.content, #restaurant-banner {
 		margin-left:0;
 	}
 	
