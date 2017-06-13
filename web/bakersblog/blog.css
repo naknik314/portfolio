@@ -55,7 +55,7 @@ border-radius: 10px;
 
 }
 
-@media(min-width:1024px) {
+@media(min-width:1024px) and (max-width:821px) {
 	#restaurant-banner {
 	margin-left:190px;	
 	}
