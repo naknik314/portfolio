@@ -55,22 +55,16 @@ border-radius: 10px;
 
 }
 
-@media(min-width:1024px) and (max-width:821px) {
-	#restaurant-banner {
-	margin-left:190px;	
-	}
-}
-
 @media(min-width:820px) {
-	#restaurant-banner {
-	margin-left:75px;	
-	}
+#restaurant-banner {
+	left:75%;
+}
 }
 
 #restaurant-banner {
 	bottom:90px;
-	left:10px;
 }
+
 
 #restaurant-banner a {
 bottom:0;
