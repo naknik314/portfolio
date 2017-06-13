@@ -47,6 +47,7 @@ background: webkit-linear-gradient(to right,#ECF8F6, white);
 background: moz-linear-gradient(to right,#ECF8F6, white);
 background: o-linear-gradient(to right,#ECF8F6, white);
     padding: 5px;
+margin-left: 190px;
     margin-top: 10px;
  overflow: hidden;
 color: #1964A8;
@@ -54,12 +55,12 @@ border-radius: 10px;
 
 }
 
-.content, .restaurant-banner {
-margin-left: 190px;	
+#restaurant-banner {
+margin-top:30px;	
 }
 
 @media(max-width:767px){
-	.content, .restaurant-banner {
+	.content {
 		margin-left:0;
 	}
 	
