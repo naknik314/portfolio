@@ -55,10 +55,15 @@ border-radius: 10px;
 
 }
 
+@media(min-width:1024px) {
+	#restaurant-banner {
+	margin-left:190px;	
+	}
+}
+
 #restaurant-banner {
 	bottom:90px;
 	left:10px;
-	margin-left:100px;
 }
 
 #restaurant-banner a {
