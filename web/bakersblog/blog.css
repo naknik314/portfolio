@@ -215,11 +215,14 @@ background: linear-gradient(to top, #ECF8F6, white);
 
 		}
 
+			.panels, .panel {
+				background: #ECF8F6;	
+				}
+
 			.panel {
 				width: 100%;
 				opacity: 0;
 				position: absolute;
-				background: #ECF8F6;
 				border-radius: 0 0px 0px 0px;
 				padding: 4%;
 				box-sizing: border-box;
