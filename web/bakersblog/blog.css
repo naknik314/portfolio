@@ -77,6 +77,17 @@ right:0;
 position:absolute;	
 }
 
+@media(min-width:768px){	
+		.panel {
+		margin-top:0;
+	}
+	
+		#restaurant-banner {
+		display:block;
+	}
+	
+}
+
 @media(max-width:767px){
 	.content {
 		margin-left:0;
@@ -254,7 +265,6 @@ background: linear-gradient(to top, #ECF8F6, white);
 				padding: 4%;
 				box-sizing: border-box;
                 font-family: 'Century Gothic',sans-serif;
-				margin-top:200px;
 			}
 
 				.panel h2 {
