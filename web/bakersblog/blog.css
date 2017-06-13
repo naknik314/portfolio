@@ -72,8 +72,14 @@ right:0;
 position:absolute;	
 }
 
+@media(max-width:900px) {
+	#restaurant-banner {
+		margin-left:0;
+	}	
+}
+
 @media(max-width:767px){
-	.content, #restaurant-banner {
+	.content {
 		margin-left:0;
 	}
 	
