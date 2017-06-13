@@ -49,13 +49,17 @@ background: o-linear-gradient(to right,#ECF8F6, white);
     padding: 5px;
     margin-top: 10px;
  overflow: hidden;
-margin-left: 190px;
 color: #1964A8;
 border-radius: 10px;
 
 }
+
+.content, #restaurant-banner {
+margin-left: 190px;	
+}
+
 @media(max-width:767px){
-	.content {
+	.content, #restaurant-banner {
 		margin-left:0;
 	}
 	
