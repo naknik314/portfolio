@@ -55,7 +55,7 @@ border-radius: 10px;
 
 }
 
-iframe#restaurant-banner {
+#restaurant-banner {
 position:absolute;
 	bottom:90px;
 	left:10px;
