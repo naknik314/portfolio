@@ -55,18 +55,6 @@ border-radius: 10px;
 
 }
 
-.reverse-content-gradient {
-/* "Invalid", but works in IE 6-8 */
-filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FFF, endColorstr=#ECF8F6 ) !important;
-
-/* Valid, works in IE 8-9 */
-background-color: #FFF;
-background: linear-gradient(to right,white,#ECF8F6) !important;
-background: webkit-linear-gradient(to right,white,#ECF8F6 ) !important;
-background: moz-linear-gradient(to right, white,#ECF8F6) !important;
-background: o-linear-gradient(to right,white,#ECF8F6) !important;	
-}
-
 @media(min-width:820px) {
 #restaurant-banner {
 	left:25%;
