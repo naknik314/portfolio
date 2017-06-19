@@ -284,6 +284,7 @@ background: linear-gradient(to top, #ECF8F6, white);
 				box-sizing: border-box;
                 font-family: 'Century Gothic',sans-serif;
 				background-color: #EAF8FE;
+				background-image: url('sprinkles.png');
 			}
 
 				.panel h2 {
