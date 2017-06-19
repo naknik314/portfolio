@@ -265,7 +265,7 @@ background: linear-gradient(to top, #ECF8F6, white);
 			background: #fff;
 			border-radius: 0 0px 0px 0px;
 			min-height: 315px;
-			background-image:url(bg.jpg);
+			background-image:url(bg.jpg) !important;
 			background-size:cover;
             
 
