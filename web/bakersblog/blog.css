@@ -281,43 +281,4 @@ background: linear-gradient(to top, #ECF8F6, white);
 img#cookie, img#spatula {
     width:220px !important;
 }
-    .item,.item2 {
-	margin: 10px;
-	cursor:pointer;
-}
-    .item,.item2, .panel .heading {
-        width:80%;
-        margin:auto;
-    }
-    .item span, .item2 span {
-        float:right;
-        margin-right:10px;
-        margin-top:10px;
-        overflow:hidden;
-        font-size:1.5rem;
-    }
 
-.checked {
-	background-image:url('http://gilliscoaching.com/wp-content/uploads/2014/08/check-mark-2-256.png');
-	z-index:99;
-	background-position:top center;
-	background-repeat:no-repeat;
-}
-
-.checked img{
-	position: relative;
-	z-index:-1;
-}
-
-.x {
-	background-image:url('https://cdn3.iconfinder.com/data/icons/iconic-1/28/x-128.png');
-	z-index:99;
-	background-position:top center;
-	background-repeat:no-repeat;
-    
-}
-.x img{
-	position: relative;
-	z-index:-1;
-    margin-top:10px;
-    }
