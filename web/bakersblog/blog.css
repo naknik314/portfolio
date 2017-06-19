@@ -42,10 +42,10 @@ filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr
 
 /* Valid, works in IE 8-9 */
 background-color: #FFF;
-background: linear-gradient(to right,#ECF8F6, white);
-background: webkit-linear-gradient(to right,#ECF8F6, white);
-background: moz-linear-gradient(to right,#ECF8F6, white);
-background: o-linear-gradient(to right,#ECF8F6, white);
+background: linear-gradient(to right,#EAF8FE, white);
+background: webkit-linear-gradient(to right,#EAF8FE, white);
+background: moz-linear-gradient(to right,#EAF8FE, white);
+background: o-linear-gradient(to right,#EAF8FE, white);
     padding: 5px;
 margin-left: 190px;
     margin-top: 10px;
@@ -232,7 +232,7 @@ body {
 		}
 
 			label:hover {
-				background-color:#ECF8F6;
+				background-color:#EAF8FE;
 			}
 
 			input:checked + label {
@@ -240,12 +240,12 @@ body {
 filter: progid: DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FFF, endColorstr=#ECF8F6);
 /* Valid, works in IE 8-9 */
 background-color: #FFF;
-background: linear-gradient(to top, #ECF8F6, white);
+background: linear-gradient(to top, #EAF8FE, white);
 				color: #1964A8;
                 border-top:2px solid #1964A8;
                 border-left:2px solid #1964A8;
                 border-right:2px solid #1964A8;
-                border-bottom:2px solid #ECF8F6;
+                border-bottom:2px solid #EAF8FE;
                 font-weight:bold;
 			}
 
@@ -262,7 +262,6 @@ background: linear-gradient(to top, #ECF8F6, white);
 			clear: both;
 			position: relative;
 			width: 100%;
-			background: #fff;
 			border-radius: 0 0px 0px 0px;
 			min-height: 315px;
 			background-image:url(bg.jpg) !important;
@@ -272,7 +271,7 @@ background: linear-gradient(to top, #ECF8F6, white);
 		}
 
 			.panels, .panel {
-				background: #ECF8F6;	
+				background: #EAF8FE;	
 				}
 
 			.panel {
