@@ -74,7 +74,8 @@ right:0;
 }
 
 .poll-container {
-position:relative;	
+position:relative;
+list-style-type:none;
 }
 
 .poll {
