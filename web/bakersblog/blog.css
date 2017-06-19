@@ -187,9 +187,6 @@ float:right;
 }
 
 body {
-	background-image:url(bg.jpg);
-    background-size:contain;
-    background-repeat:repeat;
     font-family:"Century Gothic",sans-serif;
     
 }
@@ -268,6 +265,8 @@ background: linear-gradient(to top, #ECF8F6, white);
 			background: #fff;
 			border-radius: 0 0px 0px 0px;
 			min-height: 315px;
+			background-image:url(bg.jpg);
+			background-size:cover;
             
 
 		}
