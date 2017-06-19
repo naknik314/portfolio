@@ -285,6 +285,7 @@ background: linear-gradient(to top, #EAF8FE, white);
 				background-color: #EAF8FE;
 				background-image: url('pastry.png');
 				background-size:contain;
+				background-repeat:no-repeat;
 			}
 
 				.panel h2 {
