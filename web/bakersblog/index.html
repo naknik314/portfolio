@@ -81,15 +81,27 @@
 		    	<h3>What is the most important step toward successful cooking?</h3>
 			<ul>
 			<script>
-    			var i = 0;
-    			function buttonClick() {
+    			var i = 178;
+    			function buttonClick1() {
         		i++;
         		document.getElementById('vote1').value = i;
     			}
+
+    			var i = 185;
+    			function buttonClick2() {
+        		i++;
+        		document.getElementById('vote2').value = i;
+    			}
+
+    			var i = 163;
+    			function buttonClick3() {
+        		i++;
+        		document.getElementById('vote3').value = i;
+    			}
 			</script>
-				<li class="poll-container"><h4>Tried and true recipes (<input id="vote1" class="poll poll-votes" value="0"></input> votes) <button class="poll poll-button" onclick="buttonClick()">Vote</button></h4></li>
-				<li class="poll-container"><h4>Quality Ingredients (185 votes)</h4></li>
-				<li class="poll-container"><h4>Time and Patience (168 votes)</h4></li>
+				<li class="poll-container"><h4>Tried and true recipes (<input id="vote1" class="poll poll-votes" value="178"></input> votes) <button class="poll poll-button" onclick="buttonClick1()">Vote</button></h4></li>
+				<li class="poll-container"><h4>Quality Ingredients (<input id="vote2" class="poll poll-votes" value="185"></input> votes) <button class="poll poll-button" onclick="buttonClick2()">Vote</button></h4></li>
+				<li class="poll-container"><h4>Time and Patience (<input id="vote3" class="poll poll-votes" value="163"></input> votes) <button class="poll poll-button" onclick="buttonClick3()">Vote</button></h4></li>
 			</ul>
 				
 			</div>
