@@ -81,7 +81,7 @@ position:relative;
 z-index:99999;	
 }
 
-#restaurant-banner, #restaurant-banner a, .poll {
+#restaurant-banner, #restaurant-banner a, .poll-button {
 position:absolute;	
 }
 
