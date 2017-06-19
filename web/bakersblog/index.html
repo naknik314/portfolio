@@ -83,10 +83,11 @@
 			<script>
     			var i = 0;
     			function buttonClick() {
-        		document.getElementById('vote1').value = ++i;
+        		i++;
+        		document.getElementById('vote1').value = i;
     			}
 			</script>
-				<li><h4>Tried and true recipes <button onclick="buttonClick()">Vote</button></h4>(<span id="vote1" value="0"></span> votes)</li>
+				<li><h4>Tried and true recipes <a onclick="buttonClick()">Vote</a></h4>(<span id="vote1" value="0"></span> votes)</li>
 				<li><h4>Quality Ingredients (185 votes)</h4></li>
 				<li><h4>Time and Patience (168 votes)</h4></li>
 			</ul>
