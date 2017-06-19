@@ -73,7 +73,15 @@ top:0;
 right:0;
 }
 
-#restaurant-banner, #restaurant-banner a {
+.poll-container {
+position:relative;	
+}
+
+.poll {
+z-index:99999;	
+}
+
+#restaurant-banner, #restaurant-banner a, .poll {
 position:absolute;	
 }
 
