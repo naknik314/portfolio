@@ -37,12 +37,14 @@ span.date{
 
 .content-placeholder, .content-gradient, .content-highlight {
     padding: 5px;
-margin-left: 190px;
     margin-top: 10px;
  overflow: hidden;
 color: #1964A8;
 position:relative;
+}
 
+.content-placeholder, .content-gradient {
+margin-left: 190px;
 }
 
 .content-gradient {
