@@ -293,6 +293,15 @@ background: linear-gradient(to top, #EAF8FE, white);
 					font-family: 'Century Gothic',sans-serif;
 				}
 
+#healthy-img:hover {
+background-image:url('healthy-banner.png');
+}
+
+#healthy-img:hover, #unhealthy-img:hover {
+	background-size:contain;
+	background-repeat:no-repeat;	
+}
+
 img#cookie, img#spatula {
     width:220px !important;
 }
