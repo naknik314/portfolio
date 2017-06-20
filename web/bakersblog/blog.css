@@ -161,7 +161,8 @@ img#recipe{
   margin: 0% 10%;  
 }
 #spatula, #cookie, #recipe{
-float: right;    
+float: right; 
+margin-left:0 !important;
 }
 #recipe {
 	width:120px;
