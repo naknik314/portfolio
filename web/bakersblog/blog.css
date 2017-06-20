@@ -65,6 +65,10 @@ background: o-linear-gradient(to right,#EAF8FE, white);
 background-color:#EAF8FE;	
 }
 
+.nutrition {
+text-align:center;	
+}
+
 
 @media(min-width:820px) {
 #restaurant-banner {
