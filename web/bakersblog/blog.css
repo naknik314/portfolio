@@ -318,7 +318,7 @@ margin:auto;
 	background-repeat:no-repeat;	
 }
 
-img#cookie, img#spatula {
+img#cookie, img#spatula, #healthy-img, #unhealthy-img {
     width:220px !important;
 }
 
