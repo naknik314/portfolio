@@ -284,7 +284,6 @@ background: linear-gradient(to top, #EAF8FE, white);
 				box-sizing: border-box;
                 font-family: 'Century Gothic',sans-serif;
 				background-color: #EAF8FE;
-				background-image: url('pastry.png');
 				background-size:contain;
 				background-repeat:no-repeat;
 			}
@@ -293,6 +292,13 @@ background: linear-gradient(to top, #EAF8FE, white);
 					margin: 0;
 					font-family: 'Century Gothic',sans-serif;
 				}
+#panel1 {
+background-image: url('pastry.png');	
+}
+
+#panel2 {
+background-image: url('berry.png');	
+}
 
 #healthy-img:hover {
 background-image:url('healthy-banner.png');
