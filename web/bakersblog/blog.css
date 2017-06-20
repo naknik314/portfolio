@@ -182,7 +182,7 @@ left:0;
   top:-100px;  
 }
 
-div#title, span.nutrition{
+div#title {
 float:right;
     overflow:hidden;
 }
@@ -306,6 +306,10 @@ background-image:url('healthy-banner.png');
 
 #unhealthy-img:hover {
 background-image:url('unhealthy-banner.png');
+}
+
+#healthy-img, #unhealthy-img {
+display:block;	
 }
 
 #healthy-img:hover, #unhealthy-img:hover {
