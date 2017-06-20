@@ -309,7 +309,8 @@ background-image:url('unhealthy-banner.png');
 }
 
 #healthy-img, #unhealthy-img {
-display:block;	
+display:block;
+margin:auto;
 }
 
 #healthy-img:hover, #unhealthy-img:hover {
