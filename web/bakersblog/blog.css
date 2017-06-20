@@ -297,11 +297,15 @@ background: linear-gradient(to top, #EAF8FE, white);
 					font-family: 'Century Gothic',sans-serif;
 				}
 #panel1 {
-background-image: url('pastry.png');	
+background-image: url('sprinkles.png');	
 }
 
 #panel2 {
 background-image: url('berry.png');	
+}
+
+#panel3 {
+background-image: url('pastry.png');	
 }
 
 #healthy-img:hover {
