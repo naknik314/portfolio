@@ -35,7 +35,7 @@ span.date{
   border-bottom: 2px dashed #1E7F85;  
 }
 
-.content, .content-placeholder {
+.content-placeholder, .content-gradient {
     padding: 5px;
 margin-left: 190px;
     margin-top: 10px;
@@ -45,7 +45,7 @@ position:relative;
 
 }
 
-.content {
+.content-gradient {
  border: 4px solid white;
 border-radius: 10px;
 /* "Invalid", but works in IE 6-8 */
@@ -113,7 +113,7 @@ position:absolute;
 }
 
 @media(max-width:767px){
-	.content, .content-placeholder {
+	.content-placeholder, .content-gradient {
 		margin-left:0;
 	}
 	
