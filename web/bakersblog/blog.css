@@ -298,6 +298,10 @@ background: linear-gradient(to top, #EAF8FE, white);
 background-image:url('healthy-banner.png');
 }
 
+#unhealthy-img:hover {
+background-image:url('unhealthy-banner.png');
+}
+
 #healthy-img:hover, #unhealthy-img:hover {
 	background-size:contain;
 	background-repeat:no-repeat;	
