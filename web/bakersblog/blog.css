@@ -35,7 +35,7 @@ span.date{
   border-bottom: 2px dashed #1E7F85;  
 }
 
-.content-placeholder, .content-gradient {
+.content-placeholder, .content-gradient, .content-highlight {
     padding: 5px;
 margin-left: 190px;
     margin-top: 10px;
@@ -57,6 +57,10 @@ background: linear-gradient(to right,#EAF8FE, white);
 background: webkit-linear-gradient(to right,#EAF8FE, white);
 background: moz-linear-gradient(to right,#EAF8FE, white);
 background: o-linear-gradient(to right,#EAF8FE, white);	
+}
+
+.content-highlight {
+background-color:#EAF8FE;	
 }
 
 
@@ -113,7 +117,7 @@ position:absolute;
 }
 
 @media(max-width:767px){
-	.content-placeholder, .content-gradient {
+	.content-placeholder, .content-gradient, .content-highlight {
 		margin-left:0;
 	}
 	
