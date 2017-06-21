@@ -97,10 +97,12 @@ z-index:99999;
 }
 
 .poll-votes {
-max-width:50px;
+max-width:70px;
 border:none;
 background-color:inherit;
 color:inherit;
+font-family:inherit;
+font-size:inherit;
 }
 
 #restaurant-banner, #restaurant-banner a, .poll-button {
