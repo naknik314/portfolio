@@ -156,7 +156,7 @@ label {
 }
 
 @media(min-width:481px){
-img#cookie, img#spatula, #healthy-img, #unhealthy-img {
+img#cookie, img#spatula, img#recipe, #healthy-img, #unhealthy-img {
     width:220px;
 }	
 }
@@ -164,9 +164,6 @@ img#cookie, img#spatula, #healthy-img, #unhealthy-img {
 @media(max-width:480px){
 	img#spatula, img#cookie, img#recipe{
 	width:100%;
-	}
-	img#recipe{
-	height:100%;
 	}
 }
 	
@@ -182,10 +179,7 @@ img#cookie, img#spatula, #healthy-img, #unhealthy-img {
 float: right; 
 margin-left:0 !important;
 }
-#recipe {
-	width:120px;
-	height:125px;
-}
+
 #header,#subhead {
 /* "Invalid", but works in IE 6-8 */
 filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FEF7FA, endColorstr=#FFF);
