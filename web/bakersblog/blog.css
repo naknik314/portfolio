@@ -215,19 +215,25 @@ body {
 			opacity:1;
 		}
 		div.bar {
-			background-color:#1964A8;
 			text-align:center;
 			color:white;
+			width: 5em;
+    			height: 5em;
+    			display: block;
+    			border-radius: 50%;
+    			background-color: #1964A8;
+    			border: 2px solid #1964A8;
+    			float: left;
+    			margin: 1em;
 		}
 		div#fifteen.bar {
-			width:15% !important;
+			    background-image:
+        			linear-gradient(180deg, transparent 50%, white 50%),
+        			linear-gradient(90deg, white 50%, transparent 50%);
 		}
 			div#fiftyfive.bar {
-			height:60px;
- 			width:45px;
- 			border-radius: 45px 0 0 45px;
- 			-moz-border-radius: 45px 0 0 45px;
- 			-webkit-border-radius: 45px 0 0 45px;
+    			background-image:
+        		linear-gradient(90deg, white 50%, transparent 50%);
 		}
 			div#thirtyfive.bar {
 			width:35% !important;
