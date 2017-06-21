@@ -158,15 +158,15 @@ label {
 @media(min-width:481px){
 img#cookie, img#spatula, #healthy-img, #unhealthy-img {
     width:220px;
-}
-img#recipe{
-	height:100%;
 }	
 }
 
-	@media(max-width:480px){
-img#spatula, img#cookie, img#recipe{
+@media(max-width:480px){
+	img#spatula, img#cookie, img#recipe{
 	width:100%;
+	}
+	img#recipe{
+	height:100%;
 	}
 }
 	
