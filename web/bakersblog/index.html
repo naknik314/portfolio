@@ -77,24 +77,24 @@
     			var i = 18;
     			function buttonClick1() {
         		i++;
-        		document.getElementById('vote1').value = i  + ' votes';
+        		document.getElementById('vote1').value = '(' + i  + ' votes)';
     			}
 
     			var j = 16;
     			function buttonClick2() {
         		j++;
-        		document.getElementById('vote2').value = j  + ' votes';
+        		document.getElementById('vote2').value = '(' + j  + ' votes)';
     			}
 
     			var k = 17;
     			function buttonClick3() {
         		k++;
-        		document.getElementById('vote3').value = k + ' votes';
+        		document.getElementById('vote3').value = '(' + k + ' votes)';
     			}
 			</script>
-				<li class="poll-container">Best recipes - (<input id="vote1" class="poll poll-votes" value="18 votes">)</input> <button class="poll poll-button" onclick="buttonClick1()">Vote</button></li>
-				<li class="poll-container">Fine Ingredients - (<input id="vote2" class="poll poll-votes" value="16 votes">)</input> <button class="poll poll-button" onclick="buttonClick2()">Vote</button></li>
-				<li class="poll-container">Patience - (<input id="vote3" class="poll poll-votes" value="17 votes"></input>) <button class="poll poll-button" onclick="buttonClick3()">Vote</button></li>
+				<li class="poll-container">Best recipes - <input id="vote1" class="poll poll-votes" value="(18 votes)"></input> <button class="poll poll-button" onclick="buttonClick1()">Vote</button></li>
+				<li class="poll-container">Fine Ingredients - <input id="vote2" class="poll poll-votes" value="(16 votes)"></input> <button class="poll poll-button" onclick="buttonClick2()">Vote</button></li>
+				<li class="poll-container">Patience - <input id="vote3" class="poll poll-votes" value="(17 votes)"></input> <button class="poll poll-button" onclick="buttonClick3()">Vote</button></li>
 			</ul>
 				
 			</div>
