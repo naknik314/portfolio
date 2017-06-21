@@ -153,13 +153,23 @@ input#one, input#two, input#three, input#four {
 label {
 	margin-top:10px;
 }
-img#spatula, img#cookie, img#recipe{
-	width:100% !important;
+}
+
+@media(min-width:481px){
+img#cookie, img#spatula, #healthy-img, #unhealthy-img {
+    width:220px;
 }
 img#recipe{
 	height:100%;
+}	
 }
+
+	@media(max-width:480px){
+img#spatula, img#cookie, img#recipe{
+	width:100%;
+	}
 }
+	
 
 #header h1, #subhead h2 {
      text-align:right;
@@ -349,7 +359,6 @@ margin:auto;
 	background-repeat:no-repeat;	
 }
 
-img#cookie, img#spatula, #healthy-img, #unhealthy-img {
-    width:220px !important;
+ #healthy-img, #unhealthy-img {
+    width:220px;
 }
-
