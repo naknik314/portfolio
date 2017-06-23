@@ -59,6 +59,10 @@ font-weight:bold;
 margin-bottom:-15px;
 }
 
+#profile > li .item-title .label {
+color:white !important;	
+}
+
 .thread-title {
 font-size: 1.5rem;
 }
