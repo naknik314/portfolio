@@ -6,7 +6,7 @@ font-family: Verdana, sans-serif;
 body {
 	color: #FFF;
 }
-div.login-screen-title {
+div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread {
 	font-family:'Russo One',sans-serif;
 }
 
