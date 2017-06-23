@@ -88,8 +88,11 @@ form.searchbar {
 background-color: gray;	
 }
 
+.reply-header, .card-content-inner {
+background-color:gray !important;
+}
+
 .reply-header {
-background-color:white !important;
 font-weight:bold;
 }
 
