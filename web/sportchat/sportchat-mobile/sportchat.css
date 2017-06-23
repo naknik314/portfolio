@@ -14,7 +14,7 @@ div.login-screen-title {
 position:fixed;	
 }
 
-.card-header {
+.card-header, .card-footer {
 	background-color: #990000;
 }
 
