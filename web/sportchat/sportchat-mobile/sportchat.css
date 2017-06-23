@@ -1,12 +1,12 @@
 @charset "UTF-8";
 /* CSS Document */
 * {
-font-family: Verdana, sans-serif;	
+font-family: sans-serif;	
 }
 body {
 	color: #FFF;
 }
-div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread {
+div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, .navbar-inner {
 	font-family:'Russo One',sans-serif;
 }
 
