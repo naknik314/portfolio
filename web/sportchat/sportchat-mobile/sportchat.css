@@ -14,8 +14,12 @@ div.login-screen-title {
 position:fixed;	
 }
 
+.card-header {
+	background-color: #990000;
+}
+
 a:link {
-	color: #990000;
+	color: white;
 	text-decoration:none;
 }
 a:hover {
@@ -23,7 +27,7 @@ text-decoration: underline;
 }
 
 a:visited {
-color: #252A3A;	
+color: gray;	
 }
 a.about-link {
 	color:white;
