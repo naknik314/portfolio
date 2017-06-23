@@ -89,7 +89,8 @@ background-color: gray;
 }
 
 .reply-header {
-background-color:white !important;	
+background-color:white !important;
+font-weight:bold;
 }
 
 .facebook-name a {
