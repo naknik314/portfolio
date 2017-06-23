@@ -44,6 +44,10 @@ li.item-content, .content-block-inner, li.list-block-search, li.accordion-item {
 	color: white;
 }
 
+.inner-thread-link {
+color: #990000;	
+}
+
 .thread {
 font-weight: bold;
 font-size: 1.2rem;
