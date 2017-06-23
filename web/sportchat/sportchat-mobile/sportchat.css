@@ -44,8 +44,8 @@ li.item-content, .content-block-inner, li.list-block-search, li.accordion-item {
 	color: white;
 }
 
-.inner-thread-link {
-color: #990000;	
+a.inner-thread-link {
+color: #990000 !important;	
 }
 
 .thread {
