@@ -88,6 +88,10 @@ form.searchbar {
 background-color: gray;	
 }
 
+.reply-header {
+background-color:white !important;	
+}
+
 .facebook-name a {
 	text-align: center !important;
 }
