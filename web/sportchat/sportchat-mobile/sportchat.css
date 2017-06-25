@@ -7,7 +7,7 @@ body {
 	color: #FFF;
 }
 div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, .sliding, .list-button, .card-header-title, .content-block-title, .reply-header > .facebook-avatar > span, 
-.card-content-inner .color-black, .item-title > a, span.tabbar-label {
+.card-content-inner .color-black, .item-title > a, .item-title, span.tabbar-label {
 	font-family:'Russo One',sans-serif;
 	font-style:italic;
 }
