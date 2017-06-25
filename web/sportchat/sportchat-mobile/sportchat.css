@@ -10,6 +10,10 @@ div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, 
 	font-family:'Russo One',sans-serif;
 }
 
+.card-header-title, .card-header {
+text-transform:uppercase;	
+}
+
 #toolbar {
 position:fixed;	
 }
