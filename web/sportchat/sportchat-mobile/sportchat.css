@@ -14,6 +14,10 @@ div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, 
 text-transform:uppercase;	
 }
 
+.inner-thread-text {
+text-transform:none !important;	
+}
+
 #toolbar {
 position:fixed;	
 }
