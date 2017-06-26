@@ -7,7 +7,7 @@ body {
 	color: #FFF;
 }
 div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, .sliding, .list-button, .card-header-title, .content-block-title, .reply-header > .facebook-avatar > span, 
-.card-content-inner .color-black, .item-title > a, .item-title, span.tabbar-label, .profile, .profile-text {
+.card-content-inner .color-black, .item-title > a, .item-title, span.tabbar-label, .profile, .profile-text, .profile-button {
 	font-family:'Russo One',sans-serif;
 	font-style:italic;
 }
@@ -51,7 +51,7 @@ li.item-content, .content-block-inner, li.list-block-search, li.accordion-item {
 	color: white;
 }
 
-a.inner-thread-text {
+a.inner-thread-text, .profile-button {
 color: #990000 !important;	
 }
 
