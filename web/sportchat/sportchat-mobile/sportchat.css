@@ -55,7 +55,7 @@ a.inner-thread-text {
 color: #990000 !important;	
 }
 
-.thread {
+.thread, .profile {
 font-weight: bold;
 font-size: 1.2rem;
 }
