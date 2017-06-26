@@ -12,7 +12,7 @@ div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, 
 	font-style:italic;
 }
 
-.card-header, .reply-header > .facebook-avatar > span {
+.reply-header > .facebook-avatar > span {
 text-transform:uppercase;	
 }
 
