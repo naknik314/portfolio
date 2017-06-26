@@ -12,11 +12,7 @@ div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, 
 	font-style:italic;
 }
 
-.reply-header > .facebook-avatar > span {
-text-transform:uppercase;	
-}
-
-.card-header-title, .inner-thread-text, .item-title > a, .card-content-inner .color-black, {
+.card-header-title, .inner-thread-text, .item-title > a, .card-content-inner .color-black, .reply-header > .facebook-avatar > span {
 text-transform:none !important;
 font-weight:normal;
 }
