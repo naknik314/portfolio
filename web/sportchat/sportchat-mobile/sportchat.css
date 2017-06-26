@@ -46,6 +46,10 @@ a.about-link {
 width:100%;	
 }
 
+.profile-text > img {
+width:15px;	
+}
+
 li.item-content, .content-block-inner, li.list-block-search, li.accordion-item {
 	background-color: #333;
 	color: white;
