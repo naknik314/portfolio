@@ -303,8 +303,12 @@ background: linear-gradient(to top, #EAF8FE, white);
 
 		}
 
-			.panels, .panel {
-				background: white;	
+			.panels {
+				background-color: #EAF8FE;
+				background: linear-gradient(to bottom, #EAF8FE, white);
+				background: webkit-linear-gradient(to bottom, #EAF8FE, white);
+				background: moz-linear-gradient(to bottom, #EAF8FE, white);
+				background: o-linear-gradient(to bottom, #EAF8FE, white);	
 				}
 
 			.panel {
