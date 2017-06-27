@@ -33,7 +33,7 @@ ul {
 }
 
 span.date{
-  border-bottom: 2px dashed #1E7F85;  
+  border-bottom: 2px dotted #1E7F85;  
 }
 
 .content-placeholder, .content-gradient, .content-highlight {
@@ -171,7 +171,7 @@ img#cookie, img#spatula, img#recipe, #healthy-img, #unhealthy-img {
 
 #header h1, #subhead h2 {
      text-align:right;
-    color: #CC3C8E;
+    color: white;
 }
 #main,#bottom{
   margin: 0% 10%;  
