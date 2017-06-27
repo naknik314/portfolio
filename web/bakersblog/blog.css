@@ -187,7 +187,7 @@ float: right;
 margin-left:0 !important;
 }
 
-#header,#subhead {
+#header {
 /* "Invalid", but works in IE 6-8 */
 filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FEF7FA, endColorstr=#FFF);
 
