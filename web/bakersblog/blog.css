@@ -80,12 +80,6 @@ text-align:center;
 	bottom:90px;
 }
 
-#banner-background {
-	top:0;
-	right:0;
-	z-index:-1;
-}
-
 
 #restaurant-banner a {
 bottom:0;
@@ -127,7 +121,7 @@ position:absolute;
 		margin-top:200px;
 	}
 	
-		#restaurant-banner, #banner-background {
+		#restaurant-banner {
 		display:block;
 	}
 	
@@ -142,7 +136,7 @@ position:absolute;
 		margin-top:0;
 	}
 	
-		#restaurant-banner, #banner-background {
+		#restaurant-banner {
 		display:none;
 	}
 	
