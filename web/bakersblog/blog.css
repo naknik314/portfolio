@@ -106,7 +106,7 @@ font-family:inherit;
 font-size:inherit;
 }
 
-#restaurant-banner, #restaurant-banner a, .poll-button {
+#restaurant-banner, #restaurant-banner a, .poll-button, #banner-background {
 position:absolute;	
 }
 
@@ -121,7 +121,7 @@ position:absolute;
 		margin-top:200px;
 	}
 	
-		#restaurant-banner {
+		#restaurant-banner, #banner-background {
 		display:block;
 	}
 	
@@ -136,7 +136,7 @@ position:absolute;
 		margin-top:0;
 	}
 	
-		#restaurant-banner {
+		#restaurant-banner, #banner-background {
 		display:none;
 	}
 	
