@@ -50,18 +50,18 @@ margin-left: 155px;
 
 .content-gradient {
 /* "Invalid", but works in IE 6-8 */
-filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FFF, endColorstr=#ECF8F6);
+filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#ECF8F6, endColorstr=#FFF);
 
 /* Valid, works in IE 8-9 */
 background-color: #FFF;
-background: linear-gradient(to right, white,#EAF8FE);
-background: webkit-linear-gradient(to right, white,#EAF8FE);
-background: moz-linear-gradient(to right, white,#EAF8FE);
-background: o-linear-gradient(to right, white,#EAF8FE);	
+background: linear-gradient(to right, #EAF8FE, white);
+background: webkit-linear-gradient(to right, #EAF8FE, white);
+background: moz-linear-gradient(to right, #EAF8FE, white);
+background: o-linear-gradient(to right, #EAF8FE, white);	
 }
 
 .content-highlight {
-background-color:#EAF8FE;	
+background-color:white;	
 }
 
 .nutrition {
