@@ -296,11 +296,7 @@ background: linear-gradient(to top, #EAF8FE, white);
 			position: relative;
 			width: 100%;
 			border-radius: 0 0px 0px 0px;
-			min-height: 315px;
-			background-image:url(bg.png) !important;
-			background-size:cover;
-            
-
+			min-height: 315px;        
 		}
 
 			.panels {
