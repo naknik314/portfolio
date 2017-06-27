@@ -80,6 +80,11 @@ text-align:center;
 	bottom:90px;
 }
 
+#banner-background {
+	top:0;
+	right:0;
+}
+
 
 #restaurant-banner a {
 bottom:0;
