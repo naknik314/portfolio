@@ -3,7 +3,7 @@ a {
 	text-decoration: none;
 }
 
-div#title, .content-gradient h2, label {
+div#title, h2.content-gradient, label {
 	font-family:"Lobster", cursive;
 }
 
