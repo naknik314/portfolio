@@ -168,10 +168,6 @@ img#cookie, img#spatula, img#recipe, #healthy-img, #unhealthy-img {
 	}
 }
 	
-
-#header h1, #header h2 {
-	margin-right:20px;
-}
 #main,#bottom{
   margin: 0% 10%;  
 }
@@ -193,6 +189,7 @@ left:0;
 div#title {
 	float:right;
 	overflow:hidden;
+	margin-right:20px;
 	margin-top:50px;
 	font-family:"Lobster", cursive;
 	color:white;
