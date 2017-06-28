@@ -272,8 +272,8 @@ body {
 			float: left;
 			margin-right: 1px;
             		font-size:20px;
-            		border:2px solid white;
-			background-image: repeating-linear-gradient(45deg, #cc3c8e, #cc3c8e 30px, hotpink 30px, hotpink 60px);
+            		border:2px solid #cc3c86;
+			background-image: repeating-linear-gradient(45deg, #d14f92, #d14f92 30px, #d6629e 30px, #d6629e 60px);
 }
 );
 		}
