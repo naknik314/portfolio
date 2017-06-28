@@ -171,7 +171,9 @@ img#cookie, img#spatula, img#recipe, #healthy-img, #unhealthy-img {
 
 #header h1, #subhead h2 {
      text-align:right;
-    color: #CC3C8E;
+    color: white;
+	margin-right:10px;
+	margin-top:50px;
 }
 #main,#bottom{
   margin: 0% 10%;  
@@ -182,17 +184,9 @@ margin-left:0 !important;
 }
 
 #header {
-/* "Invalid", but works in IE 6-8 */
-filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FEF7FA, endColorstr=#FFF);
-
-/* Valid, works in IE 8-9 */
-background-color: #FFF;
-background: linear-gradient(to top, #CC3C8E,white);
-background: webkit-linear-gradient(to top, #CC3C8E,white);
-background: moz-linear-gradient(to top, #CC3C8E,white);
-background: o-linear-gradient(to top, #CC3C8E,white);
-    opacity:.9;
+background-color: #CC3C8E;
 }
+
 #header{
 border: 5px solid white;
 border-radius: 10px;
