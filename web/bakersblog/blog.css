@@ -170,10 +170,9 @@ img#cookie, img#spatula, img#recipe, #healthy-img, #unhealthy-img {
 	
 
 #header h1, #header h2 {
-     text-align:right;
-    color: white;
+     	text-align:right;
+    	color: white;
 	margin-right:10px;
-	margin-top:50px;
 }
 #main,#bottom{
   margin: 0% 10%;  
@@ -194,8 +193,9 @@ left:0;
 }
 
 div#title {
-float:right;
-    overflow:hidden;
+	float:right;
+	overflow:hidden;
+	margin-top:50px;
 }
 
 body {
