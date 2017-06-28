@@ -195,6 +195,10 @@ div#title {
 	color:white;
 }
 
+div#title > h1 {
+font-size:3rem;	
+}
+
 body {
     font-family:"Century Gothic",sans-serif;
     
