@@ -80,7 +80,7 @@ background-color:white;
 }
 
 #restaurant-banner {
-	bottom:90px;
+	top:90px;
 }
 
 
@@ -124,7 +124,7 @@ position:absolute;
 		margin-top:200px;
 	}
 	
-		#restaurant-banner {
+		#restaurant-banner, #top-left-header-img {
 		display:block;
 	}
 	
@@ -139,7 +139,7 @@ position:absolute;
 		margin-top:0;
 	}
 	
-		#restaurant-banner {
+		#restaurant-banner, #top-left-header-img {
 		display:none;
 	}
 	
