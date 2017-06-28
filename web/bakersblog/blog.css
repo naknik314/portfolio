@@ -272,7 +272,7 @@ body {
 			float: left;
 			margin-right: 1px;
             		font-size:20px;
-            		border:2px solid white;
+            		border:2px solid #95275f;
 			background-image: repeating-linear-gradient(45deg, #d14f92, #d14f92 30px, #d6629e 30px, #d6629e 60px);
 }
 );
