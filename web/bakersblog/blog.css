@@ -277,7 +277,7 @@ background: linear-gradient(to top, white, #EAF8FE);
                 border-top:2px solid #1964A8;
                 border-left:2px solid #1964A8;
                 border-right:2px solid #1964A8;
-                border-bottom:2px solid #EAF8FE;
+                border-bottom:2px solid white;
                 font-weight:bold;
 			}
 
