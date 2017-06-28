@@ -317,14 +317,13 @@ background: linear-gradient(to top, white, #EAF8FE);
 				border-radius: 0 0px 0px 0px;
 				padding: 4%;
 				box-sizing: border-box;
-                font-family: 'Century Gothic',sans-serif;
+                		font-family: 'Century Gothic',sans-serif;
 				background-size:contain;
 				background-repeat:no-repeat;
 			}
 
 				.panel h2 {
 					margin: 0;
-					font-family: 'Century Gothic',sans-serif;
 				}
 #panel1 {
 background-image: url('sprinkles.png');	
