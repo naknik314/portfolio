@@ -4,7 +4,7 @@ a {
 }
 
 div#title, h2.content-gradient, label {
-	font-family:"Lobster Two", cursive;
+	font-family:"Lobster Two", cursive !important;
 }
 
 .content-highlight {
