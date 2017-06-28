@@ -83,6 +83,12 @@ background-color:white;
 	top:90px;
 }
 
+#top-left-header-img {
+	left: 0;
+	top: -120px;
+	z-index: -1;	
+}
+
 
 #restaurant-banner a {
 bottom:0;
@@ -213,6 +219,8 @@ body {
 
 	.tabs {
 		width: 100%;
+		position:relative;
+		z-index:2;
 		margin: 180px auto;
         
 	}
