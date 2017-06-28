@@ -68,7 +68,7 @@ background-color:white;
 .nutrition {
 	text-align:center;
 	max-width:200px;
-	margin:auto;
+	margin:auto !important;
 	
 }
 
