@@ -109,7 +109,7 @@ font-family:inherit;
 font-size:inherit;
 }
 
-#restaurant-banner, #restaurant-banner a, .poll-button, #banner-background {
+#restaurant-banner, #restaurant-banner a, .poll-button, #banner-background, #top-left-header-img {
 position:absolute;	
 }
 
@@ -348,6 +348,6 @@ margin:auto;
 	background-repeat:no-repeat;	
 }
 
- #healthy-img, #unhealthy-img {
+ #healthy-img, #unhealthy-img, #top-left-header-img {
     width:220px;
 }
