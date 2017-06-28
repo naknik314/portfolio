@@ -7,7 +7,7 @@ blockquote {
 	font-style: italic;
 }
 
-h1, h2 {
+.content-gradient h2, .content-highlight {
 	font-weight: normal;
 	font-family: "Century Gothic", sans-serif;
 	margin: 3px;
