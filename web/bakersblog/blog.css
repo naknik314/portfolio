@@ -145,7 +145,7 @@ position:absolute;
 		margin-top:0;
 	}
 	
-		#restaurant-banner, #top-left-header-img {
+		#restaurant-banner {
 		display:none;
 	}
 	
@@ -163,6 +163,12 @@ input#one, input#two, input#three, input#four {
 label {
 	margin-top:10px;
 }
+}
+
+@media(max-width:640px) {
+	#top-left-header-img {
+	display:none;	
+	}
 }
 
 @media(min-width:481px){
