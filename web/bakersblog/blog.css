@@ -253,7 +253,7 @@ body {
 
 		label {
 			cursor: pointer;
-			background: linear-gradient(to top, #FEF7FA, white);
+			background: linear-gradient(to top, white, #FEF7FA);
 			color: #CC3C8E;
 			border-radius: 3px 3px 0px 0px;
 			padding: 1%;
@@ -269,10 +269,10 @@ body {
 
 			input:checked + label {
 /* "Invalid", but works in IE 6-8 */
-filter: progid: DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FFF, endColorstr=#ECF8F6);
+filter: progid: DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#ECF8F6, endColorstr=#FFF);
 /* Valid, works in IE 8-9 */
 background-color: #FFF;
-background: linear-gradient(to top, #EAF8FE, white);
+background: linear-gradient(to top, white, #EAF8FE);
 				color: #1964A8;
                 border-top:2px solid #1964A8;
                 border-left:2px solid #1964A8;
@@ -298,12 +298,8 @@ background: linear-gradient(to top, #EAF8FE, white);
 			min-height: 315px;        
 		}
 
-			.panels {
-				/* "Invalid", but works in IE 6-8 */
-				filter: progid: DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#FFF, endColorstr=#ECF8F6);
-				/* Valid, works in IE 8-9 */
+			.panels, .panel {
 				background-color: #FFF;
-				background: linear-gradient(to bottom, #EAF8FE, white);	
 				}
 
 			.panel {
@@ -314,7 +310,6 @@ background: linear-gradient(to top, #EAF8FE, white);
 				padding: 4%;
 				box-sizing: border-box;
                 font-family: 'Century Gothic',sans-serif;
-				background-color: white;
 				background-size:contain;
 				background-repeat:no-repeat;
 			}
