@@ -53,7 +53,6 @@ margin-left: 155px;
 .content-gradient {
 /* "Invalid", but works in IE 6-8 */
 filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#ECF8F6, endColorstr=#FFF);
-
 /* Valid, works in IE 8-9 */
 background-color: #FFF;
 background: linear-gradient(to right, #EAF8FE, white);
@@ -171,8 +170,6 @@ img#cookie, img#spatula, img#recipe, #healthy-img, #unhealthy-img {
 	
 
 #header h1, #header h2 {
-     	text-align:right;
-    	color: white;
 	margin-right:20px;
 }
 #main,#bottom{
