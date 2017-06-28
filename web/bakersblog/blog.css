@@ -19,6 +19,7 @@ h1, h2 {
 img#pastries {
 	position:absolute;
 	top:-10px;
+	left:-15px;
 	overflow:hidden;
 	width:40%;
 }
