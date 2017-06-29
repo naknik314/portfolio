@@ -287,11 +287,11 @@ body {
 		filter: progid: DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#ECF8F6, endColorstr=#FFF);
 		/* Valid, works in IE 8-9 */
 		background-color: #FFF;
-		background: linear-gradient(to top, white, #b1eacd);
-		color: #247a4e;
-		border-top: 2px solid #2a8e5b;
-		border-left: 2px solid #2a8e5b;
-		border-right: 2px solid #2a8e5b;
+		background: linear-gradient(to top, white, #f4f4d8);
+		color: #4a4916;
+		border-top: 2px solid #e5e49d;
+		border-left: 2px solid #e5e49d;
+		border-right: 2px solid #e5e49d;
                 border-bottom:2px solid white;		
                 font-weight:bold;
 			}
