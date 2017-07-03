@@ -42,7 +42,7 @@ border-radius: 10px;
 padding: 5px;
 margin-top: 10px;
 overflow: hidden;
-color: #1964A8;
+color: #206263;
 position:relative;
 }
 
@@ -55,10 +55,10 @@ margin-left: 155px;
 filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1, startColorstr=#ECF8F6, endColorstr=#FFF);
 /* Valid, works in IE 8-9 */
 background-color: #FFF;
-background: linear-gradient(to right, #EAF8FE, white);
-background: webkit-linear-gradient(to right, #EAF8FE, white);
-background: moz-linear-gradient(to right, #EAF8FE, white);
-background: o-linear-gradient(to right, #EAF8FE, white);	
+background: linear-gradient(to right, #b4f9d9, white);
+background: webkit-linear-gradient(to right, #b4f9d9, white);
+background: moz-linear-gradient(to right, #b4f9d9, white);
+background: o-linear-gradient(to right, #b4f9d9, white);	
 }
 
 .content-highlight {
