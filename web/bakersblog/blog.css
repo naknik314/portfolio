@@ -345,6 +345,10 @@ background-image: url('berry.png');
 background-image: url('pastry.png');	
 }
 
+#panel4 {
+background-image: url('cupcakes.png');	
+}
+
 #healthy-img:hover {
 background-image:url('healthy-banner.png');
 }
