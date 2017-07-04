@@ -72,6 +72,10 @@ background-color:white;
 	
 }
 
+body.banner-body-page {
+background-image: repeating-linear-gradient(45deg, yellow, yellow 30px, lightyellow 30px, lightyellow 60px);	
+}
+
 
 @media(min-width:820px) {
 #restaurant-banner {
