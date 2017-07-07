@@ -3,10 +3,6 @@ a {
 	text-decoration: none;
 }
 
-li.main-bullet {
-font-weight:bold;	
-}
-
 div#title, h2.content-gradient, label {
 	font-family:"Lobster Two", cursive !important;
 }
@@ -67,6 +63,10 @@ background: o-linear-gradient(to right, #b4f9d9, white);
 
 .content-highlight {
 background-color:white;	
+}
+
+.content-highlight-main-text {
+font-weight:bold;	
 }
 
 .nutrition {
