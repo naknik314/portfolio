@@ -3,6 +3,10 @@ a {
 	text-decoration: none;
 }
 
+li.main-bullet {
+font-weight:bold;	
+}
+
 div#title, h2.content-gradient, label {
 	font-family:"Lobster Two", cursive !important;
 }
