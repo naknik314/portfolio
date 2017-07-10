@@ -1,1 +1,78 @@
-
+<html>
+<head>
+<title>Web Design</title>
+<meta charset="utf8" name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="css/styles.css" rel="stylesheet">
+<link href="css/fonts.css" rel="stylesheet">
+<link href='https://fonts.googleapis.com/css?family=Handlee' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
+<link href="lity-1.6.5/dist/lity.css" rel="stylesheet">
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+</head>
+<body>
+<div class='navbar'><button class="top-nav top-title"><span>Portfolio</span></button><button class="top-nav middle-title"><span>Services</span><button class="top-nav bottom-title"><span>Contact</span></button></div>
+<br class='top'>
+<div class='container wrapper' id="portfolio">
+    <h2 class="text-center">Digital Portfolio</h2>
+    <div class="inner-container">
+    <div class="thumbnail" id="coffeehouse">
+    <a href="web/coffeehouse/index.html" data-lity><img class="thumbnail-half-wide" src="img/coffeehouse.png"></a></div>
+    <div class="thumbnail" id="sportchat"><a href="web/sportchat/index.html" data-lity><img class="thumbnail-wide" src="img/sportchat.png"></a></div>
+    <div class="thumbnail" id="decorhub"><a href="web/decorhub/index.html" data-lity><img class="thumbnail-wide" src="img/decorhub.png"></a></div>
+    <div class="thumbnail" id="bakersblog"><a href="web/bakersblog/index.html" data-lity><img class="thumbnail-wide" src="img/bakersblog.png"></a></div>
+    <div class="thumbnail" id="losttreasures"><a href="web/losttreasures/index.html" data-lity><img class="thumbnail-wide" src="img/losttreasures.png"></a></div>
+    <div class="thumbnail"><a href="https://www.dropbox.com/home/WIW?preview=3-pages-layout.jpg" data-lity>WHOISWHO</a></div>
+    <div style="clear:both"></div>
+    <br>
+     </div>
+</div>
+<br class="middle">
+<div class='container' id="about">
+    <h2 class="text-center">Services</h2>
+<p>Fill out information about your project in the form below.</p>
+    <p><a class="button-link" href="https://form.jotform.us/71144034584149" data-lity>Project Form</a></p>
+<br>
+</div>
+<br class="bottom">
+<div class='container' id="contact">
+    <h2 class="text-center">Contact</h2>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script type="text/javascript" src="https://form.jotform.us/jsform/71146286484159"></script>
+    <div class="text-center"><button class="top-title"><i class="fa fa-angle-double-up icon"></i></button></div>
+</div>
+<div class='footer'><p>&copy;&nbsp;2013-<script type="text/javascript">var year = new Date();document.write(year.getFullYear());</script></p></div>
+ <script src="lity-1.6.5/src/lity.js"></script>
+     <script src="https://use.fontawesome.com/d2f5d1ce0e.js"></script>
+<script src="js/accordion.js"></script>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="https://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<script>
+$("document").ready(function() {
+ 
+                $('.middle-title').click(function(){
+ 
+                    $('html, body').animate({
+                        scrollTop: $(".middle").offset().top
+                    }, 2000);
+ 
+                 });
+ 
+                $('.bottom-title').click(function(){
+ 
+                    $('html, body').animate({
+                        scrollTop: $(".bottom").offset().top
+                    }, 2000);
+ 
+                 });
+ 
+                    $('.top-title').click(function(){
+ 
+                    $('html, body').animate({
+                        scrollTop: $(".top").offset().top
+                    }, 2000);
+ 
+                 });
+});
+                 </script>
+</body>                                                                                
+</html>
