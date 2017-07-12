@@ -12,6 +12,10 @@ div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, 
 	font-style:italic;
 }
 
+.login-screen-title {
+font-size:3rem;	
+}
+
 .card-header-title, .inner-thread-text, .item-title > a, .card-content-inner .color-black, .reply-header > .facebook-avatar > span {
 text-transform:none !important;
 font-weight:normal;
@@ -21,6 +25,7 @@ font-weight:normal;
 	width:70%;
 	display:block;
 	margin:auto;
+	margin-top:70px;
 }
 
 #toolbar {
