@@ -21,7 +21,7 @@ font-weight:normal;
 position:fixed;	
 }
 
-.page-content.login-screen, .card-header, .card-footer, li.accordion-item > a {
+.page-content.login-screen-content, .card-header, .card-footer, li.accordion-item > a {
 	background-color: #990000;
 }
 
