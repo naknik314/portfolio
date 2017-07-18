@@ -2,7 +2,7 @@
 /* CSS Document */
 header.bar.bar-nav {
 background-color: #8c735b;
-font: 'Bookman Old Style';
+font-family: 'Bookman Old Style', sans-serif;
 }
 
 header img {
