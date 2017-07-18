@@ -2,7 +2,7 @@
 /* CSS Document */
 header.bar.bar-nav {
 background-color: #8c735b;
-font-family: 'Bookman Old Style', sans-serif;
+font-family: 'Zilla Slab', sans-serif;
 }
 
 header img {
@@ -10,7 +10,7 @@ header img {
 }
 
     body {
-background-color: #eae0cb;
+background-color:#D7F7D2;
 font-family: Futura, sans-serif;
 color: #A06739;
 width: 320px;
