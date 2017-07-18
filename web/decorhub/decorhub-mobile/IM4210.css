@@ -1,6 +1,6 @@
 @charset "utf-8";
 /* CSS Document */
-header {
+header.bar.bar-nav {
 background-color: #8c735b;
 font: 'Bookman Old Style';
 }
