@@ -6,6 +6,10 @@ font-family: 'Zilla Slab', sans-serif;
 font-size:1.5rem;
 }
 
+#grid-links {
+text-align:center;	
+}
+
 header img {
  margin-top: 20px;   
 }
