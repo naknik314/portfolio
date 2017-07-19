@@ -32,14 +32,24 @@ div.third-square, div.third-square a, div.half-square, div.half-square a, div.re
 	display:inline-block;
 }
 
-div.third-square a, div.half-square a, div.rectangle a {
-	width:100%;
-	background-color:lightblue;
-	color:black;
+div.third-square a, div.half-square a, div.rectangle a, a.cover-link {
 	position:absolute;
 	left:0;
 	bottom:0;
 	
+}
+
+div.third-square a, div.half-square a, div.rectangle a {
+	width:100%;
+	background-color:lightblue;
+	color:black;
+	
+}
+
+	a.cover-link {
+	background-color:transparent;
+	top:0;
+	right:0;	
 }
 
 div.third-square {
