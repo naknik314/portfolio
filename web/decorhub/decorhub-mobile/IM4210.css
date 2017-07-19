@@ -14,6 +14,10 @@ header img {
 	margin-top: 20px;   
 }
 
+#content.grid {
+margin-top:50px;	
+}
+
 img.third-square, img#rectangle {
 	height:100px;	
 }
