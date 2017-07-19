@@ -18,7 +18,7 @@ header img {
 margin-top:50px;	
 }
 
-div.third-square, div#rectangle {
+div.third-square, div.rectangle {
 	height:100px;	
 }
 
@@ -29,7 +29,7 @@ div.half-square {
     	width:150px;
 	height:150px;
 }
-div#rectangle {
+div.rectangle {
 	width:300px;
 }
 
