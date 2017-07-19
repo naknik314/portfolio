@@ -1,9 +1,12 @@
 @charset "utf-8";
 /* CSS Document */
 header.bar.bar-nav {
-background-color: #seagreen;
-font-family: 'Zilla Slab', sans-serif;
-color:white;
+	background-color: seagreen;
+	font-family: 'Zilla Slab', sans-serif;
+	color:white;
+}
+
+h1.title {
 font-size:1.5rem;
 }
 
