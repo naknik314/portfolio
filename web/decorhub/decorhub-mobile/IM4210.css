@@ -18,8 +18,11 @@ img.square, img#rectangle {
 height:100px;	
 }
 
-img.square {
-    width:150px;
+img.third-square {
+    width:100px;
+}
+img.half-square {
+    width:100px;
 }
 img#rectangle {
     width:300px;
