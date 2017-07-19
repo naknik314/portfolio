@@ -27,6 +27,17 @@ div.third-square, div.half-square, div.rectangle {
 	display:inline-block;
 }
 
+div.third-square, div.third-square a, div.half-square, div.half-square a, div.rectangle, div.rectangle a {
+	display:inline-block;
+}
+
+div.third-square a, div.half-square a, div.rectangle a {
+	width:100%;
+	background-color:lighblue;
+	color:black;
+	
+}
+
 div.third-square {
 	width:100px;
 }
