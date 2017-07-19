@@ -25,6 +25,7 @@ div.third-square, div.rectangle {
 div.third-square, div.half-square, div.rectangle {
 	background-size:contain;
 	display:inline-block;
+	position:relative;
 }
 
 div.third-square, div.third-square a, div.half-square, div.half-square a, div.rectangle, div.rectangle a {
