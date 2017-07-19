@@ -19,7 +19,8 @@ margin-top:50px;
 }
 
 div.third-square, div.rectangle {
-	height:100px;	
+	height:100px;
+	background-size:contain;
 }
 
 div.third-square {
