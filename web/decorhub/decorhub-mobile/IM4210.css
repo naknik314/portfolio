@@ -10,16 +10,15 @@ header img {
  margin-top: 20px;   
 }
 
-img.square, img.rectangle {
+img.square, img#rectangle {
 height:100px;	
 }
 
 img.square {
-    width:125px;
+    width:150px;
 }
-img.rectangle {
+img#rectangle {
     width:300px;
-    text-align:center;
 }
 
     body {
