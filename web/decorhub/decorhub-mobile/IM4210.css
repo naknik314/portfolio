@@ -36,6 +36,9 @@ div.third-square a, div.half-square a, div.rectangle a {
 	width:100%;
 	background-color:lightblue;
 	color:black;
+	position:absolute;
+	left:0;
+	bottom:0;
 	
 }
 
