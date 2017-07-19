@@ -28,18 +28,18 @@ div.third-square, div.half-square, div.rectangle {
 	position:relative;
 }
 
-div.third-square, div.third-square a, div.half-square, div.half-square a, div.rectangle, div.rectangle a {
+div.third-square, div.third-square span, div.half-square, div.half-square span, div.rectangle, div.rectangle span, a.cover-link {
 	display:inline-block;
 }
 
-div.third-square a, div.half-square a, div.rectangle a, a.cover-link {
+div.third-square span, div.half-square span, div.rectangle span, a.cover-link {
 	position:absolute;
 	left:0;
 	bottom:0;
 	
 }
 
-div.third-square a, div.half-square a, div.rectangle a {
+div.third-square span, div.half-square span, div.rectangle span {
 	width:100%;
 	background-color:lightblue;
 	color:black;
