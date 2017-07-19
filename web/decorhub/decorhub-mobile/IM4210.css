@@ -33,6 +33,42 @@ div.rectangle {
 	width:300px;
 }
 
+#home-image-1 {
+	background-image:url('images/Home-image-1.jpg');	
+}
+
+#home-image-2 {
+	background-image:url('images/Home-image-2.jpg');	
+}
+
+#home-image-3 {
+	background-image:url('images/Home-image-3.jpg');	
+}
+
+#home-image-4 {
+	background-image:url('images/Home-image-4.jpg');	
+}
+
+#home-image-5 {
+	background-image:url('images/Home-image-5.jpg');	
+}
+
+#home-image-6 {
+	background-image:url('images/Home-image-6.jpg');	
+}
+
+#home-image-7 {
+	background-image:url('images/Home-image-7.jpg');	
+}
+
+#home-image-8 {
+	background-image:url('images/Home-image-8.jpg');	
+}
+
+#home-image-9 {
+	background-image:url('images/Home-image-9.jpg');	
+}
+
     body {
 background-color:#CFDBC5;
 font-family: Futura, sans-serif;
