@@ -7,25 +7,26 @@ font-size:1.5rem;
 }
 
 #grid-links {
-text-align:center;	
+	text-align:center;	
 }
 
 header img {
- margin-top: 20px;   
+	margin-top: 20px;   
 }
 
-img.square, img#rectangle {
-height:100px;	
+img.third-square, img#rectangle {
+	height:100px;	
 }
 
 img.third-square {
-    width:100px;
+	width:100px;
 }
 img.half-square {
-    width:150px;
+    	width:150px;
+	height:150px;
 }
 img#rectangle {
-    width:300px;
+	width:300px;
 }
 
     body {
