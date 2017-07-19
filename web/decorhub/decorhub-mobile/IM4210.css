@@ -18,18 +18,18 @@ header img {
 margin-top:50px;	
 }
 
-img.third-square, img#rectangle {
+div.third-square, div#rectangle {
 	height:100px;	
 }
 
-img.third-square {
+div.third-square {
 	width:100px;
 }
-img.half-square {
+div.half-square {
     	width:150px;
 	height:150px;
 }
-img#rectangle {
+div#rectangle {
 	width:300px;
 }
 
