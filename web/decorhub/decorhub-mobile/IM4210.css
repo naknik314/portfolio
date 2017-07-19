@@ -3,11 +3,11 @@
 header.bar.bar-nav {
 	background-color: seagreen;
 	font-family: 'Zilla Slab', sans-serif;
-	color:white;
 }
 
 h1.title {
-font-size:1.5rem;
+	font-size:1.5rem;
+	color:white;
 }
 
 #grid-links, #content.grid {
