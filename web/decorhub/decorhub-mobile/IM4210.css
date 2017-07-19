@@ -117,7 +117,7 @@ div.grid {
 	margin-bottom:10px !important;
 }
 #content {
-background-color:#ccd6ce;
+background-color:inherit;
 font-style:normal;
 align-content:space-around;	
 height:'275px'; 
@@ -147,7 +147,7 @@ img {
 	width: '200px';
 	padding: .5em;
 	border-color:#ccd6ce;
-    border-width: medium;
+    	border-width: medium;
 	background-color:#f2c9b9;
 	font-style:normal;
 	color:#5d5d5f;
@@ -170,9 +170,9 @@ img {
     border-width: medium;
 }
 .itemtxt {
-height: '100px';
-width: '100px';
-background-color: #ccd6ce;
+	height: '100px';
+	width: '100px';
+	background-color: #ccd6ce;
 }
 
 nav {
