@@ -6,8 +6,10 @@ font-family: 'Zilla Slab', sans-serif;
 font-size:1.5rem;
 }
 
-#grid-links {
-	text-align:center;	
+#grid-links, #content.grid {
+	text-align:center;
+	width:99%;
+	margin:auto;
 }
 
 header img {
