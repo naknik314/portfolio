@@ -21,6 +21,7 @@ margin-top:50px;
 div.third-square, div.rectangle {
 	height:100px;
 	background-size:contain;
+	display:inline-block;
 }
 
 div.third-square {
@@ -39,35 +40,35 @@ div.rectangle {
 }
 
 #home-image-2 {
-	background-image:url('images/Home-image-2.jpg');	
+	background-image:url('images/home-image-2.jpg');	
 }
 
 #home-image-3 {
-	background-image:url('images/Home-image-3.jpg');	
+	background-image:url('images/home-image-3.jpg');	
 }
 
 #home-image-4 {
-	background-image:url('images/Home-image-4.jpg');	
+	background-image:url('images/home-image-4.jpg');	
 }
 
 #home-image-5 {
-	background-image:url('images/Home-image-5.jpg');	
+	background-image:url('images/home-image-5.jpg');	
 }
 
 #home-image-6 {
-	background-image:url('images/Home-image-6.jpg');	
+	background-image:url('images/home-image-6.jpg');	
 }
 
 #home-image-7 {
-	background-image:url('images/Home-image-7.jpg');	
+	background-image:url('images/home-image-7.jpg');	
 }
 
 #home-image-8 {
-	background-image:url('images/Home-image-8.jpg');	
+	background-image:url('images/home-image-8.jpg');	
 }
 
 #home-image-9 {
-	background-image:url('images/Home-image-9.jpg');	
+	background-image:url('images/home-image-9.jpg');	
 }
 
     body {
