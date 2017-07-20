@@ -16,6 +16,12 @@ h1.title {
 	margin:auto;
 }
 
+@media (max-width:479px){
+#content.grid h3 {
+display:none;	
+}
+}
+
 header img {
 	margin-top: 20px;   
 }
