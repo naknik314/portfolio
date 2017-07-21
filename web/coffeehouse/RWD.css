@@ -12,6 +12,7 @@ nav.navbar.navbar-default {
 	background-image:none !important;
 	background-color:#32100D !important;
 	color:white !important;
+	font-family:"Montserrat Subrayada",sans-serif;
 }
 button.navbar-toggle {
 	background-color:#32100D;
