@@ -312,7 +312,7 @@ li.text {
 	font-weight: bold;
 	}
 .lefttextboxheader {
-	color: #493212;
+	color: inherit;
 	text-align: center;
 	padding: 5px 10px 15px 10px;
 	font-style: normal;
