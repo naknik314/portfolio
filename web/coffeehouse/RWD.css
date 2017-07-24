@@ -37,10 +37,11 @@ margin-left:10px;
 span.glyphicon.glyphicon-chevron-right {
 left:20%;	
 }
-ul#menu_nav.nav.navbar-nav >li.active, .AccordionPanelOpen .AccordionPanelTab {
+ul#menu_nav.nav.navbar-nav >li.active, .AccordionPanelOpen {
 	background-color:#32100D;
 	color:white;
 }
+
 div.AccordionPanelContent ul li {
 	margin-right:100px;
 	list-style-type:none;
@@ -48,6 +49,10 @@ div.AccordionPanelContent ul li {
 .AccordionPanelOpen .AccordionPanelTab {
 	border-bottom:5px solid #32100D;
 }
+.AccordionPanelContent {
+	margin-top:10px;	
+}
+
 body {
 	margin: 0 auto;
 //	width: 1000px;
