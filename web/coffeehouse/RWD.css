@@ -37,7 +37,7 @@ margin-left:10px;
 span.glyphicon.glyphicon-chevron-right {
 left:20%;	
 }
-ul#menu_nav.nav.navbar-nav >li.active, .AccordionPanelOpen {
+ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li {
 	background-color:#32100D;
 	color:white;
 }
@@ -102,10 +102,10 @@ img {
 	border-width: 0px;
 }
 #site-wrapper {
-    width: 100%;
+    	width: 100%;
 	height: auto;
 	margin-left: auto;
-    margin-right: auto;
+    	margin-right: auto;
 	font-family:'Montserrat', sans-serif;	
 }
 #page-wrapper {
@@ -114,7 +114,7 @@ img {
 }
 
 #page_header {
-width: 100%;
+	width: 100%;
 }
 #banner_region {
 	height:171px;
@@ -124,7 +124,7 @@ width: 100%;
 }
 #menu_bar,#menu_bar a, #menu_nav, #menu_nav a, {
 	background-color:#996 !important;
-    color: #FFF;
+    	color: #FFF;
 }
 .textbox img:last-child {
 	margin-bottom: -5px;
@@ -145,7 +145,7 @@ width: 100%;
 }
 #bottom_banner {
 	clear:both;
-    position: relative;
+    	position: relative;
 //	height: 150px;
 	height: 60px;
 
