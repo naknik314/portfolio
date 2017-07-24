@@ -206,7 +206,7 @@ img {
 .bold{
 	font-weight:bold;
 }
-.letf {
+.left {
 	clear:both;
 	float:left;
 	width:200px;
@@ -252,22 +252,22 @@ li.text {
 	padding: 10px 5px 10px 5px;
 	text-align: left;
 	width: 90%;
-    -webkit-columns: 200px 1;
-  -moz-columns:200px 1;
-  columns: 200px 1;
-  -webkit-column-gap: 0;
-  -moz-column-gap: 0;
-  column-gap: 0;
-  -webkit-column-rule: 1px dashed lightblue;
-  -moz-column-rule: 1px dashed lightblue;
-  column-rule: 1px dashed lightblue;
+    	-webkit-columns: 200px 1;
+  	-moz-columns:200px 1;
+  	columns: 200px 1;
+  	-webkit-column-gap: 0;
+  	-moz-column-gap: 0;
+  	column-gap: 0;
+  	-webkit-column-rule: 1px dashed lightblue;
+  	-moz-column-rule: 1px dashed lightblue;
+  	column-rule: 1px dashed lightblue;
 	}
 .textbox li {
-  text-decoration: none;
-list-style-type: none;
-  color: inherit;
-  padding: 1rem;
-  text-align: center;
+  	text-decoration: none;
+	list-style-type: none;
+ 	color: inherit;
+  	padding: 1rem;
+  	text-align: center;
 }
 .textbox ul {
     display: block;
@@ -275,7 +275,7 @@ list-style-type: none;
     height:460px;
 }
  .lefttextbox      {
-	color: #333;
+	color: inherit;
 	padding: 5px 10px 5px 10px;
 	text-align: left;
 	width: 40%;
@@ -285,7 +285,7 @@ list-style-type: none;
 	font-size: 12px;
 	}
 .righttextbox      {
-	color: #333;
+	color: inherit;
 	padding: 5px 10px 5px 10px;
 	text-align: left;
 	width: 40%;
@@ -294,7 +294,7 @@ list-style-type: none;
 	font-size: 12px;
 	}
 .textboxheader {
-	color: #493212;
+	color: inherit;
 	text-align: center;
 	font: bold;
 	padding: 5px 5px 5px 5px;
@@ -303,7 +303,7 @@ list-style-type: none;
 	font-size: 24px;
 	}
 .righttextboxheader {
-	color: #493212;
+	color: inherit;
 	text-align: center;
 	padding: 5px 10px 15px 10px;
 	background-color: inherit;
