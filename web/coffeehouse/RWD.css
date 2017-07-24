@@ -31,7 +31,7 @@ margin-left:10px;
 span.glyphicon.glyphicon-chevron-right {
 left:20%;	
 }
-ul#menu_nav.nav.navbar-nav >li.active {
+ul#menu_nav.nav.navbar-nav >li.active, .AccordionPanelOpen .AccordionPanelTab {
 	background-color:#32100D;
 	color:white;
 }
@@ -40,7 +40,6 @@ div.AccordionPanelContent ul li {
 	list-style-type:none;
 }
 .AccordionPanelOpen .AccordionPanelTab {
-	background-color:none;
 	border-bottom:5px solid #32100D;
 }
 body {
