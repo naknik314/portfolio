@@ -8,6 +8,8 @@ body,td,th {
 
 #page_content, .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand {
 	color:white !important;
+	font-family:'Montserrat', sans-serif;
+	text-transform:uppercase;
 }
 
 .AccordionPanelContent.boxMargin, .AccordionPanelOpen{
