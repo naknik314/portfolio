@@ -12,12 +12,18 @@ nav.navbar.navbar-default {
 	background-image:none !important;
 	background-color:#32100D !important;
 	color:white !important;
-	font-size:2rem;
 }
 
 .navbar-brand, .navbar-nav>.active > a, .AccordionPanelTab {
 	font-family:"Montserrat Subrayada",sans-serif;	
 }
+
+@media(max-width:480px){
+.navbar-nav .active > a {
+		font-size:2rem;
+	}
+}
+
 button.navbar-toggle {
 	background-color:#32100D;
 }
