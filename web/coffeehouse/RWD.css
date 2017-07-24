@@ -37,14 +37,14 @@ button.navbar-toggle {
 	background-color:#32100D;
 }
 span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-control, span.glyphicon.glyphicon-chevron-right {
-background-image:none;	
+	background-image:none;	
 }
 span.glyphicon.glyphicon-chevron-left {
-right:20%;
-margin-left:10px;
+	right:20%;
+	margin-left:10px;
 }
 span.glyphicon.glyphicon-chevron-right {
-left:20%;	
+	left:20%;	
 }
 ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li {
 	background-color:#32100D;
@@ -115,6 +115,7 @@ img {
 	height: auto;
 	margin-left: auto;
     	margin-right: auto;
+	margin-top:-21px;
 	font-family:'Montserrat', sans-serif;	
 }
 #page-wrapper {
