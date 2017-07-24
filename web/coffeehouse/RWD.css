@@ -273,7 +273,6 @@ list-style-type: none;
 	padding: 5px 10px 5px 10px;
 	text-align: left;
 	width: 40%;
-	border: 1px dashed #32100D;
 	display:inline;
 	float: left;
 	border-right: 0;
@@ -284,7 +283,6 @@ list-style-type: none;
 	padding: 5px 10px 5px 10px;
 	text-align: left;
 	width: 40%;
-	border: 1px dashed #32100D;
 	display:inline;
 	float: right;
 	font-size: 12px;
@@ -295,7 +293,7 @@ list-style-type: none;
 	font: bold;
 	padding: 5px 5px 5px 5px;
 	width: 100%;
-	background-color: lightblue;
+	border: 1px solid lightblue;
 	font-size: 24px;
 	}
 .righttextboxheader {
