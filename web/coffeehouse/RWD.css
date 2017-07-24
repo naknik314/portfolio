@@ -18,7 +18,7 @@ nav.navbar.navbar-default {
 	font-family:"Montserrat Subrayada",sans-serif;	
 }
 
-@media(max-width:480px){
+@media(max-width:767px){
 .navbar-nav .active > a {
 		font-size:2rem;
 	}
