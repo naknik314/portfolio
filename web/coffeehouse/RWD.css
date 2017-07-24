@@ -62,9 +62,9 @@ div.AccordionPanelContent ul li {
 body {
 	margin: 0 auto;
 //	width: 1000px;
-	background: linear-gradient(45deg, #dca 12%, transparent 0, transparent 88%, #dca 0),
-    	linear-gradient(135deg, transparent 37%, #a85 0, #a85 63%, transparent 0),
-    	linear-gradient(45deg, transparent 37%, #dca 0, #dca 63%, transparent 0) #753;
+	background: linear-gradient(45deg, #2a1b0d 12%, transparent 0, transparent 88%, #2a1b0d 0),
+    	linear-gradient(135deg, transparent 37%, #382512 0, #382512 63%, transparent 0),
+    	linear-gradient(45deg, transparent 37%, #2a1b0d 0, #2a1b0d 63%, transparent 0) #32100d;
     	background-size: 25px 25px;
 	
 }
