@@ -6,8 +6,9 @@ body,td,th {
 //	float: left;
 }
 
-#page_content {
-	background-color:rgba(255,255,255,.6);
+#page_content, .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand,
+.AccordionPanel.AccordionPanelOpen {
+	color:white;
 }
 
 nav.navbar.navbar-default {
@@ -17,7 +18,6 @@ nav.navbar.navbar-default {
 .AccordionPanel.AccordionPanelOpen {
 	background-image:none !important;
 	background-color:#32100D !important;
-	color:white !important;
 }
 
 .navbar-brand, .navbar-nav > a, .AccordionPanelTab, div.textboxheader, .lefttextboxheader, .righttextboxheader {
