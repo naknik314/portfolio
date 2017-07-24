@@ -15,7 +15,7 @@ nav.navbar.navbar-default {
 	font-size:2rem;
 }
 
-.navbar-brand, .navbar-nav>.active > a {
+.navbar-brand, .navbar-nav>.active > a, .AccordionPanelTab {
 	font-family:"Montserrat Subrayada",sans-serif;	
 }
 button.navbar-toggle {
