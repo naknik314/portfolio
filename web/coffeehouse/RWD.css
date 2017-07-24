@@ -43,7 +43,7 @@ span.glyphicon.glyphicon-chevron-left {
 span.glyphicon.glyphicon-chevron-right {
 	left:20%;	
 }
-ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li {
+ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li, .lefttextbox, .righttextbox {
 	background-color:#32100D;
 	color:white;
 }
