@@ -6,9 +6,13 @@ body,td,th {
 //	float: left;
 }
 
-#page_content, .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand,
-.AccordionPanel.AccordionPanelOpen {
+#page_content, .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand {
 	color:white !important;
+}
+
+.AccordionPanelContent.boxMargin{
+	color:black;
+	background-color:#32100d !important;
 }
 
 nav.navbar.navbar-default {
