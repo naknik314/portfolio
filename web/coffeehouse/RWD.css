@@ -11,7 +11,7 @@ body,td,th {
 }
 
 .AccordionPanelContent.boxMargin, .AccordionPanelOpen{
-	background-color:lightblue !important;
+	background-color:transparent !important;
 }
 
 nav.navbar.navbar-default {
@@ -57,7 +57,7 @@ div.AccordionPanelContent ul li {
 }
 .AccordionPanelOpen .AccordionPanelTab {
 	background-color: #32100D;
-	border-bottom: 2px solid lightblue;
+	border-bottom: 2px solid transparent;
 }
 .AccordionPanelContent {
 	margin-top:10px;	
