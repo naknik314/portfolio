@@ -10,9 +10,8 @@ body,td,th {
 	color:white !important;
 }
 
-.AccordionPanelContent.boxMargin{
-	color:black;
-	background-color:#32100d !important;
+.AccordionPanelContent.boxMargin, .AccordionPanelOpen{
+	background-color:lightblue !important;
 }
 
 nav.navbar.navbar-default {
