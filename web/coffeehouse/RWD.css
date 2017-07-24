@@ -53,7 +53,8 @@ div.AccordionPanelContent ul li {
 	list-style-type:none;
 }
 .AccordionPanelOpen .AccordionPanelTab {
-	border-bottom:5px solid #32100D;
+	background-color: #32100D;
+	border-bottom: 2px solid lightblue;
 }
 .AccordionPanelContent {
 	margin-top:10px;	
