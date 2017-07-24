@@ -7,9 +7,9 @@ body,td,th {
 }
 
 #page_content {
-	background: linear-gradient(45deg, darkbrown 12%, transparent 0, transparent 88%, darkbrown 0),
+	background: linear-gradient(45deg, brown 12%, transparent 0, transparent 88%, brown 0),
     	linear-gradient(135deg, transparent 37%, #181008 0, #181008 63%, transparent 0),
-    	linear-gradient(45deg, transparent 37%, #181008 0, darkbrown 63%, transparent 0) #32100d;
+    	linear-gradient(45deg, transparent 37%, #181008 0, brown 63%, transparent 0) #32100d;
     	background-size: 25px 25px;
 }
 
