@@ -14,7 +14,7 @@ nav.navbar.navbar-default {
 	color:white !important;
 }
 
-.navbar-brand, .navbar-nav>.active > a, .AccordionPanelTab {
+.navbar-brand, .navbar-nav>.active > a, .AccordionPanelTab, div.textboxheader {
 	font-family:"Montserrat Subrayada",sans-serif;	
 }
 
