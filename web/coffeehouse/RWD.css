@@ -8,7 +8,7 @@ body,td,th {
 nav.navbar.navbar-default {
  border: 1px solid #9ECFE0;
 }
-.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a {
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid {
 	background-image:none !important;
 	background-color:#32100D !important;
 	color:white !important;
@@ -95,9 +95,6 @@ h6 {
 }
 img {
 	border-width: 0px;
-}
-.container-fluid {
-	background-color:lightblue !important;
 }
 #site-wrapper {
     width: 100%;
