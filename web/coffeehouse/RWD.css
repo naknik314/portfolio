@@ -8,7 +8,7 @@ body,td,th {
 
 #page_content, .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand,
 .AccordionPanel.AccordionPanelOpen {
-	color:white;
+	color:white !important;
 }
 
 nav.navbar.navbar-default {
