@@ -43,7 +43,7 @@ span.glyphicon.glyphicon-chevron-left {
 span.glyphicon.glyphicon-chevron-right {
 	left:20%;	
 }
-ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li, .lefttextbox, .righttextbox {
+ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li, ul.lefttextbox, ul.righttextbox {
 	background-color:#32100D;
 	color:white;
 }
@@ -278,7 +278,6 @@ list-style-type: none;
 	float: left;
 	border-right: 0;
 	font-size: 12px;
-	background-color: inherit;
 	}
 .righttextbox      {
 	color: #333;
@@ -289,7 +288,6 @@ list-style-type: none;
 	display:inline;
 	float: right;
 	font-size: 12px;
-	background-color: inherit;
 	}
 .textboxheader {
 	color: #493212;
