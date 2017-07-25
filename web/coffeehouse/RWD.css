@@ -359,6 +359,11 @@ li.text {
     .textbox ul {
       height:auto;    
     }
+	    .textbox ul {
+    width:100%;
+      height:auto;
+    position: relative;
+    }
 }
 @media screen and (max-width:538px){
     iframe {
@@ -381,11 +386,6 @@ li.text {
     left:10px;
     }
     
-    .textbox ul {
-    width:100%;
-      height:auto;
-    position: relative;
-    }
     #coupon {
     margin-top: 0;
     }
