@@ -324,6 +324,7 @@ li.text {
 .logo-left {
 	position:absolute;
 	left:0;
+	top:0;
 }
 
 .indent10 {
