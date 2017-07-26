@@ -161,6 +161,11 @@ img {
 	margin-top:-25px;
 }
 
+#giftcardoptions {
+	font-size:1.5rem;
+	font-family:"Montserrat",sans-serif;
+}
+
 /* Define textbox area */
 
 .textbox {
