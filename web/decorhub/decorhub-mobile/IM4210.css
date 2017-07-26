@@ -7,7 +7,7 @@ header.bar.bar-nav {
 
 h1.title {
 	font-size:1.5rem;
-	color:white;
+	color:darkgreen;
 }
 
 #grid-links, #content.grid {
@@ -113,9 +113,9 @@ div.rectangle {
 }
 
     body {
-	background-color:#CFDBC5;
+	background-color:white;
 	font-family: Futura, sans-serif;
-	color: white;
+	color: darkgreen;
 	width: 320px;
 }
 body h1 {
@@ -155,9 +155,9 @@ img {
 	height:'150px'; 
 	width: '200px';
 	padding: .5em;
-	border-color:darkgreen;
+	border-color:#CFDBC5;
     	border-width: medium;
-	background-color:darkgreen;
+	background-color:#CFDBC5;
 	font-style:normal;
 	color:#5d5d5f;
 	font-size:24px;
