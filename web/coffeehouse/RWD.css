@@ -63,10 +63,7 @@ div.AccordionPanelContent ul li {
 	margin-right:100px;
 	list-style-type:none;
 }
-.AccordionPanelOpen .AccordionPanelTab {
-	background-color: #32100D;
-	border-bottom: 2px solid transparent;
-}
+
 .AccordionPanelContent {
 	margin-top:10px;	
 }
