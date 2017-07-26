@@ -7,7 +7,7 @@ header.bar.bar-nav {
 
 h1.title {
 	font-size:1.5rem;
-	color:darkgreen;
+	color:white;
 }
 
 #grid-links, #content.grid {
@@ -54,8 +54,8 @@ div.third-square span, div.half-square span, div.rectangle span, a.cover-link {
 div.third-square span, div.half-square span, div.rectangle span {
 	width:100%;
 	font-size:1.3rem;
-	background-color:darkgreen;
-	color:white;
+	background-color:white;
+	color:darkgreen;
 	
 }
 
