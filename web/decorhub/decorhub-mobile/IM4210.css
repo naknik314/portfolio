@@ -181,7 +181,8 @@ img {
 .itemtxt {
 	height: '100px';
 	width: '100px';
-	background-color:darkgreen;
+	background-color:white;
+	border-top:3px solid darkgreen;
 }
 
 nav {
