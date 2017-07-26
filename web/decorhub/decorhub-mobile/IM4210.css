@@ -135,8 +135,7 @@ div.grid {
 }
 
 .images{
-	height:'275px'; 
-	width:'275px';
+	width:105px;
 	align:left;
 	background-color:darkgreen;
 	border-color:darkgreen;
