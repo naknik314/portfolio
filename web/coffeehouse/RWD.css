@@ -316,7 +316,7 @@ li.text {
 	font-size: 15px;
 	}
 
-ul.nav navbar-nav li, .lefttexboxheader, .righttextboxheader {
+ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
 	text-align: center !important;	
 }
 
