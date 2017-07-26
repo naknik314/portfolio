@@ -157,90 +157,10 @@ img {
 	float: right;
 	margin-top: 15px;
 }
-#bottom_banner {
-	clear:both;
-    	position: relative;
-//	height: 150px;
-	height: 160px;
-
+#giftbox {
+	margin-top:-25px;
 }
 
-.ask_about {
-	margin-left:60px;
-	margin-right:60px;
-	margin-bottom: 30px;
-	margin-top: 20px;
-}
-.font36px {
-	font-size: 36px;
-}
-.font24px {
-		font-size: 24px;
-}
-.font18px {
-		font-size: 18px;
-}
-.font16px {
-		font-size: 16px;
-}
-.font14px {
-	font-size: 14px;
-}
-.font10px {
-		font-size: 10px;
-}
-.font08px {
-		font-size: 8px;
-}
-.green_font {
-	color: #2F8B5A;
-}
-.textcenter {
-//	margin:0 auto;
-	text-align:center;
-	display: block;
-}
-.bold{
-	font-weight:bold;
-}
-.left {
-	clear:both;
-	float:left;
-	width:200px;
-	margin-left:10px;
-	margin-bottom:10px;
-	
-}
-.right {
-	float:right;
-	margin-right:10px;
-	margin-bottom:10px;
-}
-.center_winbag {
-	margin: 0 auto;
-	display: block;
-	margin-top: 10px;
-	margin-bottom: 10px;
-	
-}
-.center_image {
-	margin: 0 auto;
-	display: block;
-}
-.iconlist
-{
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	margin-left: 25px;
-}
-li.text {
-// padding: 3px 0 3px 20px;
-	padding: 0 0 0 50px;
-}
-.text_block_with_title {
-	background-color: #FEF8DE;
-}
 /* Define textbox area */
 
 .textbox {
