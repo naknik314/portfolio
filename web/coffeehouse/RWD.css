@@ -120,9 +120,6 @@ img {
 	margin-left: auto;
     	margin-right: auto;
 	margin-top:-21px;
-	background-image: url('Images/page_background.png');
-	background-repeat:no-repeat;
-	background-position: center bottom;
 	font-family:'Montserrat', sans-serif;
 }
 #page-wrapper {
