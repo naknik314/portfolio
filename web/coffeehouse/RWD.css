@@ -12,7 +12,7 @@ body,td,th {
 	text-transform:uppercase;
 }
 
-.AccordionPanelContent.boxMargin, .AccordionPanel.AccordionPanelOpen {
+.AccordionPanelContent.boxMargin, .AccordionPanel.AccordionPanelOpen, button.navbar-toggle {
 	background-color:#9ECFE0 !important;
 	color:black;
 }
@@ -41,9 +41,6 @@ nav.navbar.navbar-default {
 	}
 }
 
-button.navbar-toggle {
-	background-color:#32100D;
-}
 span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-control, span.glyphicon.glyphicon-chevron-right {
 	background-image:none;	
 }
