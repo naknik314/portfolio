@@ -12,15 +12,20 @@ body,td,th {
 	text-transform:uppercase;
 }
 
-.AccordionPanelContent.boxMargin, .AccordionPanelOpen{
+.AccordionPanelContent.boxMargin {
 	background-color:transparent !important;
 }
 
 nav.navbar.navbar-default {
  border: 1px solid #9ECFE0;
 }
-.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand,
-.AccordionPanel.AccordionPanelOpen {
+
+.AccordionPanel {
+	border-bottom: 2px solid #9ECFE0;	
+}
+
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand, 
+.AccordionPanel, .AccordionPanel.AccordionPanelOpen {
 	background-image:none !important;
 	background-color:#32100D !important;
 }
