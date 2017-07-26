@@ -54,7 +54,7 @@ div.third-square span, div.half-square span, div.rectangle span, a.cover-link {
 div.third-square span, div.half-square span, div.rectangle span {
 	width:100%;
 	font-size:1.3rem;
-	background-color:seagreen;
+	background-color:darkgreen;
 	color:white;
 	
 }
@@ -138,15 +138,15 @@ div.grid {
 	height:'275px'; 
 	width:'275px';
 	align:left;
-	background-color:#ccd6ce;
-	border-color:#ccd6ce;
+	background-color:darkgreen;
+	border-color:darkgreen;
 	border-width: medium;
 	padding-right: 2em;
 }
 
 img {
 	float:top;
-    border-color: #ccd6ce;
+    border-color: darkgreen;
     border-width: medium;
 }
 
@@ -155,9 +155,9 @@ img {
 	height:'150px'; 
 	width: '200px';
 	padding: .5em;
-	border-color:#ccd6ce;
+	border-color:darkgreen;
     	border-width: medium;
-	background-color:#f2c9b9;
+	background-color:darkgreen;
 	font-style:normal;
 	color:#5d5d5f;
 	font-size:24px;
