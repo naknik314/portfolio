@@ -190,8 +190,8 @@ nav {
     font-size: '10px';
 	margin-top:50px;
 }
-a:link {
- color:#5d5d5f;   
+a:link, button.lefttextboxheader {
+ color:#32100d;   
 }
 
 a:visited {
