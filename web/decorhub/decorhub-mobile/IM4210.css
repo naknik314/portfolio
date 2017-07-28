@@ -1,8 +1,11 @@
 @charset "utf-8";
 /* CSS Document */
+header.bar.bar-nav, h2 {
+	font-family: 'Zilla Slab', sans-serif;
+}
+
 header.bar.bar-nav {
 	background-color: darkgreen;
-	font-family: 'Zilla Slab', sans-serif;
 }
 
 h1.title {
