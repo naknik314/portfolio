@@ -187,7 +187,11 @@ img {
 }
 
 ul.iteminfo {
-	margin-left:120px;	
+	margin-left:100px;	
+}
+
+ul.iteminfo h4 {
+	text-transform:uppercase;	
 }
 
 nav {
