@@ -1,6 +1,6 @@
 @charset "utf-8";
 /* CSS Document */
-header.bar.bar-nav, h2 {
+header.bar.bar-nav, h1, h2 {
 	font-family: 'Zilla Slab', sans-serif;
 }
 
