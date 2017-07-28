@@ -186,6 +186,10 @@ img {
 	border-top:3px solid darkgreen;
 }
 
+ul.iteminfo {
+	margin-left:120px;	
+}
+
 nav {
 	font-family: Corbel, sans-serif;
 	color:#5d5d5f;
