@@ -135,18 +135,16 @@ div.grid {
 }
 
 .images{
-	width:105px;
-	align:left;
 	background-color:darkgreen;
 	border-color:darkgreen;
 	border-width: medium;
-	padding-right: 2em;
+	padding-right: .2em;
 }
 
 img {
 	float:top;
-    border-color: darkgreen;
-    border-width: medium;
+    	border-color: darkgreen;
+    	border-width: medium;
 }
 
 .btn {
