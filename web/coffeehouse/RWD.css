@@ -241,6 +241,10 @@ img {
 	font-size: 15px;
 	}
 
+button.lefttextboxheader {
+	color:#32100d;	
+}
+
 ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
 	text-align: center !important;	
 }
