@@ -5,7 +5,7 @@ header.bar.bar-nav, h1, h2 {
 }
 
 header.bar.bar-nav {
-	background-color: darkgreen;
+	background-color: #55A32B;
 	font-weight:bold;
 }
 
@@ -139,15 +139,15 @@ div.grid {
 }
 
 .images{
-	background-color:darkgreen;
-	border-color:darkgreen;
+	background-color:#55A32B;
+	border-color:#55A32B;
 	border-width: medium;
 	padding-right: .2em;
 }
 
 img {
 	float:top;
-    	border-color: darkgreen;
+    	border-color: #55A32B;
     	border-width: medium;
 }
 
@@ -176,14 +176,14 @@ img {
 	height:'300px'; 
 	width: '250px';
 	padding: .5em;
-    border-color: #ccd6ce;
+    border-color: #55A32B;
     border-width: medium;
 }
 .itemtxt {
 	height: '100px';
 	width: '100px';
 	background-color:white;
-	border-top:3px solid darkgreen;
+	border-top:3px solid #55A32B;
 }
 
 ul.iteminfo {
