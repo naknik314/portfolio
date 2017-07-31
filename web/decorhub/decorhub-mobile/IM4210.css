@@ -89,8 +89,7 @@ div.rectangle {
 }
 
 #home-image-3 {
-	background-image:url('images/home-image-3.jpg');	
-}
+	background-image:url('images/home-image-3.jpg');	}
 	
 #home-image-4 {
 	background-image:url('images/home-image-4.jpg');	
@@ -118,16 +117,14 @@ div.rectangle {
 
     body {
 	background-color:white;    
-	background: 
-radial-gradient(rgba(255,255,255,0) 0, rgba(255,255,255,.15) 30%, rgba(255,255,255,.3) 32%, rgba(255,255,255,0) 33%) 0 0,
-radial-gradient(rgba(255,255,255,0) 0, rgba(255,255,255,.1) 11%, rgba(255,255,255,.3) 13%, rgba(255,255,255,0) 14%) 0 0,
-radial-gradient(rgba(255,255,255,0) 0, rgba(255,255,255,.2) 17%, rgba(255,255,255,.43) 19%, rgba(255,255,255,0) 20%) 0 110px,
-radial-gradient(rgba(255,255,255,0) 0, rgba(255,255,255,.2) 11%, rgba(255,255,255,.4) 13%, rgba(255,255,255,0) 14%) -130px -170px,
-radial-gradient(rgba(255,255,255,0) 0, rgba(255,255,255,.2) 11%, rgba(255,255,255,.4) 13%, rgba(255,255,255,0) 14%) 130px 370px,
-radial-gradient(rgba(255,255,255,0) 0, rgba(255,255,255,.1) 11%, rgba(255,255,255,.2) 13%, rgba(255,255,255,0) 14%) 0 0,
-background-size: 470px 470px, 970px 970px, 410px 410px, 610px 610px, 530px 530px, 730px 730px, 100% 100%;
-
-	width: 320px;
+	background-color:white;
+background-image: 
+radial-gradient(circle at 100% 150%, white 24%, silver 25%, silver 28%, white 29%, white 36%, silver 36%, silver 40%, transparent 40%, transparent),
+radial-gradient(circle at 0    150%, white 24%, silver 25%, silver 28%, white 29%, white 36%, silver 36%, silver 40%, transparent 40%, transparent),
+radial-gradient(circle at 50%  100%, silver 10%, white 11%, white 23%, silver 24%, silver 30%, white 31%, white 43%, silver 44%, silver 50%, white 51%, white 63%, silver 64%, silver 71%, transparent 71%, transparent),
+radial-gradient(circle at 100% 50%, silver 5%, white 6%, white 15%, silver 16%, silver 20%, white 21%, white 30%, silver 31%, silver 35%, white 36%, white 45%, silver 46%, silver 49%, transparent 50%, transparent),
+radial-gradient(circle at 0    50%, silver 5%, white 6%, white 15%, silver 16%, silver 20%, white 21%, white 30%, silver 31%, silver 35%, white 36%, white 45%, silver 46%, silver 49%, transparent 50%, transparent);
+background-size:20px 10px;width: 320px;
 }
 body h1 {
 	font-size:1.7rem;
