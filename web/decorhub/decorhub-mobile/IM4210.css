@@ -172,12 +172,18 @@ img {
 	margin: .2em;
 }
 
-.text {
-    font-family: futura, sans-serif;
-    font-size: '14px';
-    color:#a06739;
-	padding: .5em;
+#text {
+     	display: table; 
+	height:150px; 
+	width:150px;
 }
+
+#text-cell {
+     	display: table-cell; 
+	vertical-align:middle; 
+	text-align:center;
+}
+
 .item {
 	float: left;
 	height:'300px'; 
