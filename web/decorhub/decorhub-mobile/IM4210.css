@@ -211,7 +211,7 @@ ul.iteminfo h4 {
 nav {
 	font-family: Corbel, sans-serif;
 	color:#2f4f4f;
-    	font-size: '10px';
+    	font-size:1rem;
 	margin-top:50px;
 	text-transform:uppercase;
 }
