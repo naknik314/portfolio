@@ -114,6 +114,10 @@ h6 {
 img {
 	border-width: 0px;
 }
+
+iframe {
+	margin-top:50px;	
+}
 #site-wrapper {
     	width: 100%;
 	height: auto;
@@ -310,7 +314,7 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
     iframe {
      width:90%;
     position:absolute;
-    bottom:10px;
+    bottom:-1100px;
     left:10px;
     }
     
