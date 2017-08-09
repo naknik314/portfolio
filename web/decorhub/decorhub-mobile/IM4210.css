@@ -213,6 +213,7 @@ nav {
     	font-size:1rem;
 	margin-top:50px;
 	text-transform:uppercase;
+	text-align:center;
 }
 a:link, button.lefttextboxheader {
  color:#32100d;   
