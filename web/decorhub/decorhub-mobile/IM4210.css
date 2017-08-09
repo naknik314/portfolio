@@ -195,7 +195,7 @@ img {
 }
 .itemtxt {
 	min-height: 100px;
-	background-color:#e1e1e1;
+	background-color:transparent;
 	border-top:3px solid #4c7f7f;
 }
 
