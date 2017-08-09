@@ -194,8 +194,7 @@ img {
     border-width: medium;
 }
 .itemtxt {
-	height: '100px';
-	width: '100px';
+	min-height: 100px;
 	background-color:#e1e1e1;
 	border-top:3px solid #4c7f7f;
 }
