@@ -179,10 +179,13 @@ img {
 	width:150px;
 }
 
+#buttons, #text-cell, nav {
+	text-align:center;	
+}
+
 #text-cell {
      	display: table-cell; 
 	vertical-align:middle; 
-	text-align:center;
 }
 
 .item {
@@ -213,8 +216,8 @@ nav {
     	font-size:1rem;
 	margin-top:50px;
 	text-transform:uppercase;
-	text-align:center;
 }
+
 a:link, button.lefttextboxheader {
  color:#32100d;   
 }
