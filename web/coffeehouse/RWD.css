@@ -305,12 +305,15 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
     .textbox ul {
       height:auto;    
     } 
-} 
-@media screen and (max-width:480px){
+}
+
+@media (max-width:640px){
     #page_content_left {
      display:none;   
     }
-    
+}
+
+@media screen and (max-width:480px){  
     iframe {
      width:90%;
     position:absolute;
