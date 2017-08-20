@@ -207,7 +207,7 @@ ul.iteminfo {
 	margin-left:100px;	
 }
 
-ul.iteminfo h4 {
+ul.iteminfo h4, .btn a {
 	text-transform:uppercase;	
 }
 
