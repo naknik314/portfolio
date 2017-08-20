@@ -170,8 +170,8 @@ img {
 	margin: .2em;
 }
 
-.btn a {
-	color:white;
+.btn a, .btn a:visited, .btn a:link  {
+	color:white !important;
 }
 
 #text {
