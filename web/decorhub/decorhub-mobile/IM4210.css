@@ -160,7 +160,7 @@ img {
 }
 
 .btn {
-	width: 90%;
+	width: 95%;
 	padding: .5em;
 	border-color:#4c7f7f;
     	border-width: medium;
@@ -280,6 +280,8 @@ margin-left:3px;
     
 }
 img.store {
-height:50px;	
+	width:120px;
+	margin-left:-20px;
+	margin-right:10px;
 }
 
