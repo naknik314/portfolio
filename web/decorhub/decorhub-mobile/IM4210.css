@@ -17,7 +17,6 @@ h1.title {
 
 #grid-links, #content.grid {
 	text-align:center;
-	width:99%;
 	margin:auto;
 	float:none !important;
 }
@@ -34,6 +33,7 @@ header img {
 
 #content.home-grid {
 	margin-top:50px;
+	width:99%;
 }
 
 div.third-square, div.rectangle {
