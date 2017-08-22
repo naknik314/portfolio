@@ -233,49 +233,51 @@ a:visited {
   margin: auto;
   width: 320px;
 }
-.img1{
-  float:left;
+
+.img1, .img2, .img3, .img4, .img5, .img6, .img7, .img8, .img9 {
+	display:inline-block;	
+}
+
+.img1 {
 -webkit-filter: grayscale(100%);
     margin-left:3px;
 }
-.img2{
-  float:left;
+
+.img2 {
     -webkit-filter: sepia(100%);
     margin-left:3px;
 }
-.img3{
-  float:left; 
+
+.img3 {
     -webkit-filter: brightness(50%);
-    margin-left:3px;
-    
+    margin-left:3px;    
 }
-.img4{
-  float:left; 
+
+.img4 {
     -webkit-filter: opacity(25%);
     margin-left:3px;
 }
-.img5{
-  float:left;
-margin-left:3px;
-    
+
+.img5 {
+margin-left:3px;    
 }
-.img6{
-  float:left; 
+
+.img6 {
    -webkit-filter: contrast(50%); 
     margin-left:3px;
 }
-.img7{
-  float:left; 
+
+.img7 {
     -webkit-filter: grayscale(100%) contrast(200%);
     margin-left:3px;
 }
-.img8{
-  float:left;
+
+.img8 {
     -webkit-filter: blur(1px);
     margin-left:3px;
 }
-.img9{
-  float:left;
+
+.img9 {
     -webkit-filter: contrast(200%);
     margin-left:3px;
     
