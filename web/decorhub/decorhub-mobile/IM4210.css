@@ -32,7 +32,8 @@ header img {
 }
 
 #content.grid {
-	margin-top:50px;	
+	margin-top:50px;
+	float:none !important;
 }
 
 div.third-square, div.rectangle {
@@ -143,7 +144,7 @@ div.grid {
 	background-color:inherit;
 	font-style:normal;
 	align-content:space-around;	
-	text-align:center;
+	float:left;
 }
 
 .images{
