@@ -143,7 +143,7 @@ div.grid {
 	background-color:inherit;
 	font-style:normal;
 	align-content:space-around;	
-	float:left;
+	text-align:center;
 }
 
 .images{
