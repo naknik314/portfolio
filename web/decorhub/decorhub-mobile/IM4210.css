@@ -19,6 +19,7 @@ h1.title {
 	text-align:center;
 	width:99%;
 	margin:auto;
+	float:none !important;
 }
 
 @media (max-width:479px){
@@ -31,9 +32,8 @@ header img {
 	margin-top: 20px;   
 }
 
-#content.grid {
+#content.home-grid {
 	margin-top:50px;
-	float:none !important;
 }
 
 div.third-square, div.rectangle {
