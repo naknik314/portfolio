@@ -314,7 +314,7 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
 }
 
 @media screen and (max-width:480px){  
-    iframe {
+    iframe#maps {
      width:90%;
     position:absolute;
     bottom:-1100px;
