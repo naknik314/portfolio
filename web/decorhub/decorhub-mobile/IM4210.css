@@ -227,6 +227,9 @@ a:link, button.lefttextboxheader {
 
 a:visited {
   	color:darkgreen;
+}
+
+a:visited, h1.title {
 	text-decoration:underline;
 }
 
