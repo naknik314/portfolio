@@ -115,7 +115,7 @@ img {
 	border-width: 0px;
 }
 
-iframe {
+iframe#maps {
 	margin-top:50px;	
 }
 #site-wrapper {
