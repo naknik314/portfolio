@@ -310,11 +310,13 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
     } 
 }
 
-@media screen and (max-width:479px){  
-   
+@media screen and (max-width:639px){
 #page_content_left {
      display:none !important;   
-    }
+    }	
+}
+
+@media screen and (max-width:479px){  
 	
 iframe#maps {
     width:90%;
