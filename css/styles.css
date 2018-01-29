@@ -375,3 +375,8 @@ font-family: "Open Sans", sans-serif !important;
 i.fa.fa-angle-double-up.icon:before {
 	height:30px;
 }
+
+div.jotform-ad {
+	background-color: transparent !important;
+	border-top-color: transparent !important;
+}
