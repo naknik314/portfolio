@@ -55,7 +55,7 @@ button {
   vertical-align: middle;
   width: 100%;
 }
-button.top-nav {
+button.top-nav, button.bottom-nav {
 width:30%;
 margin-top:20px;
   -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
@@ -67,7 +67,7 @@ margin-top:20px;
 button.top-nav span {
   z-index: 20;
 }
-button.top-nav:hover {
+button.top-nav:hover, button.bottom-nav:hover {
 	background-color: white;
 	border: 1px solid #223C40;
 	border-bottom:none;
@@ -78,6 +78,10 @@ button.top-nav:hover {
   	border-top-right-radius: 90px;
 	  -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
           transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+button.bottom-nav {
+	top:20px;
 }
 
 button.top-title, button.middle-title, button.bottom-title {
