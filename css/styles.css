@@ -194,6 +194,7 @@ background-image: url(../img/contactme.jpg);
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
+  overflow:hidden;
 }
 .navbar a, .navbar,.footer {
 color:#223C40;
