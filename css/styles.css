@@ -66,22 +66,15 @@ margin-top:10px;
 button.top-nav span {
   z-index: 20;
 }
-button.top-nav:after {
+button.top-nav:hover {
 	background-color: white;
   	display: inline-block;
   	margin: 0 1em 1em 0;
-  	border-top-left-radius: 45px * 2;
-  	border-top-right-radius: 45px * 2;
-	border-top-left-radius: 45px * 2;
-  	border-top-right-radius: 45px * 2;
-}
-
-button.top-nav:hover:after {
-  top: 120%;
-  -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+  	border-top-left-radius: 90px;
+  	border-top-right-radius: 90px;
+	  -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
           transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
 }
-
 
 button.top-title, button.middle-title, button.bottom-title {
 font-size:1rem;
