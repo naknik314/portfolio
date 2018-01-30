@@ -176,10 +176,12 @@ background-image: url(../img/contactme.jpg);
 }
 
 .footer {
-    text-align:center;
-    align-content:center;
-    clear:both;
-    border:2px solid white;
+    	text-align:center;
+    	align-content:center;
+    	clear:both;
+    	border:2px solid white;
+	border-top-left-radius: 30px;
+	border-top-right-radius:30px;
 }
 
 .navbar {
@@ -191,18 +193,20 @@ background-image: url(../img/contactme.jpg);
     	position:fixed;
     	top:0;
     	z-index:2;
+	border-bottom-left-radius: 30px;
+	border-bottom-right-radius:30px;
 }
 .navbar, .footer {
-    font-size:1.2rem;
-    background-color:white;
-    width: 100%;
-    margin:auto;
-   background-image: url(../img/bg.jpg);
-  -webkit-background-size: cover;
-  -moz-background-size: cover;
-  -o-background-size: cover;
-  background-size: cover;
-  overflow:hidden;
+    	font-size:1.2rem;
+    	background-color:white;
+    	width: 100%;
+    	margin:auto;
+   	background-image: url(../img/bg.jpg);
+  	-webkit-background-size: cover;
+  	-moz-background-size: cover;
+  	-o-background-size: cover;
+  	background-size: cover;
+  	overflow:hidden;
 }
 .navbar a, .navbar,.footer {
 color:#223C40;
