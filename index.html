@@ -1,3 +1,4 @@
+<!DOCTYPE HTML>
 <html>
 <head>
 <title>NK | Web Design</title>
@@ -10,9 +11,12 @@
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
 </head>
 <body>
-<div class='navbar'><center><div id="logo"><img src="img/logo.png"><h2 class="logotype">NK</h2></div></center><button class="top-nav top-title"><span>Portfolio</span></button><button class="top-nav middle-title"><span>Services</span><button class="top-nav bottom-title"><span>Contact</span></button></div>
-<br class='top'>
-<div class='container wrapper' id="portfolio">
+    <header>
+<nav class='navbar'><center><div id="logo"><img src="img/logo.png"><h2 class="logotype">NK</h2></div></center><button class="top-nav top-title"><span href="#portfolio">Portfolio</span></button><button class="top-nav middle-title"><span href="#services">Services</span><button class="top-nav bottom-title"><span href="#contact">Contact</span></button></nav>
+    </header>
+        <br class='top'>
+ <main>
+<section class='container wrapper' id="portfolio">
     <h2 class="text-center">Digital Portfolio</h2>
     <div class="inner-container">
     <div class="thumbnail" id="coffeehouse">
@@ -23,23 +27,24 @@
     <div class="thumbnail" id="losttreasures"><a href="web/losttreasures/index.html" data-lity><img class="thumbnail-wide" src="img/losttreasures.png"></a></div>
     <div style="clear:both"></div>
     <br>
-     </div>
+     </section>
 </div>
 <br class="middle">
-<div class='container' id="about">
+<section class='container' id="about">
     <h2 class="text-center">Services</h2>
 <p>Fill out information about your project in the form below.</p>
     <p><a class="button-link" href="https://form.jotform.com/73114128884155">Project Form</a></p>
 <br>
-</div>
+</section>
 <br class="bottom">
-<div class='container' id="contact">
+<section class='container' id="contact">
     <h2 class="text-center">Contact</h2>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script type="text/javascript" src="https://form.jotform.us/jsform/71146286484159"></script>
     <div class="text-center"><button class="bottom-nav top-title"><i class="fa fa-angle-double-up icon"></i>Top of Page</button></div>
-    <div class='footer'><p>&copy;&nbsp;2013-<script type="text/javascript">var year = new Date();document.write(year.getFullYear());</script></p></div>
-</div>
+    <footer class='footer'><p>&copy;&nbsp;2013-<script type="text/javascript">var year = new Date();document.write(year.getFullYear());</script></p></footer>
+</section>
+    </main>
 
  <script src="lity-1.6.5/src/lity.js"></script>
      <script src="https://use.fontawesome.com/d2f5d1ce0e.js"></script>
