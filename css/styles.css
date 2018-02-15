@@ -18,6 +18,10 @@ body {
     width: extend-to-zoom;
     zoom: 1.0;
 }
+@-o-viewport{
+    width: extend-to-zoom;
+    zoom: 1.0;
+}
 
 .text-center {
 text-align:center !important;	
