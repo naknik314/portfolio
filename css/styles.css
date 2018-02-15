@@ -43,10 +43,11 @@ h2.logotype{
 	margin-top:-15px;
 }
 div#logo {
-border-radius:50%;
-background-color:#2C71A7;
-width:55px;
-height:55px;
+	border-radius:50%;
+	background-color:#2C71A7;
+	width:55px;
+	height:55px;
+	margin:auto;
 }
 button {
   color: black;
