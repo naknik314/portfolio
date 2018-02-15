@@ -301,43 +301,6 @@ div.icon {
     width:30px;
     display:inline-block;
 }
-#photoshop {
-    width: 40px;
-    height: 40px;
-    background: url(../img/adobe_icons.png) 190 222;
-}
-
-#dreamweaver {
-    width: 40px;
-    height: 40px;
-    background: url(../img/adobe_icons.png) 190 980;
-}
-#illustrator {
-    width: 40px;
-    height: 40px;
-    background: url(../img/adobe_icons.png) 430 623;
-}
-#flash {
-    width: 40px;
-    height: 40px;
-    background: url(../img/adobe_icons.png) 479 624;
-}
-#indesign {
-    width: 40px;
-    height: 40px;
-    background: url(../img/adobe_icons.png) 235 311;
-}
-#premierepro {
-    width: 40px;
-    height: 40px;
-    background: url(../img/adobe_icons.png) 908 222;
-}
-#dreamweaver, #premierepro {
-    margin-left:40px;
-}
-#flash {
-    margin-left:-40px;
-}
 .invisible {
     display:none;
 }
