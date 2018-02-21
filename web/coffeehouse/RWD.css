@@ -264,9 +264,10 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
 	vertical-align:middle;
 	}
 #page_content {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
+    	position: relative;
+    	width: 100%;
+	overflow:hidden;
+    	max-width: 800px;
 }
 @media screen and (max-width:788px){
     iframe#maps {
