@@ -204,10 +204,10 @@ background-image: url(../img/contactme.jpg);
 }
 .navbar, .footer {
     	font-size:1.2rem;
-    	background-color:white;
+    	background-color: #000000;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.4' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E");
     	width: 100%;
     	margin:auto;
-   	background-image: url(../img/bg.jpg);
   	-webkit-background-size: cover;
   	-moz-background-size: cover;
   	-o-background-size: cover;
@@ -215,7 +215,7 @@ background-image: url(../img/contactme.jpg);
   	overflow:hidden;
 }
 .navbar a, .navbar,.footer {
-color:#223C40;
+color:white;
     text-align:center;
 }
 .navbar a {
