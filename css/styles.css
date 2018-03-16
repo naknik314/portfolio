@@ -29,6 +29,10 @@ body#terms {
 	width:95%;
 	margin:auto;
 }
+
+body#terms, #terms li {
+	background-color:white;
+}
 h2,h3,.navbar,.footer {
     font-family:'Handlee',sans-serif;
 }
