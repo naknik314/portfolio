@@ -47,13 +47,15 @@ div#logo {
 	margin:auto;
 }
 button {
-  	color: white;
   	cursor: pointer;
   	max-width: 160px;
   	position: relative;
   	text-transform: uppercase;
   	vertical-align: middle;
   	width: 100%;
+}
+button.top-nav {
+	color: white;
 }
 button.top-nav, button.bottom-nav {
 	width:30%;
