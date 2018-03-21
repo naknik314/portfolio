@@ -10,7 +10,7 @@ nav {
 
 nav > ul {
   padding-bottom:10px;
-  background-color:#e1e1e1;
+  background-color:transparent;
 }
 
 main {
@@ -33,16 +33,6 @@ main {
   padding-bottom:10px;
 }
 
-ul#mobile-only li {
-  width:100%;
-  text-align: center;
-  list-style-type:none;
-}
-
-ul#tablet-desktop li {
-  width:20%;
-}
-
 div#logo {
   width:25%;
   min-height:70px;
@@ -63,11 +53,17 @@ header {
 }
 
 @media (min-width:481px) {
-  nav > ul#tablet-desktop {
-    display:inline;
+  ul#tablet-desktop {
+    position:absolute;
+    bottom:-20px;
   }
-  nav > ul#mobile-only {
+  ul#mobile-only {
     display:none;
+  }
+
+  ul#tablet-desktop li {
+    display:inline-block;
+    width:20%;
   }
 }
 
@@ -78,5 +74,11 @@ header {
   }
   nav > ul#mobile-only {
     display:inline-block;
+  }
+
+  ul#mobile-only li {
+    width:100%;
+    text-align: center;
+    list-style-type:none;
   }
 }
