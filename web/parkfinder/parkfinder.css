@@ -64,7 +64,7 @@ header {
 
 @media (min-width:481px) {
   nav > ul#tablet-desktop {
-    display:inline-block;
+    display:inline;
   }
   nav > ul#mobile-only {
     display:none;
