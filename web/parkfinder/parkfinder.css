@@ -38,19 +38,12 @@ main {
   text-align:center;
   left:0;
   right:0;
-  width:90%;
+  width:100%;
   margin:auto;
   text-align:center;
   font-variant:bold;
   font-size:1.5rem;
   padding-bottom:10px;
-}
-
-div#logo {
-  width:25%;
-  min-height:70px;
-  float:left;
-  vertical-align:center;
 }
 
 div#logo img {
@@ -89,6 +82,13 @@ main#parkfinder-index {
     display:none;
   }
 
+  div#logo {
+    width:25%;
+    min-height:70px;
+    float:left;
+    vertical-align:center;
+  }
+
   .word-art {
     font-size:6rem;
     text-align:center;
@@ -125,6 +125,12 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 @media (max-width:480px) {
   ul#tablet-desktop {
     display:none;
+  }
+
+  div#logo {
+    width:100%;
+    min-height:70px;
+    vertical-align:center;
   }
 
   #mobile-header-img {
