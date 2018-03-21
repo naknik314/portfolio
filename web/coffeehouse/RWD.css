@@ -270,9 +270,6 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
     	max-width: 800px;
 }
 @media screen and (max-width:788px){
-    iframe#maps {
-     width:350px;
-    }
     .textbox ul {
       height:auto;
     }
@@ -289,9 +286,6 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
 }
 
 @media screen and (max-width:619px){
-    iframe#maps {
-     width:inherit;
-    }
     .textbox ul {
       height:auto;
     }
@@ -302,10 +296,6 @@ ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
     }
 }
 @media screen and (max-width:538px){
-    iframe#maps {
-     width:290px;
-    }
-
     .textbox ul {
       height:auto;
     }
