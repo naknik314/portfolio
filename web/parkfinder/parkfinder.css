@@ -95,7 +95,7 @@ main#parkfinder-index {
 
   .word-art {
     font-size:6rem;
-    font-weight:black;
+    font-weight:900;
     text-align:center;
   -webkit-text-fill-color: transparent;
   -webkit-background-clip: text;
@@ -103,14 +103,13 @@ main#parkfinder-index {
   /* what will show through the text
       ~ or ~
      what will be the background of that element */
-     background-color: #ffffff;
      background-color: #8fd94a;
-background-image: url(https://www.transparenttextures.com/patterns/football-no-lines.png);
+     background-image: url(https://www.transparenttextures.com/patterns/football-no-lines.png);
 
   /* fallback text color
       ~ or ~
      the actual color of text, so it better work on the background */
-  color: white;
+     color: #042402;
 
   }
 
