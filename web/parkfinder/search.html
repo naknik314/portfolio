@@ -1,0 +1,64 @@
+<html>
+<head>
+  <meta charset="utf-8" name="viewport" content="width:device-width;user-scale:1">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:400,900" rel="stylesheet">
+  <link href="parkfinder.css" rel="stylesheet">
+</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<body>
+<header>
+<div id="logo">
+  <img src="https://images.unsplash.com/photo-1478444879690-1f7fc11918d3?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=5ba37e4954646dd7ee6c9b2ea12d5220&amp;auto=format&amp;fit=crop&amp;w=750&amp;q=80" />
+</div>
+<nav>
+<span id="nav-header"><p>Find your natural escape</p></span>
+<ul id="tablet-desktop">
+<li><a href="index.html">Home</a></li>
+<li><a href="#">Search</a></li>
+<li><a href="#">About</a></li>
+<li><a href="apps.html">Apps</a></li>
+</ul>
+</nav>
+</header>
+<ul id="mobile-only">
+<li><a href="index.html">Home</a></li>
+<li><a href="#">Search</a></li>
+<li><a href="about.html">About</a></li>
+<li><a href="apps.html">Apps</a></li>
+</ul>
+<h1 class="word-art">Search</h1>
+<main>
+  <section>
+    <h2>Featured Area Park Search</h2>
+    <p>
+      Our featured area for parks is....Broward County. Search Broward County parks here!
+    </p>
+  <h3>Search for ...<input type="text" placeholder="park,playground...etc">?</h3>
+  <br />
+  </section>
+
+</main>
+
+</body>
+<script>
+$('input').keypress(function(e){
+
+  if(e.which ==13)/* 13 is EQUAL TO "ENTER" or "RETURN" Key */ {
+    $('body').append("<h3>Local " + ($(this).val()));
+
+    $.ajax({
+  url:"https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20local.search%20where%20zip%3D'33028'%20and%20query%3D'"+$(this).val() +"'&format=json&diagnostics=true&callback=?",
+  dataType: 'jsonp',
+  success: function(data){
+    var i; for(i=0; i < data.query.results.Result.length; i++){
+      $('body').append(data.query.results.Result[i].Title+" ");
+      $('body').append('<i>'+data.query.results.Result[i].Phone+"<br>");
+    }
+  }
+})
+
+
+    }
+});
+</script>
+</html>
