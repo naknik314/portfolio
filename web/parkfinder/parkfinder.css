@@ -46,6 +46,7 @@ aside {
 
 aside > img {
   height:175px;
+  width:250px;
   border: 1px solid #8AB28F;
 }
 
@@ -117,7 +118,7 @@ section {
   }
 }
 
-@media(min-width:481px){
+@media(min-width:640px){
   .word-art {
     font-size:6rem;
     font-weight:900;
@@ -140,7 +141,7 @@ color:white;
 }
 
 
-@media (max-width:480px) {
+@media (max-width:639px) {
   ul#tablet-desktop {
     display:none;
   }
