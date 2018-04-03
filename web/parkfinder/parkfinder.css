@@ -39,6 +39,10 @@ main {
   color:white;
 }
 
+aside img {
+  height:175px;
+}
+
 #nav-header {
   display:inline-block;
   position:relative;
