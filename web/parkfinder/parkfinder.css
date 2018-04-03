@@ -31,8 +31,12 @@ a {
 }
 
 main {
-  width:90%;
   margin:auto;
+  background-size:cover;
+  min-height:500px;
+  padding-top:30px;
+  width:100%;
+  color:white;
 }
 
 #nav-header {
@@ -55,11 +59,7 @@ div#logo img {
   height:100px;
 }
 
-main#parkfinder-index {
-  width:100%;
-}
-
-#parkfinder-intro {
+section {
   width:90%;
   margin:auto;
 }
@@ -114,13 +114,10 @@ main#parkfinder-index {
   }
 
   main#parkfinder-index {
-    background-image:url('https://images.unsplash.com/photo-1505778276668-26b3ff7af103?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=c31c1a0b3ef5bab89aa621ae99620451&amp;auto=format&amp;fit=crop&amp;w=743&amp;q=80'); background-size:cover;
-    color:white;
-    min-height:500px;
-    padding-top:30px;
+    background-image:url('https://images.unsplash.com/photo-1505778276668-26b3ff7af103?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=c31c1a0b3ef5bab89aa621ae99620451&amp;auto=format&amp;fit=crop&amp;w=743&amp;q=80');
   }
 
-  section#parkfinder-intro {
+  section {
     background-color: rgba(0, 40, 0, .5);
     padding-left: 15px;
   }
