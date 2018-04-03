@@ -109,14 +109,14 @@ section {
     font-weight:900;
     text-align:center;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 1px white;
+  -webkit-text-stroke: 1px #8AB28F;
   -webkit-background-clip: text;
 
   /* what will show through the text
       ~ or ~
      what will be the background of that element */
-     background-color: #DFFFE3;
-     background-image: url(football-no-lines.png);
+     background-color: darkgreen;
+     background-image: url(gray-floral.png);
 
   /* fallback text color
       ~ or ~
