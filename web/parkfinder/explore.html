@@ -35,6 +35,10 @@
     </p>
   <h3>I want to go to the...<input type="text" placeholder="park,playground...etc"> in Broward County</h3>
   <br />
+
+    <h3>Park Photos</h3>
+  <aside>
+  </aside>
   </section>
 
 </main>
@@ -59,6 +63,17 @@ $('input').keypress(function(e){
 
 
     }
+});
+//FLICKR- AJAX
+  $.ajax({
+ url: "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20flickr.photos.search%20where%20has_geo%3D%22true%22%20and%20text%3D%22typark%2C%20ES%22%20and%20api_key%3D%2292bd0de55a63046155c09f1a06876875%22%3B&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
+  success : function(json){
+   var src;
+for (var i=0; i < 3; i++){
+  src=  "https://farm" + json.query.results.photo[i].farm + ".staticflickr.com/" + json.query.results.photo[i].server + "/" + json.query.results.photo[i].id + "_" +json.query.results.photo[i].secret ;
+   $('aside').append("<br><img src='"+ src + "_m.jpg"+ "'>");
+}
+  }
 });
 </script>
 </html>
