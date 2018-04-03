@@ -39,8 +39,14 @@ main {
   color:white;
 }
 
-aside img {
+aside {
+  padding:10px;
+  background-color:#042402;
+}
+
+aside > img {
   height:175px;
+  border: 1px solid #8AB28F;
 }
 
 #nav-header {
