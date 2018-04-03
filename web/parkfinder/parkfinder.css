@@ -146,4 +146,7 @@ section {
     text-align: center;
     list-style-type:none;
   }
+  section {
+    color:#042402;
+  }
 }
