@@ -1,0 +1,92 @@
+<html>
+<head>
+  <meta charset="utf-8" name="viewport" content="width:device-width;initial-scale:1">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:400,900" rel="stylesheet">
+  <link href="parkfinder.css" rel="stylesheet">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+</head>
+<body>
+<header>
+<div id="logo">
+  <img src="https://images.unsplash.com/photo-1478444879690-1f7fc11918d3?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=5ba37e4954646dd7ee6c9b2ea12d5220&amp;auto=format&amp;fit=crop&amp;w=750&amp;q=80" />
+</div>
+<nav>
+<span id="nav-header"><p>Find your natural escape</p></span>
+<ul id="tablet-desktop">
+<li><a href="index.html">Home</a></li>
+<li><a href="explore.html">Explore</a></li>
+<li><a href="#">Play</a></li>
+<li><a href="weather.html">Weather</a></li>
+</ul>
+</nav>
+</header>
+<ul id="mobile-only">
+<li><a href="index.html">Home</a></li>
+<li><a href="explore.html">Explore</a></li>
+<li><a href="#">Play</a></li>
+<li><a href="weather.html">Weather</a></li>
+</ul>
+<main id="parkfinder-wgf">
+  <h1 class="word-art">Play</h1>
+  <section>
+    <h3>Water Plant Fire</h3>
+    <script>
+    // JavaScript Document
+$(document).ready(function(){
+
+var userChoice = prompt("Do you choose water, plant or fire?");
+var computerChoice = Math.random();
+if (computerChoice <= 1/3) {
+computerChoice = "Water";
+}
+else if(computerChoice <= 2/3) {
+computerChoice = "Plant";
+}
+else {
+computerChoice = "Fire";
+
+}
+document.write("<center>" + "YOU: " + userChoice + "<br>" +"Computer: " + computerChoice + "<br>" + "</center>");
+
+var compare = (function(choice1,choice2){
+if (userChoice === computerChoice) {
+document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"TIE!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+}
+else if (userChoice === "water") {
+  if (computerChoice === "fire"){
+document.write ("<center>" + "<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80'>" +"<br>" + "Water EXTINGUISHES Fire! WATER WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+  }
+  else {
+document.write("<center>" +"<br><img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"Plant ABSORBS Water! PLANT WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+  }
+}
+else if (userChoice === "Plant") {
+      if (computerChoice === "Water"){
+   document.write ("<center>"+ "<img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"<br>" +"Plant ABSORBS Water, Plant WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+  }
+  else {
+  document.write ("<center><img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80'" +"<br>" +"Fire BURNS Plant, Fire WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+  }
+}
+else if (userChoice === "Fire") {
+      if (computerChoice === "Plant"){
+  document.write ("<center>" + "<img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80' height='100px'>"+"<br>" +"Fire BURNS Plant, Fire WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+  }
+  else {
+  document.write ("<center>" +"<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80' /><br>" +"Water EXTINGUISHES Fire! Water WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+  }
+}
+}); // end compare
+
+compare();
+
+}); //end ready
+
+
+    </script>
+  </section>
+
+</main>
+
+</body>
+</html>
