@@ -35,9 +35,7 @@
 $(document).ready(function(){
 
 var userChoice = prompt("Do you choose water, plant or flame?");
-if (document.Entry.Number.value.length !== 5) {
-  var userChoice = prompt("Please try again. Do you choose water, plant or flame?");
-}
+
 var computerChoice = Math.random();
 if (computerChoice <= 1/3) {
 computerChoice = "Water";
@@ -89,7 +87,7 @@ document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uplo
   }
 }
 else if (userChoice != "Water" || userChoice != "Plant" || userChoice != "Flame") {
-  document.write ("<center>" +"Trying to cheat huh? Maybe this isn't the game for you.<br />"+ "<button onClick='location.href=location.href'>Oops, I'll play again</button><br /><a href="play.html">Nah, I'm a rebel</a></center>");
+  document.write ("<center>" +"Was that a typo, or were you trying to cheat?<br />"+ "<button onClick='location.href=location.href'>Oops, I'll play again</button><br /><a href="play.html">I'm done with this game</a></center>");
 }
 }); // end compare
 
