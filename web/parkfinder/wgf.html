@@ -49,10 +49,10 @@ computerChoice = "Fire";
 document.write("<center>" + "YOU: " + userChoice + "<br>" +"Computer: " + computerChoice + "<br>" + "</center>");
 
 var compare = (function(choice1,choice2){
-if (userChoice === computerChoice) {
+if (userChoice == computerChoice) {
 document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"TIE!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
 }
-else if (userChoice === "Water") {
+else if (userChoice === "Water" || userChoice === "water") {
   if (computerChoice === "Fire"){
 document.write ("<center>" + "<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80'>" +"<br>" + "Water EXTINGUISHES Fire! WATER WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
   }
@@ -60,7 +60,7 @@ document.write ("<center>" + "<img src='https://images.unsplash.com/photo-148322
 document.write("<center>" +"<br><img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"Plant ABSORBS Water! PLANT WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
   }
 }
-else if (userChoice === "Plant") {
+else if (userChoice === "Plant" || userChoice === "plant") {
       if (computerChoice === "Water"){
    document.write ("<center>"+ "<img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"<br>" +"Plant ABSORBS Water, Plant WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
   }
@@ -68,13 +68,16 @@ else if (userChoice === "Plant") {
   document.write ("<center><img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80'" +"<br>" +"Fire BURNS Plant, Fire WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
   }
 }
-else if (userChoice === "Fire") {
+else if (userChoice === "Fire" || userChoice === "fire") {
       if (computerChoice === "Plant"){
   document.write ("<center>" + "<img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80' height='100px'>"+"<br>" +"Fire BURNS Plant, Fire WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
   }
   else {
   document.write ("<center>" +"<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80' /><br>" +"Water EXTINGUISHES Fire! Water WINS!"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
   }
+}
+else if (userChoice != "Water" || userChoice != "Plant" || userChoice || "Fire") {
+  document.write ("<center>" +"Trying to cheat huh? Maybe this isn't the game for you."+ "<button onClick='location.href=location.href'>Play by the rules this time?</button></center>");
 }
 }); // end compare
 
