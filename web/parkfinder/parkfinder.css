@@ -66,7 +66,7 @@ section {
   margin:auto;
 }
 
-main#parkfinder-wpf > section {
+main#parkfinder-wpf > section, .word-art {
     text-align:center !important;
 }
 
