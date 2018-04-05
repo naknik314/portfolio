@@ -116,7 +116,7 @@ button#play-again, #wpf-game {
   }
 
   div#logo {
-    width:25%;
+    width:20%;
     min-height:70px;
     float:left;
     vertical-align:center;
@@ -241,7 +241,8 @@ color:white;
   }
 
   div#logo {
-    width:100%;
+    width:50%;
+    margin:auto;
     min-height:70px;
     vertical-align:center;
   }
