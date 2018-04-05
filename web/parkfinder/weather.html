@@ -45,9 +45,7 @@ $('section').append("<p>Date: " + json.query.results.channel.item.condition.date
 
 $('section').append("<p>Temp: " + json.query.results.channel.item.condition.temp + "F");
 $('section').append("<p>Condition: " + json.query.results.channel.item.condition.text);
-$('section').append("<p>Sunrise: " + json.query.results.channel.astronomy.sunrise);
-$('section').append("<p>Sunset: " + json.query.results.channel.astronomy.sunset);
-$('section').append("<p>Humidity: " + json.query.results.channel.atmosphere.humidity);
+$('section').append("<p>Humidity: " + json.query.results.channel.atmosphere.humidity+ "%");
   }
 });
 </script>
