@@ -178,6 +178,16 @@ color:white;
   }
 }
 
+.word-art > span#water-word-art {
+  background-color: #004f8c;
+  background-image: url(https://www.transparenttextures.com/patterns/white-wave.png);
+}
+
+.word-art > span#flame-word-art {
+  background-color: maroon;
+  background-image: url(https://www.transparenttextures.com/patterns/wall-4-light.png);
+}
+
 
 @media (max-width:480px) {
   ul#tablet-desktop {
