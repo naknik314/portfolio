@@ -66,7 +66,7 @@ section {
   margin:auto;
 }
 
-main#parkfinder-wpf > section, .word-art {
+main#parkfinder-wpf > section, .word-art, h1#wpf-title {
     text-align:center !important;
 }
 
@@ -178,14 +178,44 @@ color:white;
   }
 }
 
-.word-art > span#water-word-art {
-  background-color: #004f8c;
-  background-image: url(https://www.transparenttextures.com/patterns/white-wave.png);
+span#water-word-art {
+  font-size:6rem;
+  font-weight:900;
+  text-align:center;
+-webkit-text-fill-color: transparent;
+-webkit-text-stroke: 1px #DFFFE3;
+-webkit-background-clip: text;
+
+/* what will show through the text
+    ~ or ~
+   what will be the background of that element */
+   background-color: #004f8c;
+   background-image:url(https://www.transparenttextures.com/patterns/white-wave.png);
+
+/* fallback text color
+    ~ or ~
+   the actual color of text, so it better work on the background */
+color:white;
 }
 
-.word-art > span#flame-word-art {
-  background-color: maroon;
-  background-image: url(https://www.transparenttextures.com/patterns/wall-4-light.png);
+span#flame-word-art {
+  font-size:6rem;
+  font-weight:900;
+  text-align:center;
+-webkit-text-fill-color: transparent;
+-webkit-text-stroke: 1px #DFFFE3;
+-webkit-background-clip: text;
+
+/* what will show through the text
+    ~ or ~
+   what will be the background of that element */
+   background-color: maroon;
+   background-image:url(https://www.transparenttextures.com/patterns/wall-4-light.png);
+
+/* fallback text color
+    ~ or ~
+   the actual color of text, so it better work on the background */
+color:white;
 }
 
 
@@ -214,7 +244,7 @@ color:white;
   section {
     color:#042402;
   }
-  .word-art {
+  .word-art, h1#wpf-title {
      color: #042402;
   }
 }
