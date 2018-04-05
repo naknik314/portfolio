@@ -76,6 +76,14 @@ span#wpf-middle-img {
   height:300px;
 }
 
+button#play-again {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  background-color: #8AB28F;
+  color: #042402;
+  border-radius: 10px;
+}
+
 @media (min-width:481px) {
   ul#tablet-desktop {
     position:absolute;
