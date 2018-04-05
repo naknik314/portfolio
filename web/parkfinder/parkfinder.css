@@ -199,7 +199,7 @@ span#water-word-art {
     ~ or ~
    what will be the background of that element */
    background-color: #004f8c;
-   background-image:url(https://www.transparenttextures.com/patterns/white-wave.png);
+   background-image:url(white-wave.png);
 
 /* fallback text color
     ~ or ~
@@ -219,7 +219,7 @@ span#flame-word-art {
     ~ or ~
    what will be the background of that element */
    background-color: maroon;
-   background-image:url(https://www.transparenttextures.com/patterns/wall-4-light.png);
+   background-image:url(wall-4-light.png);
 
 /* fallback text color
     ~ or ~
