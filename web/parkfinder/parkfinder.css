@@ -21,12 +21,7 @@ header {
   height:100px;
 }
 
-header, ul#mobile-only {
-    background-color:#8AB28F;
-    color:#042402;
-}
-
-a {
+header, a {
   color: #042402;
 }
 
@@ -240,8 +235,12 @@ color:white;
     display:none;
   }
 
+  header {
+      background-color:#8AB28F;
+  }
+
   div#logo {
-    width:50%;
+    width:70%;
     margin:auto;
     min-height:70px;
     vertical-align:center;
@@ -266,5 +265,9 @@ color:white;
   }
   span#water-word-art, span#flame-word-art {
     font-size:2rem;
+  }
+  header, ul#mobile-only {
+      background-color:#DFFFE3;
+      color:#042402;
   }
 }
