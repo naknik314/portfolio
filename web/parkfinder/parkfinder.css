@@ -125,7 +125,7 @@ main#parkfinder-wpf > section {
 }
 
 main#parkfinder-wpf > section span {
-    background-color:darkgreen;
+    background-color: rgb(0, 40, 0);
 }
 
 span#wpf-top-text, span#wpf-bottom-text {
@@ -133,7 +133,7 @@ span#wpf-top-text, span#wpf-bottom-text {
 }
 
 span#wpf-middle-img {
-  border:1px solid #DFFFE3 ;
+  backgroudn-color:transparent !important;
 }
 
 main {
