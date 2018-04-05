@@ -40,15 +40,15 @@
   url:"https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22nome%2C%20ak%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
   success: function(json){
 
-document.write("<p>Weather for: " + json.query.results.channel.title);
+$('section').append("<p>Weather for: " + json.query.results.channel.title);
 
-document.write("<p>Date: " + json.query.results.channel.item.condition.date);
+$('section').append("<p>Date: " + json.query.results.channel.item.condition.date);
 
-document.write("<p>Temp: " + json.query.results.channel.item.condition.temp);
-document.write("<p>Text: " + json.query.results.channel.item.condition.text);
-document.write("<p>Sunrise: " + json.query.results.channel.astronomy.sunrise);
-document.write("<p>Sunset: " + json.query.results.channel.astronomy.sunset);
-document.write("<p>Humidity: " + json.query.results.channel.atmosphere.humidity);
+$('section').append("<p>Temp: " + json.query.results.channel.item.condition.temp);
+$('section').append("<p>Text: " + json.query.results.channel.item.condition.text);
+$('section').append("<p>Sunrise: " + json.query.results.channel.astronomy.sunrise);
+$('section').append("<p>Sunset: " + json.query.results.channel.astronomy.sunset);
+$('section').append("<p>Humidity: " + json.query.results.channel.atmosphere.humidity);
   }
 });
 </script>
