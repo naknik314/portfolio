@@ -76,7 +76,7 @@ span#wpf-middle-img {
   height:300px;
 }
 
-button#play-again {
+button#play-again, a#wpf-game {
   font-size: 1.5rem;
   margin-bottom: 10px;
   background-color: #8AB28F;
