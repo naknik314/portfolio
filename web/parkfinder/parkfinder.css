@@ -69,6 +69,11 @@ main#parkfinder-wpf > section, .word-art, h1#wpf-title, #wpf-game {
     text-align:center !important;
 }
 
+#wpf-game {
+  padding:5px;
+  text-decoration:none;
+}
+
 span#wpf-middle-img {
   background-color:transparent !important;
   width:70%;
