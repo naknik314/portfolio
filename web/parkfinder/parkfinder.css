@@ -120,6 +120,10 @@ main#parkfinder-wpf > section img {
     height:300px;
 }
 
+main#parkfinder-wpf > section {
+    text-align:center !important;
+}
+
 main {
   margin:auto;
   background-size:cover;
