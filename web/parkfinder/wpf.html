@@ -29,13 +29,13 @@
 <main id="parkfinder-wpf">
   <h1 class="word-art">Water, Plant, Flame</h1>
   <section>
-    <script>
+    <script defer>
     // JavaScript Document
     $(document).ready(function(){
 
     var userChoice = prompt("Do you choose water, plant or flame?");
     while (userChoice.length !== 5) {
-    userChoice = prompt("Please check your spelling. Your answer should only be 5 letters long with no spaces. Do you choose water, plant or flame?");  
+    userChoice = prompt("Please check your spelling. Your answer should only be 5 letters long with no spaces. Do you choose water, plant or flame?");
     }
     var computerChoice = Math.random();
     if (computerChoice <= 1/3) {
