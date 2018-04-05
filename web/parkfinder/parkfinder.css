@@ -145,6 +145,11 @@ span#wpf-top-text, span#wpf-bottom-text {
   font-size:1.5rem;
 }
 
+span#wpf-top-text {
+  display:inline-block;
+  width:100%;
+}
+
 main {
   margin:auto;
   background-size:cover;
