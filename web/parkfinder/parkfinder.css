@@ -247,4 +247,7 @@ color:white;
   .word-art, h1#wpf-title {
      color: #042402;
   }
+  span#water-word-art, span#flame-word-art {
+    font-size:2rem;
+  }
 }
