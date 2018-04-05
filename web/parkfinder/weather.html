@@ -30,12 +30,11 @@
 <main id="parkfinder-weather">
   <h1 class="word-art">Weather</h1>
   <section>
-    <h2>Weather</h2>
-    <h3>Random Weather Locale</h3>
+    <h2>Extreme Weather Spotlight</h2>
+    <h3>Nome, AK</h3>
     <p>
      Here's our pick for the city with regularly extreme weather so it's more likely that you know wether or not (pardon the pun) you're better off where you are.
     </p>
-    <h3>Extreme Weather</h3>
     <script>
     $.ajax({
   url:"https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22nome%2C%20ak%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
