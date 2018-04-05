@@ -48,47 +48,47 @@
     computerChoice = "Flame";
 
     }
-    document.write("<center>" + "YOU: " + userChoice + "<br>" +"Computer: " + computerChoice + "<br>" + "</center>");
+    $('section').append("<center>" + "YOU: " + userChoice + "<br>" +"Computer: " + computerChoice + "<br>" + "</center>");
 
     var compare = (function(choice1,choice2){
     if (userChoice == computerChoice) {
-    document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
+    $('section').append("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button></center>");
     }
     else if (userChoice === "Water" || userChoice === "water") {
     if (computerChoice === "Flame"){
-    document.write ("<center>" + "<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80'>" +"<br>" + "Water EXTINGUISHES Flame! <br />YOU WIN!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append ("<center>" + "<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80'>" +"<br>" + "Water EXTINGUISHES Flame! <br />YOU WIN!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     else if (computerChoice === "Water") {
-    document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     else {
-    document.write("<center>" +"<br><img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"<br />Plant ABSORBS Water!<br /> COMPUTER WINS!"+ "<br /><button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append("<center>" +"<br><img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"<br />Plant ABSORBS Water!<br /> COMPUTER WINS!"+ "<br /><button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     }
     else if (userChoice === "Plant" || userChoice === "plant") {
       if (computerChoice === "Water"){
-    document.write ("<center>"+ "<img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"<br>" +"<br />Plant ABSORBS Water<br /> YOU WIN!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append ("<center>"+ "<img src='https://images.unsplash.com/photo-1502152080777-e8335fa08a3d?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=f18a3638bc697af89882e11e0bcac137&amp;auto=format&amp;fit=crop&amp;w=335&amp;q=80'>" +"<br>" +"<br />Plant ABSORBS Water<br /> YOU WIN!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     else if (computerChoice === "Plant") {
-    document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     else {
-    document.write ("<center><img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80'" +"<br>" +"Flame BURNS Plant<br />COMPUTER WINS!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append ("<center><img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80'" +"<br>" +"Flame BURNS Plant<br />COMPUTER WINS!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     }
     else if (userChoice === "Flame" || userChoice === "flame") {
       if (computerChoice === "Plant"){
-    document.write ("<center>" + "<img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80' height='300px'>"+"<br>" +"Flame BURNS Plant<br />YOU WIN!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append ("<center>" + "<img src='https://images.unsplash.com/photo-1518633642659-880338726a0d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=554d7454ee8884f71ae40c828f492dcd&auto=format&fit=crop&w=334&q=80' height='300px'>"+"<br>" +"Flame BURNS Plant<br />YOU WIN!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     else if (computerChoice === "Flame") {
-    document.write("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append("<center>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'>" +"<br />TIE!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     else {
-    document.write ("<center>" +"<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80' /><br>" +"Water EXTINGUISHES Flame!<br /> COMPUTER WINS!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append ("<center>" +"<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80' /><br>" +"Water EXTINGUISHES Flame!<br /> COMPUTER WINS!<br />"+ "<button onClick='location.href=location.href'>Play Again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     }
     else if (userChoice != "Water" || userChoice != "Plant" || userChoice != "Flame") {
-    document.write ("<center>" +"Was that a typo, or were you trying to cheat?<br />"+ "<button onClick='location.href=location.href'>Oops, I'll play again</button><br /><a href='play.html'>I'm done with this game</a></center>");
+    $('section').append ("<center>" +"Was that a typo, or were you trying to cheat?<br />"+ "<button onClick='location.href=location.href'>Oops, I'll play again</button><br /><a href='play.html'>I'm done with this game</a></center>");
     }
     }); // end compare
 
