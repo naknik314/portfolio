@@ -50,7 +50,6 @@ aside > img {
   right:0;
   width:100%;
   margin:auto;
-  text-align:center;
   font-variant:bold;
   font-size:1.5rem;
   padding-bottom:10px;
@@ -66,7 +65,7 @@ section {
   margin:auto;
 }
 
-main#parkfinder-wpf > section, .word-art, h1#wpf-title {
+main#parkfinder-wpf > section, .word-art, h1#wpf-title, a#wpf-game {
     text-align:center !important;
 }
 
@@ -82,6 +81,11 @@ button#play-again, a#wpf-game {
   background-color: #8AB28F;
   color: #042402;
   border-radius: 10px;
+}
+
+a#wpf-game {
+  display:inline-block;
+  margin:auto;
 }
 
 @media (min-width:481px) {
