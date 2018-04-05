@@ -124,6 +124,18 @@ main#parkfinder-wpf > section {
     text-align:center !important;
 }
 
+main#parkfinder-wpf > section span {
+    background-color:darkgreen;
+}
+
+span#wpf-top-text, span#wpf-bottom-text {
+  font-size:1.5rem;
+}
+
+span#wpf-middle-img {
+  border:1px solid #DFFFE3 ;
+}
+
 main {
   margin:auto;
   background-size:cover;
