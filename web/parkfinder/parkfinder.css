@@ -266,7 +266,10 @@ color:white;
     font-size:2rem;
   }
   header, ul#mobile-only {
-      background-color:#DFFFE3;
       color:#042402;
+  }
+
+  ul#mobile-only {
+      background-color:#DFFFE3;
   }
 }
