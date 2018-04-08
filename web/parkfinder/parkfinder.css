@@ -167,7 +167,7 @@ main {
   }
 }
 
-@media(min-width:481px){
+@media(min-width:641px){
   .word-art {
     font-size:6rem;
     font-weight:900;
@@ -187,7 +187,6 @@ main {
      the actual color of text, so it better work on the background */
 color:white;
   }
-}
 
 span#water-word-art {
   font-size:6rem;
@@ -229,8 +228,10 @@ span#flame-word-art {
 color:white;
 }
 
+}
 
-@media (max-width:480px) {
+
+@media (max-width:640px) {
   ul#tablet-desktop {
     display:none;
   }
