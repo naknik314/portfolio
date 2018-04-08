@@ -97,6 +97,7 @@ button#play-again, #wpf-game {
     left: 0;
     text-align: right;
     margin-right: 50px;
+    font-size: 1.2rem;
   }
   ul#mobile-only {
     display:none;
