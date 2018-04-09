@@ -243,7 +243,7 @@ color:white;
   }
 
   div#logo {
-    width:55%;
+    width:65%;
     margin:auto;
     min-height:70px;
     vertical-align:center;
@@ -259,6 +259,7 @@ color:white;
     display:inline-block;
     text-align: center;
     list-style-type:none;
+    margin-top:1rem;
     margin-bottom: 1rem;
   }
   section {
