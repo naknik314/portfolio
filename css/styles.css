@@ -152,6 +152,11 @@ button.top-title img {
 	max-width:550px;
 	margin-left:3%;
 }
+
+#about, #contact {
+	margin-top:90px;
+}
+
 @media(max-width:1039px){
 	#about p {
 		max-width:450px;
