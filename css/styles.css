@@ -294,6 +294,11 @@ img.thumbnail-half-square {
 #parkfinder {
 	background-color:#8AB28F;
 }
+#wiw {
+	background-color:#333;
+	color:white;
+}
+
 div.icon {
     width:30px;
     display:inline-block;
