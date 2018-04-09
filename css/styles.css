@@ -152,6 +152,10 @@ button.top-title img {
 	margin-left:3%;
 }
 
+#about li {
+	margin-bottom:15px;
+}
+
 #about, #contact, h2.index-section-title {
 	margin-top:100px;
 }
