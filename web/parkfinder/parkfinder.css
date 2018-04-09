@@ -93,6 +93,10 @@ ul#mobile-only li, ul#tablet-desktop {
   font-size:1.2rem;
 }
 
+main#parkfinder-explore > h3 > span {
+  cursor:pointer;
+}
+
 @media (min-width:641px) {
   ul#tablet-desktop {
     position:absolute;
