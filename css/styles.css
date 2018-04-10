@@ -247,10 +247,7 @@ img.thumbnail-wide {
     margin-left:-3px;
     padding-top:60px;
 }
-img.thumbnail-long {
-    width:150px;
-    height:200px;
-}
+
 img.thumbnail-square {
     width:150px;
     height:150px;
@@ -261,10 +258,11 @@ img.thumbnail-half-wide {
     height:60px;
     padding-top:35px;
 }
-img.thumbnail-half-long {
-    width:90px;
-    height:150px;
-    padding-top:30px;
+img.thumbnail-wide-2 {
+	width:160px;
+	height:50px;
+	margin-left:-3px;
+	padding-top:60px;
 }
 img.thumbnail-half-square {
     width:75px;
