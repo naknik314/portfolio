@@ -30,6 +30,23 @@ body#terms {
 	margin:auto;
 }
 
+            #bottom-sticky {
+            background-color:black;
+            color:white;
+            position:fixed;
+            bottom:0;
+            font-family: Handlee;
+            left: 0;
+            right:0;
+            padding-left: 3%;
+            padding-right: 3%;
+        }
+        
+        #bottom-sticky > a, #bottom-sticky > a:visited {
+            color:white !important;
+            font-variant:smallcaps !important;
+        }
+
 body#terms, #terms li {
 	background-color:white;
 }
