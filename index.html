@@ -71,12 +71,23 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="https://form.jotform.us/jsform/71146286484159"></script>
     <div class="text-center"><button class="bottom-nav top-title"><i class="fa fa-angle-double-up icon"></i>Top of Page</button></div>
-    <footer class='footer'><p>&copy;&nbsp;2013-<script>var year = new Date();document.write(year.getFullYear());</script>&nbsp;<a id="index-sticky" href="terms.html">This site uses cookies.</a></p></footer>
+    <footer class='footer'><p>&copy;&nbsp;2013-<script>var year = new Date();document.write(year.getFullYear());</script>&nbsp;<a id="index-sticky" href="terms.html">This site uses cookies.</a><button onclick="myfunction()>Learn more</button></p></footer>
 </section>
     </main>
+     <div id="cookie-terms">By visiting this website, you agree that <a href="https://en.wikipedia.org/wiki/HTTP_cookie" target="_blank">cookies</a> may be used from <a href="https://www.paypal.com/us/webapps/mpp/paypal-marketing-solutions" target="_blank">Paypal Marketing Solutions</a> to collect anonymous information about other websites you visited, your session(s) on this site, and device type to improve the site's user experience</div>
 </body>
     <script src="https://use.fontawesome.com/d2f5d1ce0e.js" async></script>
 <script src="js/accordion.js" async></script>
+         <script async>
+         function myFunction() {
+         var x = document.getElementById("cookie-terms");
+         if (x.style.display === "none") {
+         x.style.display = "block";
+         } else {
+         x.style.display = "none";
+         }
+         }
+         </script>
 <script>
 $("document").ready(function() {
 
