@@ -42,7 +42,7 @@ body#terms {
             padding-right: 3%;
         }
         
-        #bottom-sticky > a, #bottom-sticky > a:visited {
+        #bottom-sticky > a, #bottom-sticky > a:visited, a#index-sticky {
             color:white !important;
             font-variant:smallcaps !important;
         }
