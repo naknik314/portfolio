@@ -51,7 +51,7 @@ body#terms {
         
         #bottom-sticky > a, #bottom-sticky > a:visited, a#index-sticky {
             color:white !important;
-            font-variant:smallcaps !important;
+            font-variant:small-caps !important;
         }
 
 body#terms, #terms li {
