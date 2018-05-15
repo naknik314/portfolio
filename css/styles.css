@@ -6,6 +6,10 @@ div.site-branding__text {
 	font-family:"Prata";
 }
 
+#block-bartik-branding img {
+	border-radius:50%;
+}
+
 body {
 	font-family: 'Montserrat',sans-serif;
 	font-size:1.3rem;
