@@ -2,6 +2,10 @@
 /* CSS Document */
 @import url('https://fonts.googleapis.com/css?family=Lato|Prata');
 
+div.site-branding__text {
+	font-family:"Prata";
+}
+
 body {
 	font-family: 'Montserrat',sans-serif;
 	font-size:1.3rem;
