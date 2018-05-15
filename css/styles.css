@@ -6,12 +6,12 @@ div.site-branding__text {
 	font-family:"Prata", serif;
 }
 
-.site-branding__slogan {
-	font-family: "Lato", sans-serif;	
-}
-
 #block-bartik-branding img {
 	border-radius:50%;
+}
+
+h2,h3,.navbar,.footer, .site-branding__slogan {
+    font-family:'Lato',sans-serif;
 }
 
 body {
@@ -71,9 +71,7 @@ body#terms {
 body#terms, #terms li {
 	background-color:white;
 }
-h2,h3,.navbar,.footer {
-    font-family:'Handlee',sans-serif;
-}
+
 div#logo img {
 	width:45px;
 	height:40px;
