@@ -3,7 +3,11 @@
 @import url('https://fonts.googleapis.com/css?family=Lato|Prata');
 
 div.site-branding__text {
-	font-family:"Prata";
+	font-family:"Prata", serif;
+}
+
+.site-branding__slogan {
+	font-family: "Lato", sans-serif;	
 }
 
 #block-bartik-branding img {
