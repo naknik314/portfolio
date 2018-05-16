@@ -130,7 +130,7 @@ button.bottom-nav {
 button.top-title, button.middle-title, button.bottom-title {
 	font-size:1rem;
 	border:none;
-	font-family:"Handlee","Open Sans", sans-serif;
+	font-family:"Lato","Open Sans", sans-serif;
 }
 
 button.top-title img {
@@ -372,10 +372,10 @@ ul.mytools li, .desktop {
 
 }
 body.thankyou h1 {
-font-family: "Handee", sans-serif !important;
+font-family: "Prata", sans-serif !important;
 }
 body.thankyou p {
-font-family: "Open Sans", sans-serif !important;
+font-family: "Lato", sans-serif !important;
 }
 
 i.fa.fa-angle-double-up.icon:before {
