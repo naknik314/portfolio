@@ -57,10 +57,7 @@ body#terms {
 	}
 
             #bottom-sticky {
-            position:fixed;
-            bottom:0;
-            left: 0;
-            right:0;
+		font-family:"Prata", serif;
         }
         
         #bottom-sticky > a, #bottom-sticky > a:visited, a#index-sticky {
