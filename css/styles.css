@@ -54,7 +54,6 @@ body#terms {
         
         #cookie-terms > a, #cookie-terms > a:visited, a#index-sticky {
             color:white !important;
-            font-variant:small-caps !important;
         }
 
 body#terms, #terms li {
