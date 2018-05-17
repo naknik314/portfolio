@@ -70,21 +70,18 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="https://form.jotform.us/jsform/71146286484159"></script>
     <div class="text-center"><button class="bottom-nav top-title"><i class="fa fa-angle-double-up icon"></i>Top of Page</button></div>
-    <footer class='footer'><p>&copy;&nbsp;2013-<script>var year = new Date();document.write(year.getFullYear());</script>&nbsp;</p>
-	    <br>		<a href="http://jigsaw.w3.org/css-validator/check/referer">
-		<img style="border:0;width:88px;height:31px"
-			src="//jigsaw.w3.org/css-validator/images/vcss-blue"
-			alt="Valid CSS!" />
-	</a>
+    <footer class='footer'><p>&copy;&nbsp;2013-<script>var year = new Date();document.write(year.getFullYear());</script>&nbsp;	    
+	    </p>
+	    	    <a href="http://jigsaw.w3.org/css-validator/check/referer"><img style="border:0;width:88px;height:31px" src="//jigsaw.w3.org/css-validator/images/vcss-blue" alt="Valid CSS!" /></a>
+	    <br><div id="footer-stub"></div>
+     		<script>
+       	$(function() {
+               $('#footer-stub').load('footer-stub.html');
+       	});
+                 </script>
 	</footer>
 </section>
     </main>
-	<div id="footer-stub"></div>
-     		<script>
-       $(function() {
-               $('#footer-stub').load('footer-stub.html');
-       });
-                 </script>
          <script src="https://use.fontawesome.com/d2f5d1ce0e.js" async></script>
 <script src="js/accordion.js" async></script>
 <script>
