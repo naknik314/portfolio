@@ -44,23 +44,15 @@ body#terms {
 	margin:auto;
 }
 
-	#cookie-terms, #bottom-sticky {
+	#cookie-terms {
 	    	background-color:black;
             	color:white;
-		font-family: Handlee;
+		font-family: 'Prata';
 		padding-left: 3%;
             	padding-right: 3%;
 	}
-
-	#cookie-terms {
-	display:none;		
-	}
-
-            #bottom-sticky {
-		font-family:"Prata", serif;
-        }
         
-        #bottom-sticky > a, #bottom-sticky > a:visited, a#index-sticky {
+        #cookie-terms > a, #cookie-terms > a:visited, a#index-sticky {
             color:white !important;
             font-variant:small-caps !important;
         }
