@@ -282,6 +282,12 @@ img.thumbnail-half-wide {
     height:60px;
     padding-top:35px;
 }
+img.thumbnail-half-wide-2 {
+    width:150px;
+    height:60px;
+    padding-top:5px;
+}
+
 img.thumbnail-wide-2 {
 	width:160px;
 	height:50px;
@@ -314,12 +320,6 @@ img.thumbnail-half-square {
 }
 #parkfinder {
 	background-color:#8AB28F;
-}
-#wiw {
-	padding-top:20px;
-	display:inline-block;
-	color:white;
-	text-decoration: none;
 }
 
 #thedaringenglishteacher {
