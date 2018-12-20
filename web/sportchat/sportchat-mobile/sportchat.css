@@ -1,0 +1,143 @@
+@charset "UTF-8";
+/* CSS Document */
+* {
+font-family: sans-serif;	
+}
+body {
+	color: #FFF;
+}
+div.login-screen-title, .item-title.label, .card-header, .card-footer, .thread, .sliding, .list-button, .card-header-title, .content-block-title, .reply-header > .facebook-avatar > span, 
+.card-content-inner .color-black, .item-title > a, .item-title, span.tabbar-label, .profile, .profile-text, .profile-button {
+	font-family:'Russo One',sans-serif;
+	font-style:italic;
+}
+
+.login-screen-title {
+font-size:3rem;	
+}
+
+#sign-in {
+font-size:1.7rem;	
+}
+
+.card-header-title, .inner-thread-text, .item-title > a, .card-content-inner .color-black, .reply-header > .facebook-avatar > span {
+text-transform:none !important;
+font-weight:normal;
+}
+
+#logo {
+	width:40%;
+	display:block;
+	margin:auto;
+	margin-top:70px;
+}
+
+#toolbar {
+position:fixed;	
+}
+
+.page-content.login-screen-content, .card-header, .card-footer, li.accordion-item > a {
+	background-color: #990000;
+}
+
+a:link {
+	color: white;
+	text-decoration:none;
+}
+a:hover {
+text-decoration: underline;	
+}
+
+a:visited {
+color: #e1e1e1;	
+}
+a.about-link {
+	color:white;
+}
+.icon {
+	width: 30px;
+}
+.threadbg {
+width:100%;	
+}
+
+.profile-text > img {
+width:15px;	
+}
+
+li.item-content, .content-block-inner, li.list-block-search, li.accordion-item {
+	background-color: #333;
+	color: white;
+}
+
+a.inner-thread-text, .profile-button {
+color: #990000 !important;	
+}
+
+.thread, .profile {
+font-weight: bold;
+font-size: 1.2rem;
+}
+.button {
+	font-weight: bold;
+	margin: 5px;
+	padding-bottom: 5px;
+}
+#thread1, #thread2 {
+font-style:italic;
+margin-bottom:-15px;
+}
+
+#profile > li div.item-title.label {
+color:white !important;	
+}
+
+.thread-title {
+font-size: 1.5rem;
+}
+
+.logo {
+width: 75px;	
+}
+
+.navbar, .toolbar-inner {
+background-color: #990000;
+}
+body, .page-content {
+background-color: #333;	
+}
+.page-content {
+padding-top: 20px;	
+}
+form.searchbar {
+background-color: gray;	
+}
+
+.reply-header, .card-content-inner {
+background-color:#e1e1e1 !important;
+}
+
+.reply-header {
+font-weight:bold;
+}
+
+.facebook-name a {
+	text-align: center !important;
+}
+
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: white;
+}
+::-moz-placeholder { /* Firefox 19+ */
+  color: white;
+}
+:-ms-input-placeholder { /* IE 10+ */
+  color: white;
+}
+:-moz-placeholder { /* Firefox 18- */
+  color: white;
+}
+
+::placeholder {
+color:white;	
+}

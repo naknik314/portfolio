@@ -1,0 +1,78 @@
+<html>
+<head>
+<meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:400,900" rel="stylesheet">
+  <link href="parkfinder.css" rel="stylesheet">
+</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://use.fontawesome.com/d2f5d1ce0e.js" async></script>
+<body>
+<header>
+<div id="logo">
+  <img src="parkfinder.jpg" />
+</div>
+<nav>
+<span id="nav-header"><p>Find your natural escape</p></span>
+<ul id="tablet-desktop">
+<li><a href="index.html">Home</a></li>
+<li><a href="#">Explore</a></li>
+<li><a href="play.html">Play</a></li>
+<li><a href="weather.html">Weather</a></li>
+</ul>
+</nav>
+</header>
+<ul id="mobile-only">
+<li><a href="index.html">Home</a></li>
+<li><a href="#">Explore</a></li>
+<li><a href="play.html">Play</a></li>
+<li><a href="Weather.html">Weather</a></li>
+</ul>
+<img id="mobile-header-img" src="https://images.unsplash.com/photo-1464536194743-0c49f0766ef6?ixlib=rb-0.3.5&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;s=dfff92e2f519a7c59b6fdc40cb435699&amp;auto=format&amp;fit=crop&amp;w=750&amp;q=80" />
+<main id="parkfinder-explore">
+  <h1 class="word-art">Explore</h1>
+  <section>
+    <h2>Discover your Local Area</h2>
+    <p>
+     Visit local parks and view some cool nature pics!<br /> Remember, the outdoors is yours to explore!
+    </p>
+  <br />
+
+  <h3>Yahoo! Local Parks <span onClick='location.href=location.href'><i class="fa fa-refresh"></i></span></h3>
+  <ul id="park-list">
+
+  </ul>
+
+    <h3>Nature Photos from Flickr</h3>
+  <aside>
+  </aside>
+  </section>
+
+</main>
+
+</body>
+<script>
+//Yahoo API
+$.ajax({
+ url:"https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20local.search%20where%20zip%3D'33129'%20and%20query%3D'parks'&format=json&diagnostics=true&callback=?",
+  dataType: 'jsonp',
+  success: function(data){
+    console.log(data);
+    var i; for(i=0; i < data.query.results.Result.length; i++){
+      $('ul#park-list').append("<li>"+data.query.results.Result[i].Title+" </li>");
+    }
+  }
+})
+
+//FLICKR- AJAX
+  $.ajax({
+ url: "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20flickr.photos.search%20where%20has_geo%3D%22true%22%20and%20text%3D%22nature%2C%20ES%22%20and%20api_key%3D%2292bd0de55a63046155c09f1a06876875%22%3B&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
+  success : function(json){
+   var src;
+for (var i=0; i < 3; i++){
+  src=  "https://farm" + json.query.results.photo[i].farm + ".staticflickr.com/" + json.query.results.photo[i].server + "/" + json.query.results.photo[i].id + "_" +json.query.results.photo[i].secret ;
+   $('aside').append("&nbsp;<img src='"+ src + "_m.jpg"+ "'>");
+}
+  }
+});
+</script>
+</html>

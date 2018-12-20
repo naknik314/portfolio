@@ -1,0 +1,108 @@
+<html>
+<head>
+<meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:400,900" rel="stylesheet">
+  <link href="parkfinder.css" rel="stylesheet">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+</head>
+<body>
+<header>
+<div id="logo">
+  <img src="parkfinder.jpg" />
+</div>
+<nav>
+<span id="nav-header"><p>Find your natural escape</p></span>
+<ul id="tablet-desktop">
+<li><a href="index.html">Home</a></li>
+<li><a href="explore.html">Explore</a></li>
+<li><a href="play.html">Play</a></li>
+<li><a href="weather.html">Weather</a></li>
+</ul>
+</nav>
+</header>
+<ul id="mobile-only">
+<li><a href="index.html">Home</a></li>
+<li><a href="explore.html">Explore</a></li>
+<li><a href="play.html">Play</a></li>
+<li><a href="weather.html">Weather</a></li>
+</ul>
+<img id="mobile-header-img" src="https://images.unsplash.com/photo-1500221079655-3cb71a299f6c?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d21547b9a169f7553552979a9307ba02&auto=format&fit=crop&w=334&q=80" />
+<main id="parkfinder-wpf">
+  <h1 id="wpf-title"><span id="water-word-art">Water,</span><span class="word-art"> Plant,</span> <span id="flame-word-art">Flame</span> </h1>
+  <section>
+    <script defer>
+    // JavaScript Document
+    $(document).ready(function(){
+
+    var userChoice = prompt("Do you choose water, plant or flame?");
+    while (userChoice.length !== 5) {
+    userChoice = prompt("Your answer should only be 5 letters long with no spaces. Do you choose water, plant or flame?");
+    }
+    var computerChoice = Math.random();
+    if (computerChoice <= 1/3) {
+    computerChoice = "Water";
+    }
+    else if(computerChoice <= 2/3) {
+    computerChoice = "Plant";
+    }
+    else {
+    computerChoice = "Flame";
+
+    }
+    $('section').append("<span id='wpf-top-text'>" + "YOU chose: " + userChoice + "<br>" +"Computer chose: " + computerChoice + "<br>" + "</span><br />");
+
+    var compare = (function(choice1,choice2){
+    if (userChoice == computerChoice) {
+    $('section').append("<span id='wpf-middle-img'>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'></span>" +"<span id='wpf-bottom-text'><h2>TIE!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else if (userChoice === "Water" || userChoice === "water") {
+    if (computerChoice === "Flame"){
+    $('section').append ("<span id='wpf-middle-img'>" + "<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80' width='70%'></span>" +"<span id='wpf-bottom-text'><br>" + "Water EXTINGUISHES Flame!<h2>YOU WIN!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else if (computerChoice === "Water") {
+    $('section').append("<span id='wpf-middle-img'>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'></span>" +"<span id='wpf-bottom-text'><h2>TIE!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else {
+    $('section').append("<span id='wpf-middle-img'>" +"<br><img src='https://images.unsplash.com/photo-1508256638959-56984bf03826?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=c60eae24908ce81ad09b04b28d1d2999&auto=format&fit=crop&w=751&q=80' width='70%'/></span>" +"<span id='wpf-bottom-text'><br />Plant ABSORBS Water!<br /> <h2>COMPUTER WINS!</h2>"+ "<br /><button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    }
+    else if (userChoice === "Plant" || userChoice === "plant") {
+      if (computerChoice === "Water"){
+    $('section').append ("<span id='wpf-middle-img'>"+ "<img src='https://images.unsplash.com/photo-1508256638959-56984bf03826?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=c60eae24908ce81ad09b04b28d1d2999&auto=format&fit=crop&w=751&q=80' width='70%'/></span>" +"<span id='wpf-bottom-text'><br>" +"<br />Plant ABSORBS Water<h2>YOU WIN!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else if (computerChoice === "Plant") {
+    $('section').append("<span id='wpf-middle-img'>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'></span>" +"<span id='wpf-bottom-text'><h2>TIE!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else {
+    $('section').append ("<span id='wpf-middle-img'><img src='https://images.unsplash.com/photo-1513908491671-b629a74290bd?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=c13ff40c4c5606156b2331e016e3c77f&auto=format&fit=crop&w=750&q=80' width='70%' /></span>" +"<span id='wpf-bottom-text'><br>" +"Flame BURNS Plant<h2>COMPUTER WINS!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    }
+    else if (userChoice === "Flame" || userChoice === "flame") {
+      if (computerChoice === "Plant"){
+    $('section').append ("<span id='wpf-middle-img'>" + "<img src='https://images.unsplash.com/photo-1513908491671-b629a74290bd?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=c13ff40c4c5606156b2331e016e3c77f&auto=format&fit=crop&w=750&q=80' width='70%'></span>"+"<span id='wpf-bottom-text'><br>" +"Flame BURNS Plant<h2>YOU WIN!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else if (computerChoice === "Flame") {
+    $('section').append("<span id='wpf-middle-img'>" + "<img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png'></span>" +"<span id='wpf-bottom-text'><h2>TIE!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    else {
+    $('section').append ("<span id='wpf-middle-img'>" +"<img src='https://images.unsplash.com/photo-1483221186507-3cfe60ffb2ad?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d3410c2a860025c55579bb9683441783&auto=format&fit=crop&w=889&q=80' width='70%' /></span>" +"<span id='wpf-bottom-text'><br />Water EXTINGUISHES Flame!<h2>COMPUTER WINS!</h2>"+ "<button id='play-again' onClick='location.href=location.href'>Play Again</button></span>");
+    }
+    }
+    else if (userChoice != "Water" || userChoice != "Plant" || userChoice != "Flame") {
+    $('section').append ("<span id='wpf-middle-img'><img src='http://questionmark.guide/wp-content/uploads/2015/04/question-mark.png' /></span>" +"<span id='wpf-bottom-text'><br />Was that a typo, or were you trying to cheat?<br />"+ "<br /><button id='play-again' onClick='location.href=location.href'>Oops, I'll play again</button></span>");
+    }
+    }); // end compare
+
+    compare();
+
+    }); //end ready
+
+
+    </script>
+
+  </section>
+
+</main>
+
+</body>
+</html>

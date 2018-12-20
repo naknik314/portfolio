@@ -1,0 +1,22 @@
+<html>
+<h2 class="decorative-header-font">More Articles</h2><div class="preview stub"><h3 class="subtitle"><a href='javascript:void(0)' id="native" class="stub">Native American Treasures<br>under a Walmart?</a></h3><div class="body"></div></div>
+<div class="preview stub"><h3 class="subtitle"><a href='javascript:void(0)' id="shipwreck" class="stub">Fisher recovers shipwreck<br> in the Keys</a></h3><div class="body"></div></div>
+ <script>
+       $('#native').click(function() {
+                $('#heading').load('nativeheading.html');
+               $('#subhead').load('nativesubhead.html');
+               $('#content').load('morearticles1.html');
+               $('#continue').hide();
+               $("#sand").toggleClass('open');
+                $("#sand").removeClass('closed');
+       });
+       $('#shipwreck').click(function() {
+                $('#heading').load('shipwreckheading.html');
+               $('#subhead').load('shipwrecksubhead.html');
+               $('#content').load('morearticles2.html');
+               $('#continue').hide();
+               $("#sand").toggleClass('open');
+                $("#sand").removeClass('closed');
+       });
+       </script>
+</html>

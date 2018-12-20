@@ -1,0 +1,218 @@
+<html lang="en">
+<head>
+<title>AD | Web Design</title>
+<meta charset="utf8" name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="css/styles.css" rel="stylesheet">
+<link href='https://fonts.googleapis.com/css?family=Handlee' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
+<link href="lity-1.6.5/dist/lity.css" rel="stylesheet">
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+<script src="https://use.fontawesome.com/d2f5d1ce0e.js"></script>
+<style>
+    body#terms {
+        background-color: #ffffff;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.14'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");  
+    }
+    
+    p {
+        font-family:"Lato",sans-serif;
+    }
+    ul.mainlist, h2 {
+        background-color:white;
+    }
+    
+    ul.mainlist {
+        width: 90%;
+        list-style-type:none;
+    }
+    
+    .bold-terms {
+     font-weight:bold; 
+     font-family:'Prata';
+    }
+    
+.background-icon {
+    position: absolute;
+    opacity: .05;
+    }
+    
+    ul.mainlist:hover {
+       color:#000080 !important;
+        opacity:1 !important;
+    }
+    
+    #terms ul.sublist li:before {
+        font-family: 'FontAwesome';
+        float: left;
+        margin-left: -1.5em;
+        content:"\f121" !important;
+    }
+    
+ @media(min-width:640px){       
+    #terms ul.sublist li {
+     margin-left:1.5em;   
+    }
+    }
+    
+     @media(max-width:639px){       
+    #terms ul.sublist li {
+     margin-left:-1.5em;   
+    }
+    }
+    
+    #terms li {
+        list-style-type:none;
+        padding-top:20px;
+    }
+    #terms ul.sublist, #terms ul.mainlist {
+      position:relative;  
+    }
+    
+    #terms ul.mainlist:last-child {
+     margin-bottom:200px;   
+    }
+</style>
+<!-- PayPal BEGIN --> <script> ;(function(a,t,o,m,s){a[m]=a[m]||[];a[m].push({t:new Date().getTime(),event:'snippetRun'});var f=t.getElementsByTagName(o)[0],e=t.createElement(o),d=m!=='paypalDDL'?'&m='+m:'';e.async=!0;e.src='https://www.paypal.com/tagmanager/pptm.js?id='+s+d;f.parentNode.insertBefore(e,f);})(window,document,'script','paypalDDL','cfbf4b81-4c82-11e8-ae29-f531e0e7bb61'); </script> <!-- PayPal END -->
+</head>
+<body id="terms">
+    <h2 class="text-center">Digital Design Agreement</h2>
+<ul class="mainlist">
+    <li><h3>Client/Designer Relationship</h3>
+        <ul class="sublist">
+    <li>
+<span class="bold-terms">Designer</span> is working as an <i>independent contractor</i> for <span class="bold-terms">Client</span>, not an <i>employee</i>. </li>
+            <ul class="sublist"><li>This Agreement between <span class="bold-terms">Client</span> and <span class="bold-terms">Designer</span> shall only become valid once Project Form is submitted by <span class="bold-terms">Client</span> AND Final Approval is granted by <span class="bold-terms">Designer</span>. </li></ul>
+            </li>                  
+            <li>
+<span class="bold-terms">Designer</span> is only specialized in <i>Front-End</i> Web Design. <span class="bold-terms">Client</span> shall seek other resources regarding <i>Back-End</i> programming or scripting. </li>
+            </li>
+            </ul></li>
+    </ul>
+    
+    <ul class="mainlist">
+    <li><h3>Web Hosting</h3>
+        <ul class="sublist">
+    <li>All web hosting and domain accounts have a separate third-party subscription with a domain/hosting provider. </li>
+     <li>  
+        <span class="bold-terms">Client</span> may choose to setup their own domain/hosting service, <i>or</i> request <span class="bold-terms">Designer</span> to setup domain and/or hosting for <span class="bold-terms">Client</span>. 
+         <ul class="sublist"><li> If you need these services, please include this in the <i>Scope of Work</i> before submitting the Project Form to avoid extra costs.</li></ul>
+            </li>
+        </ul> </li> 
+    </ul> 
+    
+    <ul class="mainlist">
+    <li><h3>Project Duration</h3>
+        <ul class="sublist">
+            <li>The <i>Project Duration</i> is determined by the <span class="bold-terms">Client</span> contributing to the workflow and delivering content to <span class="bold-terms">Designer</span> in a timely manner. Any delays in approvals or responses from the <span class="bold-terms">Client</span> will significantly affect the projected duration, with the possibility of the selected <i>End Date</i> being postponed. </li>
+    <li>By agreeing to these terms, <span class="bold-terms">Client</span> acknowledges that <span class="bold-terms">Designer</span> shall determine how many revisions will be made without affecting the <i>Project Duration</i>. On the other hand, if the <span class="bold-terms">Designer</span> is unable to meet project deadlines, the <i>Project Duration</i> will be adjusted accordingly.
+</li>
+        </ul></li>
+</ul>
+    
+<ul class="mainlist"><li><h3>Maintenance</h3>
+    <ul class="sublist">  
+<li>
+    If you selected <i>Ongoing Maintenance</i> as your Project Goal, setting an hourly rate is recommended. Any payment(s) for <i>Ongoing Maintenance</i>, will be due in installments at the proposed rate in the Project Form.</li>
+    </ul></li> </ul>
+    
+<ul class="mainlist"><li><h3>Third-party services or subscriptions</h3>
+    <ul class="sublist">
+    <li>
+Any third-party subscriptions <i>(ex: stock photography)</i> and/or additional materials and services used for the project, shall be provided by <span class="bold-terms">Client</span>. </li>
+    </ul></li>
+    </ul>
+    
+<ul class="mainlist"><li><h3>Original Content</h3>
+    <ul class="sublist">
+    <li>
+        <i>Original Content</i> is defined as anything created by <span class="bold-terms">Designer</span> not provided by <span class="bold-terms">Client</span> including but not limited to (animated GIFS, graphics, animations, web templates, printed materials etc)</i>.
+</li>
+   <li> Termination of the Project does NOT revoke the rights of the <span class="bold-terms">Designer</span> to any <i>Original Content</i>.</li>
+        </ul></li></ul>
+    
+<ul class="mainlist"><li><h3>Ownership</h3>
+    <ul class="sublist">
+    <li>
+<span class="bold-terms">Designer</span> retains the right to use, display or create derivative works from all ("original content") created by <span class="bold-terms">Designer</span> for <span class="bold-terms">Client</span>.
+      <ul class="sublist"><li>This is mainly, but not exclusively, for the purpose of displaying portfolio work on this site.</li></ul>
+</li>    
+        </li>
+    </ul></li>
+    </ul>
+    
+<ul class="mainlist"> 
+    <li><h3>Browser-Compatibility<br></h3> 
+    <ul class="sublist">
+<li>
+<span class="bold-terms">Client's</span> website should be compatible with the most recent browser versions* of: 
+<ul class="sublist">
+    <li>Firefox <i class="fa fa-firefox" aria-hidden="true"></i></li>
+    <li>Safari <i class="fa fa-safari" aria-hidden="true"></i></li>
+    <li>Chrome <i class="fa fa-chrome" aria-hidden="true"></i></li>
+    <li>Internet Explorer <i class="fa fa-internet-explorer" aria-hidden="true"></i>.</li>
+    </ul>
+    <li>*Most recent browser versions at project's End Date</li>
+</li>
+    </ul></li>
+    </ul>
+    
+<ul class="mainlist"><li><h3>Laws and Regulations</h3>
+    <ul class="sublist">
+    <li>
+<span class="bold-terms">Client</span> is solely responsible for complying with appropriate laws or taxes (ex: E-Commerce) relating to <span class="bold-terms">Client's</span> use of their project. </li>
+    <li><span class="bold-terms">Designer</span> is not responsible for any costs, fees, suits, claims, penalties or otherwise, related to <span class="bold-terms">Client's</span> use of their project.
+</li>
+    </ul></li>
+ </ul>
+    
+<ul class="mainlist"><li><h3>Payments</h3>
+    <ul class="sublist">
+
+<li>
+Work begins on the selected <i>Start Date</i> or once <span class="bold-terms">Designer</span> has reviewed and grants Final Approval for the Project Form, whichever is later. Any Payment Options other than <i>One-Time Payment</i> will be invoiced. If <span class="bold-terms">Client</span> selects the <i>Payment per Task</i> or the <i>One-Time</i> payment option, <span class="bold-terms">Client</span> agrees that payment will be due BEFORE work begins. Online Payments will only be processed thru Paypal <i class="fa fa-paypal" aria-hidden="true"></i>. </li>
+        <li>
+All invoices are due as soon as they are recieved. If <span class="bold-terms">Designer</span> doesn't recieve payment within 7 days of the invoice date, it will be assumed, at <span class="bold-terms">Designer's</span> own discretion, that <span class="bold-terms">Client</span> terminated the project.
+</li>
+    </ul></li>
+    </ul>    
+   
+ <ul class="mainlist">   
+<li><h3>Termination</h3>
+    <ul class="sublist">
+        <li>
+Either <span class="bold-terms">Client</span> or <span class="bold-terms">Designer</span> may terminate the project by providing written notice to the other party.
+</li>
+        <li>
+If <span class="bold-terms">Client</span> or <span class="bold-terms">Designer</span> terminates the project, all unpaid prior work done by <span class="bold-terms">Designer</span> up until the termination date (which will also be considered the <i>End Date</i> ) shall be billed to <span class="bold-terms">Client</span>. Once project is terminated, <span class="bold-terms">Designer</span> will no longer be responsible for providing additional services to <span class="bold-terms">Client</span>.
+</li>
+    <li>
+If the project is terminated because of <span class="bold-terms">Designer's</span> inability to complete their tasks, and <span class="bold-terms">Client</span> has paid in advance for services not completed, the amount of a refund given to <span class="bold-terms">Client</span> shall be determined based on hours spent and/or how close the project was to completion.
+</li>
+    </ul></li>
+    </ul>
+ 
+ <ul class="mainlist">   
+<li><h3>Severability</h3>
+    <ul class="sublist">
+<li>
+If any term of this Agreement is to any extent illegal, otherwise invalid, or incapable of being enforced, such term shall be excluded to the extent of such invalidity or unenforceability; all other terms hereof shall remain 
+in full force and effect; and, to the extent permitted and possible, the invalid or unenforceable term shall be deemed replaced by a term that is valid and enforceable and that comes closest to expressing the intention of such invalid or unenforceable term.</li>
+    </ul></li>
+    </ul>
+
+    <ul class="mainlist">
+<li><h3>Questions</h3>
+    <ul class="sublist">
+
+<li>
+Ideally we <i>all</i> want things to work out perfectly, but if there are any questions or concerns, please send a message so that we can figure something out.
+Please only contact and expect a response during normal weekday working hours.    
+</li>
+        <li>Thanks for your cooperation! <i class="fa fa-thumbs-o-up" aria-hidden="true"></i>
+</li>
+    </ul></li>
+    </ul>
+
+<br>
+</body>
+</html>

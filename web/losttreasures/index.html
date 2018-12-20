@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css?family=Parisienne|Cutive+Mono" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+ html {
+  background-image:url(bg.jpg);
+  background-size:cover;
+ }
+ 
+body {
+width: 600px;
+margin: 20px auto;
+font-family: 'Cutive Mono', monospace;
+background-color:transparent;
+}
+ h1#top-header {
+  display:inline;
+ }
+ 
+ #losttreasures-logo {
+  width:150px;
+  position:relative;
+  top:-8px;
+ }
+ 
+ @media (max-width:479px){
+   #losttreasures-logo, a#articles {
+  left:-80px;
+ }
+ }
+ 
+ .decorative-header-font, a#articles {
+  font-family:'Parisienne',cursive;
+ }
+ 
+ .bigger-subhead {
+  font-size:2.5rem;
+ }
+
+h2 {
+ font-size: 2rem;
+letter-spacing: -1px;
+}
+ h3.subtitle {
+  font-size:1.1rem;
+  margin-left:3%;
+ }   
+a {
+ color: #1a0d00; 
+font-size: 14px;
+}
+a:hover{
+color: black;    
+}
+p {
+font-size: 1.1rem;
+line-height: 21px;
+}
+
+article img {
+float:left;
+margin-left:30px;
+}
+article h2 {
+ margin: 0;   
+}
+#article.open, #sand.open {
+ display:block;
+}
+#article.closed, #sand.closed {
+ display:none;
+}
+.continue {
+text-align: right;
+}
+.continue:after{
+content: ')';  
+}
+.continue:before{
+content: '(';  
+}
+.meta {
+padding-left: 0; 
+margin: 0 0 8px;
+}
+.meta a, .post_info {
+ font-style: italic;
+font-size: 14px;
+}
+a#articles:before {
+ content: '\\';
+padding: 0 2px;
+color: #999;
+ text-decoration:none;
+}
+ a#articles {
+  position:relative;
+  top:-20px;
+  font-size:1.5rem;
+  text-decoration:none;
+ }
+ 
+ a#articles:hover {
+  text-decoration:underline;
+ }
+
+.meta li {
+ display: inline;
+font-family: monospace;
+}
+    
+.meta li:last-child:after {
+ content: none;   
+}
+
+.preview {
+float: right;
+width: 370px;
+}
+.post_info{
+ background-color: rgba(243,243,243,0.5);
+color: rgba(0,0,0,0.7);
+padding: 3px;
+float: left;
+font-size: 14px;
+font-family: monospace;
+}
+ 
+#article {
+ width:400px;
+ margin-bottom:20px;
+}
+ 
+div#article.stub {
+ background-image:url(articles.png);
+ background-repeat:no-repeat;
+ height:275px;
+}
+ 
+ a.stub {
+font-size: 1rem;
+text-transform: uppercase;
+}
+ 
+div#article h2 {
+ text-align:center;
+ padding-top:35px;
+}
+.post_info a{
+color: #965;
+text-decoration: none;
+}
+img.icon {
+ width:50px;
+ float:none;
+}
+
+.body {
+ clear: both; 
+color: #575757;
+width: 90%;
+}
+.fixedbottom {
+background-image: url(Realistic-Scroll-with-Rolled-Edges-bottom.png);
+background-repeat: no-repeat;
+background-size: 600px;
+clear: both;
+}
+.fixedtop{
+background-image: url(Realistic-Scroll-with-Rolled-Edges-top.png);
+background-repeat: no-repeat;
+background-size: 600px;
+}
+.fakebody {
+background-image: url(Realistic-Scroll-with-Rolled-Edges-middle.png);
+background-repeat: repeat-y;
+background-size:100%;
+overflow: hidden;
+}
+ 
+    .fixedbottom, .fixedtop, .fakebody {
+    background-color:transparent;
+    }
+.bottom-scroll-margin {
+ margin-bottom:50px;
+}
+div.sand-bottom {
+     background-image: url(sand.png);
+    width: 100%;
+    height: 25%;
+    position: absolute;
+    left:0;
+    background-color:transparent;
+}
+
+@media (max-width:600px) {
+ div#sand.sand-bottom.open {
+  width:250% !important;
+ }
+ article img#chest {
+  display:none;
+ }
+.preview {
+  float: left;
+width: 320px;
+margin-left: 5%;
+}
+.fixedtop, .fixedbottom {
+ width:80%;
+}
+}
+ 
+@media(max-width:480px) {
+ .fixedtop, .fixedbottom {
+ width:100%;
+}
+}
+</style>
+</head>
+<body>
+<div class='fakebody'>
+<div class='fixedtop'><center><br><ul class='meta'>
+<li>
+ <img id="losttreasures-logo" src="losttreasures.png" alt="logo">
+</li>
+<li>
+<a href='javascript:void(0)' id="articles">  Archive</a>    
+</li>
+</ul><br>&nbsp;<br>&nbsp;<br>&nbsp;<br>&nbsp;<br>&nbsp;</center></div>
+<article>
+<a href='#'><img id="chest" src='chest-145752_640.png' alt='treasure chest' width='30%'></a>
+<div class='preview'>
+ <div class="closed stub" id='article'></div>
+ <div id="heading">
+<h2 class="decorative-header-font bigger-subhead">3 Lost Treasures</h2>
+<p class='post_info'><a href='#'>LostTreasures</a> on 5/27/15 </p>
+</div>
+<div class='body'>
+<div id="subhead"><p>A short list of undiscovered treasures.</p></div>
+ <br>  
+<a id="continue" class='continue' href='#'>Continue</a>
+<div id="content"></div>
+&nbsp;<br>
+</div>
+</div>
+</article>
+</div>
+<div class='fixedbottom'><center><br><img class="bottom-scroll-margin" src='facebook-icon.png'>&nbsp;<img class="bottom-scroll-margin" src='Instagram-Icon-30x30.png'>&nbsp;<img class="bottom-scroll-margin" src='share-tw.png'></center></div>
+<div id="sand" class="sand-bottom closed"></div>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript">
+      $(document).ready(function() { 
+              $('#articles').click(function() {
+               $('#article').load('articles.html');
+               if ($("#article").hasClass('closed')){
+                $("#article").toggleClass('open');
+                $("#article").removeClass('closed');
+               } else {
+                $("#article").toggleClass('closed');
+                 $("#article").removeClass('open');
+               }
+       });
+       
+       $('#continue').click(function() {
+               $('#content').load('treasures.html');
+               $('#continue').hide();
+               $("#sand").toggleClass('open');
+                $("#sand").removeClass('closed');
+       });
+                //jquery code will go here
+      }); //end document ready
+</script>
+</body>
+</html>

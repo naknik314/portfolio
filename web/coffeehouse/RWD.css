@@ -1,0 +1,335 @@
+@charset "utf-8";
+/* CSS Document */
+body,td,th {
+	font-size: 12px;
+	color: #333;
+//	float: left;
+}
+
+#page_content, .navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand {
+	color:white !important;
+	font-family:'Montserrat', sans-serif;
+	text-transform:uppercase;
+}
+
+.AccordionPanelContent.boxMargin, .AccordionPanel.AccordionPanelOpen, button.navbar-toggle {
+	background-color:#9ECFE0 !important;
+	color:black;
+}
+
+nav.navbar.navbar-default {
+ border: 1px solid #9ECFE0;
+}
+
+.AccordionPanel.AccordionPanelClosed {
+	border-bottom: 2px solid #9ECFE0;
+}
+
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.open>a, #navbar.container-fluid, div.textboxheader, .navbar-brand,
+.AccordionPanel.AccordionPanelClosed {
+	background-image:none !important;
+	background-color:#32100D !important;
+}
+
+.navbar-brand, .navbar-nav > a, .AccordionPanelTab, div.textboxheader, .lefttextboxheader, .righttextboxheader {
+	font-family:"Montserrat Subrayada",sans-serif;
+}
+
+@media(max-width:767px){
+.navbar-nav .active > a {
+		font-size:2rem;
+	}
+}
+
+span.glyphicon.glyphicon-chevron-left,a.right.carousel-control, a.left.carousel-control, span.glyphicon.glyphicon-chevron-right {
+	background-image:none;
+}
+span.glyphicon.glyphicon-chevron-left {
+	right:20%;
+	margin-left:10px;
+}
+span.glyphicon.glyphicon-chevron-right {
+	left:20%;
+}
+ul#menu_nav.nav.navbar-nav >li.active, ul#menu_nav.nav.navbar-nav >li, ul.lefttextbox li, ul.righttextbox li {
+	background-color:#32100D;
+	color:white;
+}
+
+div.AccordionPanelContent ul li {
+	margin-right:100px;
+	list-style-type:none;
+}
+
+.AccordionPanelContent {
+	margin-top:10px;
+}
+
+body {
+	margin: 0 auto;
+//	width: 1000px;
+	background: linear-gradient(45deg, #2a1b0d 12%, transparent 0, transparent 88%, #2a1b0d 0),
+    	linear-gradient(135deg, transparent 37%, #382512 0, #382512 63%, transparent 0),
+    	linear-gradient(45deg, transparent 37%, #2a1b0d 0, #2a1b0d 63%, transparent 0) #32100d;
+    	background-size: 10px 10px;
+
+}
+a:link {
+	color: #493212;
+	text-decoration: none;
+}
+a:visited {
+	text-decoration: none;
+	color: darkslategray;
+}
+a:hover {
+	text-decoration: underline;
+	color: lightgray;
+}
+a:active {
+	text-decoration: none;
+	color: darkgray;
+}
+h1,h2,h3,h4,h5,h6 {
+	font-weight: bold;
+}
+h1 {
+	font-size: 36px;
+}
+h2 {
+	font-size: 24px;
+}
+h3 {
+	font-size: 18px;
+}
+h4 {
+	font-size: 16px;
+}
+h5 {
+	font-size: 14px;
+}
+h6 {
+	font-size: 12px;
+}
+img {
+	border-width: 0px;
+}
+
+iframe#maps {
+	margin-top:50px;
+}
+#site-wrapper {
+    	width: 100%;
+	height: auto;
+	margin-left: auto;
+    	margin-right: auto;
+	margin-top:-21px;
+	font-family:'Montserrat', sans-serif;
+}
+#page-wrapper {
+	margin: auto;
+	height: auto;
+}
+
+#page_header {
+	width: 100%;
+}
+#banner_region {
+	height:171px;
+}
+#menu_region {
+	height:154px;
+}
+#menu_bar,#menu_bar a, #menu_nav, #menu_nav a, {
+	background-color:#996 !important;
+    	color: #FFF;
+}
+.textbox img:last-child {
+	margin-bottom: -5px;
+}
+#page_content_right {
+	clear:none;
+	width:60%;
+	float: right;
+	margin-top: 15px;
+}
+#giftbox, #giftcardoptions {
+	margin-top:-25px;
+}
+
+#giftcardoptions {
+	font-size:1.5rem;
+	font-family:"Montserrat",sans-serif;
+}
+
+/* Define textbox area */
+
+.textbox {
+	color: #493212;
+	font: normal normal 11px/14px;
+	padding: 10px 5px 10px 5px;
+	text-align: left;
+	width: 90%;
+    	-webkit-columns: 200px 1;
+  	-moz-columns:200px 1;
+  	columns: 200px 1;
+  	-webkit-column-gap: 0;
+  	-moz-column-gap: 0;
+  	column-gap: 0;
+  	-webkit-column-rule: 1px dashed lightblue;
+  	-moz-column-rule: 1px dashed lightblue;
+  	column-rule: 1px dashed lightblue;
+	}
+.textbox li {
+  	text-decoration: none;
+	list-style-type: none;
+ 	color: inherit;
+  	padding: 1rem;
+  	text-align: center;
+}
+.textbox ul {
+    display: block;
+    width:50%;
+    height:260px;
+}
+ .lefttextbox      {
+	color: inherit;
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	width: 40%;
+	display:inline;
+	float: left;
+	border-right: 0;
+	font-size: 12px;
+	}
+.righttextbox      {
+	color: inherit;
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	width: 40%;
+	display:inline;
+	float: right;
+	font-size: 12px;
+	}
+.textboxheader {
+	color: inherit;
+	position:relative;
+	text-align: center;
+	font: bold;
+	padding: 5px 5px 5px 5px;
+	width: 100%;
+	border: 1px solid lightblue;
+	font-size: 24px;
+	}
+.righttextboxheader {
+	color: inherit;
+	padding: 5px 10px 15px 10px;
+	background-color: inherit;
+	font-size: 15px;
+	font-style: normal;
+	font-weight: bold;
+	}
+.lefttextboxheader {
+	color: inherit;
+	padding: 5px 10px 15px 10px;
+	font-style: normal;
+	font-weight: bold;
+	font-size: 15px;
+	}
+
+button.lefttextboxheader {
+	color:#32100d;
+}
+
+ul#menu_nav.nav.navbar-nav >li, .lefttexboxheader, .righttextboxheader {
+	text-align: center !important;
+}
+
+.logo-left {
+	position:absolute;
+	left:0;
+	top:0;
+}
+
+.indent10 {
+	padding-left: 20px;
+}
+.coming_soon {
+	margin: 0px 0px 10px 50px;
+	}
+.highlight {
+	background-color: #fcbe03;
+	}
+.vertical_align_middle{
+	vertical-align:middle;
+	}
+#page_content {
+    	position: relative;
+    	width: 100%;
+	overflow:hidden;
+    	max-width: 800px;
+}
+@media screen and (max-width:788px){
+    .textbox ul {
+      height:auto;
+    }
+}
+@media screen and (min-width:640px){
+	#page_content_left {
+		height:auto;
+		width: 40%;
+    		position:absolute;
+    		top: 0px;
+    		left: 0px;
+    		margin-top: 15px;
+	}
+}
+
+@media screen and (max-width:619px){
+    .textbox ul {
+      height:auto;
+    }
+	    .textbox ul {
+    width:100%;
+      height:auto;
+    position: relative;
+    }
+}
+@media screen and (max-width:538px){
+    .textbox ul {
+      height:auto;
+    }
+}
+
+@media screen and (max-width:639px){
+#page_content_left {
+     display:none !important;
+    }
+}
+
+@media screen and (max-width:479px){
+
+iframe#maps {
+    width:90%;
+    position:absolute;
+    bottom:-1100px;
+    left:10px;
+    }
+
+    #coupon {
+    margin-top: 0;
+    }
+    .textbox {
+     width:350px;
+      margin-top:0px;
+     float: left;
+    margin-left: -150px;
+    }
+    .textboxheader {
+      font-size: 12pt;
+        font-weight: bold;
+    }
+    #Accordion1 {
+      margin-left: -150px;
+    }
+}
