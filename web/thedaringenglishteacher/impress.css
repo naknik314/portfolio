@@ -1,0 +1,9 @@
+.no-support-message { display:none; } 
+.impress-not-supported .no-support-message { display:block; }
+.step {
+	font-size:32px;
+	font-family: sans-serif;
+	background-color:#A2F3DD;
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
