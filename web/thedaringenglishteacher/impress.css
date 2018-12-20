@@ -9,5 +9,6 @@
 }
 
 body {
-background-color:white;	
+	background-image:url('img/bg.png');
+	background-repeat: repeat;
 }
