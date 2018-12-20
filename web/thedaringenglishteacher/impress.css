@@ -12,3 +12,8 @@ body {
 	background-image:url('img/bg.png');
 	background-repeat: repeat;
 }
+
+.step {
+ 	background-color:black;
+	color:white;
+}
