@@ -14,7 +14,7 @@ body {
 	background-repeat: repeat;
 }
 
-.step {
+.step, .step a {
  	background-color:black;
 	color:white;
 }
