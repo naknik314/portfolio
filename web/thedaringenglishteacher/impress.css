@@ -31,6 +31,10 @@ body#impress-body {
 	width:300px;
 }
 
+.embed-wrapper {
+	text-align:center;
+}  
+
 i {
 	font-family: 'FontAwesome';
 	
