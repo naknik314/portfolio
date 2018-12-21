@@ -14,7 +14,7 @@ body#impress-body {
 	background-repeat: repeat;
 }
 
-.no-support-message, #impress {
+.no-support-message, #impress, .copywright {
 	font-family:"Nimarit", sans-serif;
 }
 
@@ -38,9 +38,12 @@ body#impress-body {
 .embed-wrapper {
 	width:300px;
 	margin:auto;
-}  
+} 
+
+.copywright {
+ background-color:white;	
+}
 
 i {
-	font-family: 'FontAwesome';
-	
+	font-family: 'FontAwesome';	
 }
