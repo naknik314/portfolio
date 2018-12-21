@@ -32,7 +32,8 @@ body#impress-body {
 }
 
 .embed-wrapper {
-	text-align:center;
+	width:300px;
+	margin:auto;
 }  
 
 i {
