@@ -14,7 +14,7 @@ body#impress-body {
 	background-repeat: repeat;
 }
 
-.no-support-message, #impress, .copywright {
+.no-support-message, #impress, .copyright {
 	font-family:"Nimarit", sans-serif;
 }
 
@@ -40,7 +40,7 @@ body#impress-body {
 	margin:auto;
 } 
 
-.copywright {
+.copyright, .no-support-message {
  background-color:white;	
 }
 
