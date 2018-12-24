@@ -9,7 +9,7 @@
 	text-align:center;
 }
 
-body#impress-body {
+body#impress-body, body#embed-body {
 	background-image:url('img/bg.png');
 	background-repeat: repeat;
 }
