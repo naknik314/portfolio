@@ -38,9 +38,10 @@ body#impress-body, body#embed-body {
 .embed-wrapper {
 	width:300px;
 	margin:auto;
+	border:1px solid white;
 } 
 
-.copyright, .no-support-message {
+.copyright, .no-support-message, body.embed-wrapper {
  background-color:white;	
 }
 
