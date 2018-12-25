@@ -32,7 +32,8 @@ body#impress-body, body#embed-body {
 }
 
 #tdet-logo-2 {
-	width:300px;
+	width:250px;
+	margin-top:-30px;
 }
 
 .embed-wrapper {
