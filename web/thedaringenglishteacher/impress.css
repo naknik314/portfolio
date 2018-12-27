@@ -18,7 +18,7 @@ body#impress-body, body#embed-body {
 	font-family:"Niramit", sans-serif;
 }
 
-.step, .step a, .embed-header-link {
+.step, .step a, .embed-header-link > a {
  	background-color:black;
 	color:white;
 }
