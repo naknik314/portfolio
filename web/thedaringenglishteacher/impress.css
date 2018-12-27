@@ -14,7 +14,7 @@ body#impress-body, body#embed-body {
 	background-repeat: repeat;
 }
 
-.no-support-message, #impress, .copyright, body#impress-body, div.step {
+.no-support-message, #impress, .copyright, body#impress-body, div.step, .embed-header-link > a {
 	font-family:"Niramit", sans-serif;
 }
 
