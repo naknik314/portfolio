@@ -27,13 +27,12 @@
  <main>
 <section class='container wrapper' id="portfolio">
     <h2 class="text-center index-section-title">Digital Portfolio</h2>
-	<div id="ajax-portfolio">
-	    <script type="text/javascript">
-	               	$(function() {
-               $('div#ajax-portfolio').load('ajax-portfolio.html');
-       	});
-	</script>
-	</div>
+	<div id="ajax-portfolio"></div>
+	<script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+      <script>
+      $("#ajax-portfolio").html('<object data="http://nkarim.github.io/portfolio/ajax-portfolio">');
+    </script>
+
      </section>
 
 <br class="middle">
