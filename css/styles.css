@@ -7,6 +7,11 @@ object {
 	height:500px;
 }
 
+object body {
+	background-color:white;
+	background-image:url(none);
+}
+
 div.site-branding__text {
 	font-family:"Prata", serif;
 }
