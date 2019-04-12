@@ -7,7 +7,7 @@ object {
 	height:500px;
 }
 
-object body {
+#object-body {
 	background-color:white;
 	background-image:url(none);
 }
