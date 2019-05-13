@@ -21,7 +21,9 @@
     class Hello extends React.Component {
       render() {
         return(
-          <div id="fancy"><h1 className="heading">Hello {this.props.firstName}</h1></div>
+          <div id="fancy"><h1 className="heading">Hello {this.props.firstName}</h1>
+<p>Learning React version {this.props.version}</p>
+          </div>
         )
 
       }
@@ -35,7 +37,7 @@ const Banner = () => (
 )
 
       ReactDOM.render(
-      <Hello firstName="Eve"/>,
+      <Hello firstName="Eve" version={16}/>,
       document.getElementById('react-container')
     );
     </script>
