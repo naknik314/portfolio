@@ -1,11 +1,12 @@
-import React from 'react'
+import React, {Component} from 'react';
+import FaPencil from 'react-icons/lib/fa/pencil';
 
-class note extends Component {
+class reactObject extends Component {
   render() {
     return (
-      <div className="note">This is a note</div>
+      <div className="reactobject">This is a note</div>
     )
   }
 }
 
-export default Note
+export default reactObject
