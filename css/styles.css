@@ -305,6 +305,13 @@ img.thumbnail-wide-2 {
 	margin-left:-3px;
 	padding-top:50px;
 }
+
+img.thumbnail-wide-3 {
+	width:160px;
+	height:20px;
+	margin-left:-3px;
+	padding-top:70px;
+}
 img.thumbnail-half-square {
     width:75px;
     height:75px;
