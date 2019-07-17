@@ -34,7 +34,7 @@
     <p>
      Snow is the most interesting kind of natural occurence. It fascinates children, but the older you get the less you appreciate it, and
      for better or worse, some people may never experience this kind of weather. However, even though some people don't like snow, most people seem to like snowflakes.
-     There may be more to snowflakes then meets the eye. Still curious? It doesn't hurt to do a quick google search...
+     There may be more to snowflakes then meets the eye. Still curious? It doesn't hurt to crack open a good book...or e-book.
     </p>
     <script>
      var xhr = new XMLHttpRequest();
@@ -44,9 +44,9 @@ xhr.send();
 var r = JSON.parse(xhr.responseText);
 document.write("<h2>Google Books Related to Snowflakes</h2>");
 document.write('Wow! Google found ')
-document.write(r.totalItems +' books about it!<br> Here are a summary of just a few.<br>');
+document.write(r.totalItems +' books about this topic!<br> Here are a summary of just a few.<br>');
 for(var i=0; i <= 1; i++) {
-document.write('<b>'+ r.items[i].volumeInfo.title +'</b>'+'<br>')
+document.write('<br><b>'+ r.items[i].volumeInfo.title +'</b>'+'<br>')
 document.write(r.items[i].volumeInfo.description+'<br>')
 }
 var xhr = new XMLHttpRequest();
