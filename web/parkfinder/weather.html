@@ -34,7 +34,7 @@
     <p>
      Snow is the most interesting kind of weather. It fascinates children, but the older you get the less you appreciate it, and
      some people may never experience this kind of weather.
-     Still curious? Check out the following read.
+     Still curious? Do a google search or read a e-book.
     </p>
     <script>
      var xhr = new XMLHttpRequest();
@@ -43,8 +43,8 @@ xhr.open("GET", "https://www.googleapis.com/books/v1/volumes?q=snowflake", false
 xhr.send();
 var r = JSON.parse(xhr.responseText);
 document.write("<h2>Google Books Related to Snow</h2>");
-document.write('Total Results:')
-document.write(r.totalItems +'<br>');
+document.write('Wow! There are')
+document.write(r.totalItems +' books about it!<br> Here are a summary of just a few.');
 for(var i=0; i <= 1; i++) {
 document.write('<b>'+ r.items[i].volumeInfo.title +'</b>'+'<br>')
 document.write(r.items[i].volumeInfo.description+'<br>')
