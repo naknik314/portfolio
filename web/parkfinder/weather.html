@@ -33,8 +33,8 @@
     <h2>Extreme Weather Spotlight</h2>
     <p>
      Snow is the most interesting kind of natural occurence. It fascinates children, but the older you get the less you appreciate it, and
-     some people may never experience this kind of weather.
-     Still curious? Do a google search or read a e-book.
+     for better or worse, some people may never experience this kind of weather. However, even though some people don't like snow, most people seem to like snowflakes.
+     There may be more to snowflakes then meets the eye. Still curious? It doesn't hurt to do a quick google search...
     </p>
     <script>
      var xhr = new XMLHttpRequest();
@@ -42,7 +42,7 @@ xhr.open("GET", "https://www.googleapis.com/books/v1/volumes?q=snowflake", false
 
 xhr.send();
 var r = JSON.parse(xhr.responseText);
-document.write("<h2>Google Books Related to Snow</h2>");
+document.write("<h2>Google Books Related to Snowflakes</h2>");
 document.write('Wow! Google found ')
 document.write(r.totalItems +' books about it!<br> Here are a summary of just a few.<br>');
 for(var i=0; i <= 1; i++) {
