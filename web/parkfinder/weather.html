@@ -33,7 +33,7 @@
     <h2>Extreme Weather Spotlight</h2>
     <p>
      Snow is the most interesting kind of weather. It fascinates children, but the older you get the less you appreciate it, and
-     some people will never experience this kind of weather.
+     some people may never experience this kind of weather.
      Still curious? Check out the following read.
     </p>
     <script>
@@ -43,7 +43,7 @@ xhr.open("GET", "https://www.googleapis.com/books/v1/volumes?q=snow", false);
 xhr.send();
 var r = JSON.parse(xhr.responseText);
 document.write("<h2>Google Books about Snow</h2>");
-document.write('Total Items:')
+document.write('Total Results:')
 document.write(r.totalItems +'<br>');
 for(var i=0; i <= 1; i++) {
 document.write('<b>'+ r.items[i].volumeInfo.title +'</b>'+'<br>')
@@ -57,7 +57,7 @@ document.write(r.items[i].volumeInfo.title)
 document.write(r.items[i].volumeInfo.description)
 } 
     </script>
-    What kind of weather will you discover today?
+    <br/><b>What kind of weather will you discover today?</b>
     <script>
     $.ajax({
   url:"https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22nome%2C%20ak%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
