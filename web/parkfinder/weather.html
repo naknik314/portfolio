@@ -38,11 +38,11 @@
     </p>
     <script>
      var xhr = new XMLHttpRequest();
-xhr.open("GET", "https://www.googleapis.com/books/v1/volumes?q=snow", false);
+xhr.open("GET", "https://www.googleapis.com/books/v1/volumes?q=snowflake", false);
 
 xhr.send();
 var r = JSON.parse(xhr.responseText);
-document.write("<h2>Google Books about Snow</h2>");
+document.write("<h2>Google Books Related to Snow</h2>");
 document.write('Total Results:')
 document.write(r.totalItems +'<br>');
 for(var i=0; i <= 1; i++) {
