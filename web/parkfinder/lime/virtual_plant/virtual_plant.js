@@ -1,75 +1,57 @@
 //set main namespace
-goog.provide('virtual_plant');
+  goog.provide('virtual_plant');
 
+  //get requirements
+goog.require( "goog.events" );
+goog.require( "goog.dom" );
+goog.require( "myapp.subapp.controller" );
+goog.require( "myapp.subapp.view" );
+  goog.require('lime.Director');
+  goog.require('lime.Scene');
+  goog.require('lime.Layer');
+	goog.require('virtual_plant.Plant');
 
-//get requirements
-goog.require('lime.Director');
-goog.require('lime.Scene');
-goog.require('lime.Layer');
-goog.require('lime.Circle');
-goog.require('lime.Label');
-goog.require('lime.animation.Spawn');
-goog.require('lime.animation.FadeTo');
-goog.require('lime.animation.ScaleTo');
-goog.require('lime.animation.MoveTo');
+  // entrypoint
+  virtual_plant.start = function(){
+      //object to store game-level properties
+      var gameObj = {
+          width: 320,
+          height: 480,
+					maxPlantSize: 200,
+          renderer: lime.Renderer.CANVAS
+      };
 
+      var director = new lime.Director(document.body,gameObj.width,gameObj.height);
+      var gameScene = new lime.Scene().setRenderer(gameObj.renderer)
+      var gameLayer = new lime.Layer().setAnchorPoint(0,0);
+      gameScene.appendChild(gameLayer);
 
-// entrypoint
-virtual_plant.start = function(){
+			var background = new lime.Sprite().setSize(gameObj.width,gameObj.height*4/5).
+						setFill('#F3E2A9').setAnchorPoint(0,0).setPosition(0,0);
 
-	var director = new lime.Director(document.body,1024,768),
-	    scene = new lime.Scene(),
+			var menuArea = new lime.Sprite().setSize(gameObj.width,gameObj.height/5).
+						setFill('#8B5A00').setPosition(gameObj.width/2,gameObj.height*9/10)
 
-	    target = new lime.Layer().setPosition(512,384),
-        circle = new lime.Circle().setSize(150,150).setFill(255,150,0),
-        lbl = new lime.Label().setSize(160,50).setFontSize(30).setText('TOUCH ME!'),
-        title = new lime.Label().setSize(800,70).setFontSize(60).setText('Now move me around!')
-            .setOpacity(0).setPosition(512,80).setFontColor('#999').setFill(200,100,0,.1);
+			gameLayer.appendChild(background);
+			gameLayer.appendChild(menuArea);
 
+			//create plant
+var pet = new virtual_plant.Plant(gameObj, gameLayer);
 
-    //add circle and label to target object
-    target.appendChild(circle);
-    target.appendChild(lbl);
+var background = new lime.Sprite().setSize(gameObj.width,gameObj.height*4/5).
+setFill('#F3E2A9').setAnchorPoint(0,0).setPosition(0,0);
 
-    //add target and title to the scene
-    scene.appendChild(target);
-    scene.appendChild(title);
+var menuArea = new lime.Sprite().setSize(gameObj.width,gameObj.height/5).
+setFill('#8B5A00').setPosition(gameObj.width/2,gameObj.height*9/10)
 
-	director.makeMobileWebAppCapable();
+gameLayer.appendChild(background);
+gameLayer.appendChild(menuArea);
 
-    //add some interaction
-    goog.events.listen(target,['mousedown','touchstart'],function(e){
+gameLayer.appendChild(plant);
 
-        //animate
-        target.runAction(new lime.animation.Spawn(
-            new lime.animation.FadeTo(.5).setDuration(.2),
-            new lime.animation.ScaleTo(1.5).setDuration(.8)
-        ));
+      director.makeMobileWebAppCapable();
+      director.replaceScene(gameScene);
+  }
 
-        title.runAction(new lime.animation.FadeTo(1));
-
-        //let target follow the mouse/finger
-        e.startDrag();
-
-        //listen for end event
-        e.swallow(['mouseup','touchend'],function(){
-            target.runAction(new lime.animation.Spawn(
-                new lime.animation.FadeTo(1),
-                new lime.animation.ScaleTo(1),
-                new lime.animation.MoveTo(512,384)
-            ));
-
-            title.runAction(new lime.animation.FadeTo(0));
-        });
-
-
-    });
-
-	// set current scene active
-	director.replaceScene(scene);
-
-}
-
-
-//this is required for outside access after code is compiled in ADVANCED_COMPILATIONS mode
-goog.exportSymbol('virtual_plant.start', virtual_plant.start);
+  //this is required for outside access after code is compiled in ADVANCED_COMPILATIONS mode
+  goog.exportSymbol('virtual_plant.start', virtual_plant.start);
