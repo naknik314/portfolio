@@ -10,6 +10,20 @@ virtual_plant.Pet = function(gameObj) {
 
   this.setPosition(this.gameObj.width/2, this.gameObj.height/2);
   this.updateLook();
+
+  var dt = 100;
+lime.scheduleManager.scheduleWithDelay(function() {
+        this.happiness -= 0.1;
+        this.health -= 0.1;
+
+        //game over
+        if(this.happiness &lt;= 0 || this.health &lt;= 0) {
+            alert('Game over!');
+            location.reload();
+        }
+
+        this.updateLook();
+    }, this, dt);
 };
 
 goog.inherits(virtual_plant.Plant,lime.Circle);
