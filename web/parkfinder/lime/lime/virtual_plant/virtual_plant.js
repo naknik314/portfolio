@@ -3,11 +3,13 @@
   goog.provide('lime.Director');
   goog.provide('lime.Scene');
   goog.provide('lime.Layer');
+  goog.provide('lime.Renderer');
 
   //get requirements
   goog.require('lime.Director');
   goog.require('lime.Scene');
   goog.require('lime.Layer');
+  goog.provide('lime.Renderer');
 
   // entrypoint
   virtual_plant.start = function(){
