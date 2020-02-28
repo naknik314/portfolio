@@ -29,6 +29,10 @@
       var gameLayer = new lime.Layer().setAnchorPoint(0,0);
       gameScene.appendChild(gameLayer);
 
+//create plant
+var plant = new virtual_plant.Plant(gameObj, gameLayer);
+gameLayer.appendChild(plant);
+
       director.makeMobileWebAppCapable();
       director.replaceScene(gameScene);
   }
