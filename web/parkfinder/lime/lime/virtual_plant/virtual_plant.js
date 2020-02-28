@@ -4,7 +4,7 @@
   goog.provide('lime.Scene');
   goog.provide('lime.Layer');
   goog.provide('lime.Renderer');
-  goog.require('virtual_plant.Plant');
+  goog.provide('virtual_plant.Plant');
 
   //get requirements
   goog.require('virtual_plant');
