@@ -7,6 +7,7 @@ goog.provide( "myapp.subapp.view" );
 goog.provide('lime.Director');
 goog.provide('lime.Scene');
 goog.provide('lime.Layer');
+goog.provide('lime.Renderer');
 goog.provide('virtual_plant.Plant');
 
   //get requirements
@@ -17,6 +18,7 @@ goog.require( "myapp.subapp.view" );
 goog.require('lime.Director');
 goog.require('lime.Scene');
 goog.require('lime.Layer');
+goog.require('lime.Renderer');
 goog.require('virtual_plant.Plant');
 
   // entrypoint
