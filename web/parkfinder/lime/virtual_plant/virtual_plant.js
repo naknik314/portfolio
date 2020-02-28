@@ -1,15 +1,23 @@
 //set main namespace
-  goog.provide('virtual_plant');
+goog.provide('virtual_plant');
+goog.provide( "goog.events" );
+goog.provide( "goog.dom" );
+goog.provide( "myapp.subapp.controller" );
+goog.provide( "myapp.subapp.view" );
+goog.provide('lime.Director');
+goog.provide('lime.Scene');
+goog.provide('lime.Layer');
+goog.provide('virtual_plant.Plant');
 
   //get requirements
 goog.require( "goog.events" );
 goog.require( "goog.dom" );
 goog.require( "myapp.subapp.controller" );
 goog.require( "myapp.subapp.view" );
-  goog.require('lime.Director');
-  goog.require('lime.Scene');
-  goog.require('lime.Layer');
-	goog.require('virtual_plant.Plant');
+goog.require('lime.Director');
+goog.require('lime.Scene');
+goog.require('lime.Layer');
+goog.require('virtual_plant.Plant');
 
   // entrypoint
   virtual_plant.start = function(){
