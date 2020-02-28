@@ -20,6 +20,7 @@
       var gameObj = {
           width: 320,
           height: 480,
+          maxPlantSize: 200,
           renderer: lime.Renderer.CANVAS
       };
 
