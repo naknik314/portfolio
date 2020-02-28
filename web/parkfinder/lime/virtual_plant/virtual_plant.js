@@ -9,7 +9,7 @@
   goog.require('lime.Director');
   goog.require('lime.Scene');
   goog.require('lime.Layer');
-  goog.provide('lime.Renderer');
+  goog.require('lime.Renderer');
 
   // entrypoint
   virtual_plant.start = function(){
