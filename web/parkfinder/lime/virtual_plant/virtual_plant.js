@@ -48,7 +48,7 @@ goog.require('virtual_plant.Plant');
 			gameLayer.appendChild(menuArea);
 
 			//create plant
-var pet = new virtual_plant.Plant(gameObj, gameLayer);
+var plant = new virtual_plant.Plant(gameObj, gameLayer);
 
 var background = new lime.Sprite().setSize(gameObj.width,gameObj.height*4/5).
 setFill('#F3E2A9').setAnchorPoint(0,0).setPosition(0,0);
