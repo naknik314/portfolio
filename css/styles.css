@@ -38,6 +38,10 @@ body {
 	text-align:center !important;
 }
 
+.no-bullets {
+	list-style-type:none;
+}
+
 .button-link {
 	background-color: white;
 	color: black;
