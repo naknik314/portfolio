@@ -329,31 +329,14 @@ img.thumbnail-half-square {
 .thumbnail-wide,.thumbnail-long,.thumbnail-square {
     margin:1%;
 }
-#coffeehouse {
-	background-color:#32100D;
-}
-#sportchat {
-	background-color:#990000;
-}
-#potterschemistrytutor {
-	background-color:#e8ff26;
-}
-#losttreasures {
-	background-color:#EACFA7;
-}
-#bakersblog {
-	background-color:#C94894;
-}
-#parkfinder {
-	background-color:#8AB28F;
-}
-
-#thedaringenglishteacher {
+#coffeehouse, #sportchat, #bakersblog, #thedaringenglishteacher {
 	background-color:black;
+	border:3px solid gray;
 }
 
-#hauteacademy {
-	background-color:#b18d45;
+#potterschemistrytutor, #losttreasures, #hauteacademy, #parkfinder {
+	background-color:white;
+	border:3px solid black;
 }
 
 div.icon {
