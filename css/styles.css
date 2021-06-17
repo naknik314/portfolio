@@ -329,12 +329,12 @@ img.thumbnail-half-square {
 .thumbnail-wide,.thumbnail-long,.thumbnail-square {
     margin:1%;
 }
-#coffeehouse, #sportchat, #bakersblog, #thedaringenglishteacher {
+#dark-bg-light-text {
 	background-color:black;
 	border:3px solid gray;
 }
 
-#potterschemistrytutor, #losttreasures, #hauteacademy, #parkfinder {
+#light-bg-dark-text  {
 	background-color:white;
 	border:3px solid black;
 }
