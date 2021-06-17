@@ -290,6 +290,11 @@ img.thumbnail-square {
     height:150px;
     padding-top:0px;
 }
+img.thumbnail-square-2 {
+    width:150px;
+    height:125px;
+    padding-top:10px;
+}
 img.thumbnail-half-wide {
     width:150px;
     height:60px;
