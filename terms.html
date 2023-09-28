@@ -83,9 +83,9 @@ function googleTranslateElementInit() {
 
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 <body id="terms">
-    <h2 class="text-center">Client & Designer Agreement<br> <div id="google_translate_element"></div></h2>
-
-<script language="javascript"> 
+    <h1 class="text-center">Client & Designer Agreement<br> <div id="google_translate_element"></div></h1>
+    <h2>
+        <script language="javascript"> 
 months = ['January', 'Febraury', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; 
 var d=new Date();
 var weekday=new Array(7);
@@ -104,9 +104,12 @@ var d = new Date();
 var theDate = new Date(document.lastModified); 
 theDate.setTime((theDate.getTime()+(60*60)) ) 
 with (theDate) { 
-document.write("<i>Last updated "+weekday[getDay()]+' '+getDate()+' '+months[getMonth()]+' '+d.getFullYear()+' '+getHours()+':'+getMinutes()+" GMT</i>") 
+document.write("<i>Last updated "+weekday[getDay()]+' '+getDate()+' '+months[getMonth()]+' '+d.getFullYear()+' </i>") 
 } 
 </script> 
+    </h2>
+
+
     
 <ul class="mainlist">
     <li><h3>Client/Designer Relationship</h3>
