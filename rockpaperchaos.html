@@ -499,7 +499,7 @@ const db = getDatabase(firebaseApp);
         const r = data.rounds?.[sharedRound];
         if (r?.phase === "reveal" && r.results) {
           applyScores(r.results.scores || {});
-          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, false, r.results.moves || {});
+          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, false, r.results.moves || {}, r.results.revealWinner || "Draw!");
         }
       }
     });
@@ -707,7 +707,25 @@ const db = getDatabase(firebaseApp);
       if (isHost && humanReady) {
         const completed={...submissions};
         players.filter(p=>p.bot).forEach(p=>{
-          completed[p.uid]={move:moves[Math.floor(Math.random()*3)],prediction:null,locked:true,submittedAt:Date.now()};
+          let prediction=null;
+          // Computer rivals follow the same optional prediction rule as people.
+          // Round 4 disables predictions for everyone.
+          if(round!==4 && Math.random()<0.7){
+            const targets=players.filter(other=>other.uid!==p.uid);
+            if(targets.length){
+              const target=targets[Math.floor(Math.random()*targets.length)];
+              prediction={
+                targetUid:target.uid,
+                predictedMove:moves[Math.floor(Math.random()*3)]
+              };
+            }
+          }
+          completed[p.uid]={
+            move:moves[Math.floor(Math.random()*3)],
+            prediction,
+            locked:true,
+            submittedAt:Date.now()
+          };
         });
         await resolveSharedRound(completed);
       }
@@ -732,6 +750,7 @@ const db = getDatabase(firebaseApp);
     players.forEach(p=>{ if(!moveLedger[p.uid]) moveLedger[p.uid]={rock:0,paper:0,scissors:0}; });
     const addMoveWin=(uid,move,points)=>{ moveLedger[uid][move]=Number(moveLedger[uid][move]||0)+Number(points||0); };
     const details=[];
+    let revealWinner="Draw!";
     const played={};
     players.forEach(p=>played[p.uid]=submissions[p.uid]?.move || "rock");
 
@@ -770,18 +789,23 @@ const db = getDatabase(firebaseApp);
       moves.forEach(m=>totals[m]=count[m]+counterMoves[m]);
       const top=Math.max(...Object.values(totals));
       const tied=moves.filter(m=>totals[m]===top);
-      if(tied.length===1) details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the move-total comparison.`);
-      else if(tied.length===3) details.unshift("All three move totals tie: round draw.");
-      else {
+      if(tied.length===1) {
+        revealWinner=`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins!`;
+        details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the move-total comparison.`);
+      } else if(tied.length===3) {
+        revealWinner="Draw!";
+        details.unshift("All three move totals tie: round draw.");
+      } else {
         const withCounter=tied.filter(m=>counterMoves[m]>0);
+        revealWinner=withCounter.length===1?`${withCounter[0][0].toUpperCase()+withCounter[0].slice(1)} wins!`:"Draw!";
         details.unshift(withCounter.length===1?`${withCounter[0][0].toUpperCase()+withCounter[0].slice(1)} wins the tied move totals with its counter bonus.`:"Move totals remain tied.");
       }
     } else {
       const a=players[0], b=players[1];
       const r=beats(played[a.uid],played[b.uid],reverse);
-      if(r>0){scores[a.uid]+=1*multiplier;addMoveWin(a.uid,played[a.uid],1*multiplier);details.push(`${a.name} wins: +${1*multiplier}.`);}
-      else if(r<0){scores[b.uid]+=1*multiplier;addMoveWin(b.uid,played[b.uid],1*multiplier);details.push(`${b.name} wins: +${1*multiplier}.`);}
-      else details.push("Head-to-head tie: no win point.");
+      if(r>0){revealWinner=`${played[a.uid][0].toUpperCase()+played[a.uid].slice(1)} wins!`;scores[a.uid]+=1*multiplier;addMoveWin(a.uid,played[a.uid],1*multiplier);details.push(`${a.name} wins: +${1*multiplier}.`);}
+      else if(r<0){revealWinner=`${played[b.uid][0].toUpperCase()+played[b.uid].slice(1)} wins!`;scores[b.uid]+=1*multiplier;addMoveWin(b.uid,played[b.uid],1*multiplier);details.push(`${b.name} wins: +${1*multiplier}.`);}
+      else {revealWinner="Draw!";details.push("Head-to-head tie: no win point.");}
     }
 
     // Prediction is optional (and disabled entirely in round 4).
@@ -803,19 +827,19 @@ const db = getDatabase(firebaseApp);
       });
     }
 
-    const results={scores,details,reverse,basePoints:multiplier,moves:played};
+    const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner};
     await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
     await update(ref(db, `rooms/${room}`), {scores,moveWinPoints:moveLedger,updatedAt:Date.now()});
   }
 
-  function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={}) {
+  function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!") {
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
     $("progressFill").style.width=`${round/7*100}%`;
     const icon=round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
     const title=round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
     $("playArea").innerHTML=`
-      <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2></div>
+      <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
       <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
