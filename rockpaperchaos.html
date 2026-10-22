@@ -257,29 +257,51 @@ const db = getDatabase(firebaseApp);
     return {id:uid, uid, name:data.name || "Mystery Player", bot:!!data.bot, host:!!data.host,
             score:Number(data.score || 0), move:null, prediction:null};
   }
+  function me() { return players.find(p => p.uid === currentUser?.uid); }
+  function opponents() { return players.filter(p => p.uid !== currentUser?.uid); }
+  function roundPath(n=round) { return `rooms/${room}/rounds/${n}`; }
 
   function listenToRoom(code) {
     if (roomUnsubscribe) roomUnsubscribe();
     roomUnsubscribe = onValue(ref(db, `rooms/${code}`), snapshot => {
       if (!snapshot.exists()) {
-        if (onlineRoom) {
-          onlineRoom = false;
-          toast("This room was closed.");
-          show("home");
-        }
+        if (onlineRoom) { onlineRoom=false; toast("This room was closed."); show("home"); }
         return;
       }
       const data = snapshot.val();
       players = Object.entries(data.players || {}).map(([uid,p]) => playerFromFirebase(uid,p));
-      players.sort((a,b) => Number(b.host) - Number(a.host));
+      players.sort((a,b) => Number(b.host)-Number(a.host));
       room = code;
       isHost = data.hostUid === currentUser?.uid;
       onlineRoom = true;
-      renderLobby();
-      if (data.status === "playing" && !isHost) {
-        toast("The host started the match.");
+
+      if (data.status === "lobby") {
+        renderLobby();
+        show("lobby");
+        return;
+      }
+      if (data.status === "finished") {
+        applyScores(data.scores || {});
+        finishGame(false);
+        return;
+      }
+      if (data.status === "playing") {
+        const sharedRound = Number(data.round || 1);
+        if (round !== sharedRound || !$("game").classList.contains("active")) {
+          round = sharedRound;
+          beginRound(false);
+        }
+        const r = data.rounds?.[sharedRound];
+        if (r?.phase === "reveal" && r.results) {
+          applyScores(r.results.scores || {});
+          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, false, r.results.moves || {});
+        }
       }
     });
+  }
+
+  function applyScores(scores) {
+    players.forEach(p => p.score = Number(scores[p.uid] || 0));
   }
 
   async function makeUniqueRoomCode() {
@@ -338,16 +360,19 @@ const db = getDatabase(firebaseApp);
   }
   async function startGame() {
     if (players.length < 2) return;
-    if (onlineRoom && !isHost) return toast("Only the host can start the match.");
-    if (onlineRoom && room) await update(ref(db, `rooms/${room}`), {status:"playing",round:1,updatedAt:Date.now()});
-    players.forEach(p => {p.score=0;p.move=null;p.prediction=null;});
+    if (!isHost) return toast("Only the host can start the match.");
+    const scores = {};
+    players.forEach(p => scores[p.uid] = 0);
+    await update(ref(db, `rooms/${room}`), {
+      status:"playing", round:1, scores, rounds:null, updatedAt:Date.now()
+    });
     round = 1;
-    beginRound();
+    beginRound(false);
   }
-  function beginRound() {
+
+  function beginRound(writeState=true) {
     clearInterval(timerInt);
-    selectedMove = null; targetId = null; predictedMove = null;
-    players.forEach(p => {p.move=null;p.prediction=null;});
+    selectedMove=null; targetId=null; predictedMove=null;
     show("game");
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
@@ -355,125 +380,182 @@ const db = getDatabase(firebaseApp);
     const modifier = modifiers[round];
     $("modifier").innerHTML = modifier ? `<b>${modifier.name}</b><span>${modifier.desc}</span>` : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
     renderMovePicker();
-    startTimer(25,() => {
-      if (!selectedMove) selectedMove = "rock";
-      if (!targetId) targetId = players.find(p => p.id !== players[0].id)?.id;
-      if (!predictedMove) predictedMove = "rock";
-      resolveRound();
-    });
+    if (isHost && writeState) {
+      update(ref(db, `rooms/${room}`), {round, updatedAt:Date.now()});
+    }
   }
-  function startTimer(seconds,callback) {
-    clearInterval(timerInt);
-    deadline = Date.now() + seconds*1000;
-    const tick = () => {
-      const left = Math.max(0,Math.ceil((deadline-Date.now())/1000));
-      $("timer").textContent = `${left}s`;
-      if (left <= 0) { clearInterval(timerInt); callback(); }
-    };
-    tick();
-    timerInt = setInterval(tick,250);
-  }
+
   function renderMovePicker() {
+    const noPrediction = round === 4;
+    const others = opponents();
+    $("timer").textContent = "WAITING";
     $("playArea").innerHTML = `
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
-      <p class="muted" style="margin-top:0">Pick rock, paper, or scissors for yourself.</p>
+      <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
       <div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>
+      ${noPrediction ? `<div class="divider"></div><p class="note"><b>Round 4 · No Predictions:</b> prediction bonus is disabled this round.</p>` : `
       <div class="divider"></div>
       <h3 style="margin-bottom:6px">🔮 Predict a rival's move</h3>
-      <p class="muted" style="margin-top:0">Choose one opponent, then guess their move. Correct prediction = +2 points.</p>
-      <div class="prediction-grid">${players.filter(p => p.id !== players[0].id).map(p => `<button class="predict ${targetId===p.id?"selected":""}" data-target="${p.id}">${escapeHtml(p.name)}<small>${p.bot?"Demo rival":"Player"}</small></button>`).join("")}</div>
-      <div id="predictedMovePicker" class="hidden"></div>
+      <p class="muted" style="margin-top:0">Correct prediction = +2 points.</p>
+      <div class="prediction-grid">${others.map(p => `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Demo rival":"Player"}</small></button>`).join("")}</div>
+      <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
-      <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices & reveal →</button>
-      <p class="note">Your choices stay hidden until the reveal. In this local demo, rivals are simulated.</p>`;
-    $("playArea").querySelectorAll("[data-move]").forEach(button => button.onclick = () => { selectedMove = button.dataset.move; renderMovePicker(); });
-    $("playArea").querySelectorAll("[data-target]").forEach(button => button.onclick = () => { targetId = Number(button.dataset.target); renderMovePicker(); });
-    const predWrap = document.createElement("div");
-    predWrap.innerHTML = `<div class="divider"></div><h3 style="margin-bottom:6px">What do you think they'll play?</h3><div class="choices" style="margin-bottom:0">${moves.map(m => `<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
-    $("playArea").querySelector("#predictedMovePicker").replaceWith(predWrap);
-    predWrap.id = "predictedMovePicker";
-    predWrap.classList.remove("hidden");
-    predWrap.querySelectorAll("[data-guess]").forEach(button => button.onclick = () => { predictedMove = button.dataset.guess; renderMovePicker(); });
-    const lock = $("lockBtn");
-    lock.disabled = !(selectedMove && targetId && predictedMove);
-    lock.style.opacity = lock.disabled ? ".5" : "1";
-    lock.onclick = () => { if (selectedMove && targetId && predictedMove) resolveRound(); };
+      <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
+      <p class="note" id="waitingNote">Waiting for your choice.</p>`;
+
+    $("playArea").querySelectorAll("[data-move]").forEach(b => b.onclick=()=>{selectedMove=b.dataset.move;renderMovePicker();});
+    if (!noPrediction) {
+      $("playArea").querySelectorAll("[data-target]").forEach(b => b.onclick=()=>{targetId=b.dataset.target;renderMovePicker();});
+      const wrap=$("predictedMovePicker");
+      if (targetId) wrap.innerHTML=`<div class="divider"></div><h3 style="margin-bottom:6px">What will they play?</h3><div class="choices">${moves.map(m=>`<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
+      wrap.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{predictedMove=b.dataset.guess;renderMovePicker();});
+    }
+    const ready = selectedMove && (noPrediction || (targetId && predictedMove));
+    $("lockBtn").disabled=!ready;
+    $("lockBtn").style.opacity=ready?"1":".5";
+    $("lockBtn").onclick=()=>{ if(ready) submitTurn(); };
   }
-  function resolveRound() {
-    clearInterval(timerInt);
-    if (!selectedMove) selectedMove = "rock";
-    if (!targetId) targetId = players.find(p => p.id !== players[0].id)?.id;
-    if (!predictedMove) predictedMove = "rock";
-    players[0].move = selectedMove;
-    players[0].prediction = {targetId,move:predictedMove};
-    players.slice(1).forEach(p => {
-      p.move = moves[Math.floor(Math.random()*moves.length)];
-      p.prediction = null;
+
+  async function submitTurn() {
+    const noPrediction = round === 4;
+    if (!selectedMove || (!noPrediction && (!targetId || !predictedMove))) return;
+    const uid=currentUser.uid;
+    // Each player writes only under their own UID. The UI never displays submissions before reveal.
+    await set(ref(db, `${roundPath()}/submissions/${uid}`), {
+      move:selectedMove,
+      prediction:noPrediction?null:{targetUid:targetId,move:predictedMove},
+      locked:true,
+      submittedAt:Date.now()
     });
-    const reverse = round === 4;
-    const basePoints = round === 2 ? 2 : 1;
-    const details = [];
-    if (players.length >= 3) {
-      const count = {rock:0,paper:0,scissors:0};
-      const counterBonus = {rock:0,paper:0,scissors:0};
-      players.forEach(p => count[p.move]++);
-      players.forEach(p => {
-        const countersSomeone = players.some(other => other.id !== p.id && beats(p.move,other.move,reverse) > 0);
-        if (countersSomeone) {
-          p.score += 1;
-          counterBonus[p.move]++;
-          details.push(`${p.name} gets +1 counter bonus`);
+    $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🔒</div><h2>Locked in!</h2><p class="muted">Waiting for everyone else…</p></div>`;
+    $("phaseLabel").textContent="Waiting for players";
+    watchSubmissions();
+  }
+
+  function watchSubmissions() {
+    onValue(ref(db, `${roundPath()}/submissions`), async snap => {
+      const submissions=snap.val() || {};
+      const humans=players.filter(p=>!p.bot);
+      const humanReady=humans.every(p=>submissions[p.uid]?.locked);
+      if (isHost && humanReady) {
+        const completed={...submissions};
+        players.filter(p=>p.bot).forEach(p=>{
+          completed[p.uid]={move:moves[Math.floor(Math.random()*3)],prediction:null,locked:true,submittedAt:Date.now()};
+        });
+        await resolveSharedRound(completed);
+      }
+    }, {onlyOnce:false});
+  }
+
+  function beatsRound(a,b) {
+    const reverse = round === 6;
+    return beats(a,b,reverse);
+  }
+
+  async function resolveSharedRound(submissions) {
+    const resultSnap=await get(ref(db, `${roundPath()}/results`));
+    if (resultSnap.exists()) return;
+    const reverse=round===6;
+    const multiplier=round===2?2:1;
+    const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
+    const scores=scoresSnap.val() || {};
+    players.forEach(p=>{ if(scores[p.uid]==null) scores[p.uid]=0; });
+    const details=[];
+    const played={};
+    players.forEach(p=>played[p.uid]=submissions[p.uid]?.move || "rock");
+
+    if (players.length>=3) {
+      const count={rock:0,paper:0,scissors:0};
+      players.forEach(p=>count[played[p.uid]]++);
+      const maxCount=Math.max(...Object.values(count));
+      let majority=moves.filter(m=>count[m]===maxCount);
+
+      // Majority points first. A full three-way tie is a draw.
+      if (majority.length===1) {
+        players.filter(p=>played[p.uid]===majority[0]).forEach(p=>scores[p.uid]+=1*multiplier);
+        details.push(`${majority[0][0].toUpperCase()+majority[0].slice(1)} has the majority: +${1*multiplier} to each matching player.`);
+      } else {
+        details.push("Majority is tied: no majority points.");
+      }
+
+      // Counter bonus: once per qualifying player, not once per opponent.
+      const counterMoves={rock:0,paper:0,scissors:0};
+      players.forEach(p=>{
+        const qualifies=players.some(o=>o.uid!==p.uid && beats(played[p.uid],played[o.uid],reverse)>0);
+        if(qualifies){ scores[p.uid]+=1*multiplier; counterMoves[played[p.uid]]++; details.push(`${p.name} gets +${1*multiplier} counter bonus.`); }
+      });
+
+      // If move totals tie, the tied move with a counter bonus wins the round tiebreak.
+      const totals={};
+      moves.forEach(m=>totals[m]=count[m]+counterMoves[m]);
+      const top=Math.max(...Object.values(totals));
+      const tied=moves.filter(m=>totals[m]===top);
+      if(tied.length===1) details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the move-total comparison.`);
+      else if(tied.length===3) details.unshift("All three move totals tie: round draw.");
+      else {
+        const withCounter=tied.filter(m=>counterMoves[m]>0);
+        details.unshift(withCounter.length===1?`${withCounter[0][0].toUpperCase()+withCounter[0].slice(1)} wins the tied move totals with its counter bonus.`:"Move totals remain tied.");
+      }
+    } else {
+      const a=players[0], b=players[1];
+      const r=beats(played[a.uid],played[b.uid],reverse);
+      if(r>0){scores[a.uid]+=1*multiplier;details.push(`${a.name} wins: +${1*multiplier}.`);}
+      else if(r<0){scores[b.uid]+=1*multiplier;details.push(`${b.name} wins: +${1*multiplier}.`);}
+      else details.push("Head-to-head tie: no win point.");
+    }
+
+    // Prediction bonus is disabled in round 4.
+    if(round!==4){
+      players.forEach(p=>{
+        const pred=submissions[p.uid]?.prediction;
+        if(pred && played[pred.targetUid]===pred.move){
+          scores[p.uid]+=2*multiplier;
+          details.push(`${p.name} predicted correctly: +${2*multiplier}.`);
         }
       });
-      const power = {};
-      moves.forEach(m => power[m] = count[m] + counterBonus[m]);
-      const maxPower = Math.max(...Object.values(power));
-      let winningMoves = moves.filter(m => power[m] === maxPower);
-      if (winningMoves.length > 1) {
-        const rpsWinners = winningMoves.filter(m => !winningMoves.some(other => other !== m && beats(other,m,reverse) > 0));
-        if (rpsWinners.length) winningMoves = rpsWinners;
-      }
-      players.forEach(p => { if (winningMoves.includes(p.move)) p.score += basePoints; });
-      details.unshift(`Move power — Rock ${power.rock}, Paper ${power.paper}, Scissors ${power.scissors}`);
-      details.unshift(winningMoves.length === 1
-        ? `${winningMoves[0][0].toUpperCase()+winningMoves[0].slice(1)} wins the round: +${basePoints} to each player who chose it.`
-        : `Power tie: ${winningMoves.join(" and ")} share the round: +${basePoints} to each matching player.`);
+    }
+
+    const results={scores,details,reverse,basePoints:multiplier,moves:played};
+    await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
+    await update(ref(db, `rooms/${room}`), {scores,updatedAt:Date.now()});
+  }
+
+  function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={}) {
+    $("phaseLabel").textContent="The reveal";
+    $("timer").textContent="REVEAL";
+    $("progressFill").style.width=`${round/7*100}%`;
+    const icon=round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
+    const title=round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
+    $("playArea").innerHTML=`
+      <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2></div>
+      <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
+      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
+      <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
+    if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
+  }
+
+  async function advanceRound() {
+    if(!isHost) return;
+    if(round===7){
+      const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
+      await update(ref(db, `rooms/${room}`), {status:"finished",scores:scoresSnap.val()||{},updatedAt:Date.now()});
     } else {
-      const a = players[0], b = players[1];
-      const result = beats(a.move,b.move,reverse);
-      if (result > 0) { a.score += basePoints; details.push(`${a.name} beats ${b.name}: +${basePoints}`); }
-      else if (result < 0) { b.score += basePoints; details.push(`${b.name} beats ${a.name}: +${basePoints}`); }
-      else if (round === 6) { a.score++; b.score++; details.push("Tie: both players get +1"); }
-      else details.push("Head-to-head tie: no points this round.");
+      round++;
+      await update(ref(db, `rooms/${room}`), {round,updatedAt:Date.now()});
+      beginRound(false);
     }
-    const target = players.find(p => p.id === targetId);
-    if (target && target.move === predictedMove) {
-      players[0].score += 2;
-      details.unshift(`Correct prediction! +2 points for ${players[0].name}.`);
-    }
-    renderReveal(details,reverse,basePoints);
   }
-  function renderReveal(details,reverse,basePoints) {
-    $("phaseLabel").textContent = "Phase 3 · The reveal";
-    $("timer").textContent = "REVEAL";
-    $("progressFill").style.width = `${round/7*100}%`;
-    $("playArea").innerHTML = `
-      <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${round===2?"⚡":round===4?"🔄":round===6?"🪞":"💥"}</div>
-      <h2 style="margin:5px 0;letter-spacing:-.04em">${round===2?"Double Trouble!":round===4?"Reverse Gear!":round===6?"Mirror Madness!":"The moves are revealed!"}</h2>
-      <p class="muted" style="margin:0">${reverse?"Winning cycle reversed this round.":modifiers[round]?.desc || "Standard scoring this round."}</p></div>
-      <div class="results-list">${players.map(p => `<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.id===players[0].id?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[p.move]} ${p.move}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
-      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,9).map(d => "• "+escapeHtml(d)).join("<br>")}</div>
-      <div class="actions"><button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button></div>`;
-    $("nextRound").onclick = () => { if (round===7) finishGame(); else { round++; beginRound(); } };
-  }
-  function finishGame() {
+
+  function finishGame(showScreen=true) {
     clearInterval(timerInt);
-    show("end");
-    const sorted = [...players].sort((a,b) => b.score-a.score);
-    $("winnerTitle").textContent = sorted.length>1 && sorted[0].score===sorted[1].score ? "It's a tie!" : `${sorted[0].name} wins!`;
-    $("winnerSub").textContent = `${sorted[0].score} points · ${sorted.length} players · 7 rounds of chaos`;
-    $("finalScores").innerHTML = sorted.map((p,i) => `<div class="result-row"><div><b>${i===0?"👑 ":""}${escapeHtml(p.name)}</b><div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div></div><b class="score">${p.score} pts</b></div>`).join("");
+    if(showScreen!==false) show("end"); else show("end");
+    const sorted=[...players].sort((a,b)=>b.score-a.score);
+    if(!sorted.length) return;
+    $("winnerTitle").textContent=sorted.length>1&&sorted[0].score===sorted[1].score?"It's a tie!":`${sorted[0].name} wins!`;
+    $("winnerSub").textContent=`${sorted[0].score} points · ${sorted.length} players · 7 rounds of chaos`;
+    $("finalScores").innerHTML=sorted.map((p,i)=>`<div class="result-row"><div><b>${i===0?"👑 ":""}${escapeHtml(p.name)}</b><div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div></div><b class="score">${p.score} pts</b></div>`).join("");
   }
+
   async function joinRoom() {
     const code = $("joinCode").value.trim().toUpperCase();
     if (!code) return toast("Enter a room code first.");
@@ -522,7 +604,10 @@ const db = getDatabase(firebaseApp);
   $("joinBtn").onclick = joinRoom;
   $("joinCode").addEventListener("input",e => { e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6); });
   $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(room); toast("Room code copied!"); } catch { toast("Your room code is "+room); } };
-  $("rematch").onclick = startGame;
+  $("rematch").onclick = async () => {
+    if (!isHost) return toast("Only the host can start a rematch.");
+    await update(ref(db, `rooms/${room}`), {status:"lobby",round:1,rounds:null,scores:null,updatedAt:Date.now()});
+  };
   $("homeBtn").onclick = leaveOnlineRoom;
   selectedUsername = "Obsidian Owl";
   updateUsername();
