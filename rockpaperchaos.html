@@ -1344,6 +1344,7 @@ const db = getDatabase(firebaseApp);
     safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
     // Bold the named used-up / not-used-up power status on the final line.
     safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Lockdown|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Lockdown|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
     return safe;
   }
 
