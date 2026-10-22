@@ -922,7 +922,7 @@ const db = getDatabase(firebaseApp);
           let appliedPenalty=penalty*multiplier;
           const power=submissions[p.uid]?.teamPower;
           if(power==="rock" && appliedPenalty>0){
-            details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 POWER USED UP — unavailable for the rest of this game.`);
+            details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid, which protects against negative prediction points and Cut in Half. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 POWER USED UP — unavailable for the rest of this game.`);
             appliedPenalty=0;
           } else {
             details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
@@ -951,9 +951,9 @@ const db = getDatabase(firebaseApp);
       if(gain>0){
         const reduced=Math.floor(gain/2);
         scores[target.uid]-=(gain-reduced);
-        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. SUCCESS: +${gain} became +${reduced}. 🔒 POWER USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's positive round points in half. SUCCESS: +${gain} became +${reduced}. 🔒 POWER USED UP — unavailable for the rest of this game.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} earned no positive points this round. 🔒 POWER USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's positive round points in half. NO EFFECT: ${target.name} earned no positive points this round. 🔒 POWER USED UP — unavailable for the rest of this game.`);
       }
     });
     for(const uid of restoreScissorsPower){
@@ -964,7 +964,7 @@ const db = getDatabase(firebaseApp);
       if(submissions[p.uid]?.teamPower!=="rock") return;
       const alreadyReported=details.some(line=>line.includes(p.name) && line.includes("Rock Solid"));
       if(!alreadyReported){
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid. NO EFFECT: there was no prediction penalty or Cut in Half attack to block. 🔒 POWER USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid, which protects against negative prediction points and Cut in Half. NO EFFECT: there was no prediction penalty or Cut in Half attack to block. 🔒 POWER USED UP — unavailable for the rest of this game.`);
       }
     });
 
@@ -976,9 +976,9 @@ const db = getDatabase(firebaseApp);
       const copied=highestGain;
       if(copied>0){
         scores[p.uid]+=copied;
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat. SUCCESS: copied +${copied} points. 🔒 POWER USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 POWER USED UP — unavailable for the rest of this game.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat. NO EFFECT: nobody else earned positive points to copy. 🔒 POWER USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat, which copies the highest positive points another player earns that round. NO EFFECT: nobody else earned positive points to copy. 🔒 POWER USED UP — unavailable for the rest of this game.`);
       }
     });
 
@@ -996,18 +996,10 @@ const db = getDatabase(firebaseApp);
     const powerNotices=(details||[]).filter(line=>line.includes("POWER USED")||line.includes("POWER CLASH")||line.includes("POWER ATTEMPT"));
     $("playArea").innerHTML=`
       <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
-      <div class="rule-card" style="margin-bottom:10px">
-        <strong>⚡ Team Powers</strong>
-        <span>🪨 Rock Solid protects. 📄 Copycat copies positive round points. ✂️ Cut in Half cuts a chosen player's positive round points in half. 🎲 Jack of All Trades randomly gets one of those powers.</span>
-      </div>
       ${powerNotices.length?`<div class="rule-card" style="margin-bottom:14px">
-        <strong>⚡ Power Status This Round</strong>
-        <span><b>🔒 USED UP</b> = gone for this game. <b>♻️ NOT USED UP</b> = still available.</span>
         ${powerNotices.map(line=>`<span>${escapeHtml(line)}</span>`).join("")}
       </div>`:`<div class="rule-card" style="margin-bottom:14px">
-        <strong>⚡ Power Status This Round</strong>
-        <span><b>🔒 USED UP</b> = gone for this game. <b>♻️ NOT USED UP</b> = still available.</span>
-        <span>No team power was used this round.</span>
+        <span>⚡ No team power was used this round.</span>
       </div>`}
       <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
