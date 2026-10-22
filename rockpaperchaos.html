@@ -174,7 +174,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
 <span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
 <span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
-<span>🎲 <b>Team Unpredictable:</b> Randomly gets one of the three powers for that game.</span>
+<span>🎲 <b>Team Unpredictable — Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
 <span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
 </div>
             <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
@@ -201,7 +201,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
 <span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
 <span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
-<span>🎲 <b>Team Unpredictable:</b> Randomly gets one of the three powers for that game.</span>
+<span>🎲 <b>Team Unpredictable — Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
 <span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
 </div>
       </div>
@@ -661,7 +661,8 @@ const db = getDatabase(firebaseApp);
     const profileSnap=await get(ref(db,`profiles/${currentUser.uid}`));
     const profile=profileSnap.exists()?profileSnap.val():blankProfile();
     let team=profile.team||"unassigned";
-    if(team==="unassigned"){
+    const isUnpredictable=team==="unassigned";
+    if(isUnpredictable){
       const powerRef=ref(db,`rooms/${room}/unpredictablePowers/${currentUser.uid}`);
       const powerSnap=await get(powerRef);
       if(powerSnap.exists()) team=powerSnap.val();
@@ -671,7 +672,12 @@ const db = getDatabase(firebaseApp);
         await set(powerRef,team);
       }
     }
-    return powerForTeam(team);
+    const power=powerForTeam(team);
+    if(isUnpredictable && power){
+      power.displayName=`🎲 Jack of All Trades → ${power.name.replace(/^[^ ]+ /,"")}`;
+      power.desc=`Jack of All Trades randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
+    }
+    return power;
   }
 
   async function refreshTeamPowerUI() {
@@ -679,7 +685,7 @@ const db = getDatabase(firebaseApp);
     if(!btn) return;
     activeTeamPower=await loadActiveTeamPower();
     if(!activeTeamPower) return;
-    $("teamPowerName").textContent=activeTeamPower.name;
+    $("teamPowerName").textContent=activeTeamPower.displayName||activeTeamPower.name;
     $("teamPowerDesc").textContent=activeTeamPower.desc+" One use per game.";
     const targetSelect=$("scissorsTarget");
     if(activeTeamPower.key==="scissors"){
@@ -987,12 +993,20 @@ const db = getDatabase(firebaseApp);
     $("progressFill").style.width=`${round/7*100}%`;
     const icon=round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
     const title=round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
+    const powerNotices=(details||[]).filter(line=>line.includes("POWER USED")||line.includes("POWER CLASH")||line.includes("POWER ATTEMPT"));
     $("playArea").innerHTML=`
       <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
-      <div class="rule-card" style="margin-bottom:14px">
+      <div class="rule-card" style="margin-bottom:10px">
         <strong>⚡ Team Powers</strong>
-        <span>🪨 Rock Solid protects. 📄 Copycat copies positive round points. ✂️ Cut in Half cuts a chosen player's positive round points in half. The highlights below show who used a power and whether it worked.</span>
+        <span>🪨 Rock Solid protects. 📄 Copycat copies positive round points. ✂️ Cut in Half cuts a chosen player's positive round points in half. 🎲 Jack of All Trades randomly gets one of those powers.</span>
       </div>
+      ${powerNotices.length?`<div class="rule-card" style="margin-bottom:14px">
+        <strong>⚡ Power Used This Round</strong>
+        ${powerNotices.map(line=>`<span>${escapeHtml(line)}</span>`).join("")}
+      </div>`:`<div class="rule-card" style="margin-bottom:14px">
+        <strong>⚡ Power Used This Round</strong>
+        <span>No team power was used this round.</span>
+      </div>`}
       <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
