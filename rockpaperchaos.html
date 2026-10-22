@@ -847,11 +847,37 @@ const db = getDatabase(firebaseApp);
     return power;
   }
 
-  async function refreshTeamPowerUI() {
+  
+  function renderExactMovePower(){
+    const btn=$("teamPowerBtn");
+    const desc=$("teamPowerDesc");
+    if(!btn || !desc) return;
+
+    if(!activeTeamPower){
+      btn.textContent="⚡ Team Power";
+      desc.textContent="Your team power is loading…";
+      return;
+    }
+
+    const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
+    const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
+    const prefix=isSwap ? "Your swapped team power" : "Your team power";
+
+    desc.innerHTML=`<b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game. Powers cannot be used in Round 4.</span>`;
+
+    if(teamPowerArmed){
+      btn.textContent=`⚡ ${powerName} Active`;
+    }else if(!btn.disabled){
+      btn.textContent=`⚡ ${isSwap ? "Activate" : "Use"} ${powerName}`;
+    }
+  }
+
+async function refreshTeamPowerUI() {
     // Always derive the power fresh from Firebase. This prevents a cached
     // normal power (for example Copycat) from surviving after Power Swap
     // has been activated.
     activeTeamPower = await loadActiveTeamPower();
+    renderExactMovePower();
     const displayedPowerName = displayedPowerName || "No team power";
     const displayedPowerDesc = displayedPowerDesc || "";
 
@@ -911,6 +937,8 @@ const db = getDatabase(firebaseApp);
       $("teamPowerDesc").innerHTML = `<b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
     }
 
+  
+    renderExactMovePower();
   }
 
   function beginRound(writeState=true) {
