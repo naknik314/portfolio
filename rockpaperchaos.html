@@ -121,7 +121,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <div id="app">
   <div class="wrap">
     <header class="top">
-      <div class="brand"><div class="logo" aria-label="Dice icon">🎲</div><span>ROCK PAPER CHAOS</span></div>
+      <div class="brand"><div class="logo" aria-label="Dice icon">🎲</div><span>RPS WITH A TWIST</span></div>
       <span class="pill">PARTY MODE · 2–8 PLAYERS</span>
     </header>
 
@@ -133,14 +133,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       </div>
       <div class="panel">
         <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div><div class="section-label" style="margin-bottom:5px">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">✊</span><span id="chosenUsername">Obsidian Owl</span></div></div>
+          <div><div class="section-label" style="margin-bottom:5px">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
           <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
         </div>
         <div class="start-grid">
           <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
-          <div class="option"><div class="emoji">🔑</div><h2>Join a room</h2><p>Got a code from a friend? Enter it to join their online room.</p><input class="field" id="joinCode" maxlength="6" placeholder="ROOM CODE" style="text-transform:uppercase;letter-spacing:.14em"><button class="btn secondary wide" id="joinBtn">Join room</button></div>
+          <div class="option"><div class="emoji">🚪</div><h2>Join an open room</h2><p>Pick a waiting room below — no code to type.</p><div id="openRooms" class="results-list" style="margin-top:10px"><div class="rule-card"><span>Looking for open rooms…</span></div></div><button class="btn secondary wide" id="refreshRooms" style="margin-top:10px">↻ Refresh rooms</button></div>
         </div>
-        <p class="note">No sign-up or nickname required: everyone gets a random Rock–Paper–Scissors-themed name. Room codes are synced online with Firebase.</p>
+        <p class="note">Kid-friendly by design — random game names + tap-to-join rooms mean no real names or personal info need to be typed in.</p>
         <div class="divider"></div>
         <div class="section-label">Community teams</div>
         <div class="prediction-grid" id="teamCounts">
@@ -236,9 +236,16 @@ const db = getDatabase(firebaseApp);
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
   const themedNames = [
-    "Obsidian Owl","Granite Griffin","Basalt Badger","Marble Mantis","Flint Fox","Quartz Quokka","Slate Shark","Pumice Panda",
-    "Origami Otter","Papyrus Phoenix","Parchment Pup","Cardboard Cat","Kraft Koala","Vellum Viper","Tissue Tiger","Newsprint Newt",
-    "Shears Sparrow","Snips Snake","Tailor Tortoise","Clipper Cobra","Bonsai Beetle","Pruner Panther","Scissor Shrike","Cobalt Cutter"
+    "Cosmic Otter","Turbo Turtle","Neon Narwhal","Pixel Panda","Jolly Jaguar","Mango Moose",
+    "Bouncy Badger","Dizzy Dolphin","Waffle Wolf","Sunny Sloth","Rocket Raccoon","Noodle Newt",
+    "Disco Duck","Fuzzy Falcon","Marshmallow Moth","Banana Beaver","Silly Seal","Comet Cat",
+    "Bubble Bear","Giggly Gecko","Zippy Zebra","Pepper Penguin","Lucky Llama","Jellyfish Jet",
+    "Moonlight Monkey","Sprinkle Shark","Pogo Pony","Cocoa Koala","Taco Tiger","Mystery Mouse",
+    "Electric Eagle","Pancake Parrot","Cheeky Cheetah","Rainbow Rabbit","Popcorn Puma","Doodle Dragon",
+    "Biscuit Buffalo","Glitter Goat","Speedy Sparrow","Muffin Mantis","Cloudy Crab","Funky Ferret",
+    "Starry Stingray","Peachy Pelican","Boogie Bunny","Churro Chameleon","Quirky Quokka","Lemon Lynx",
+    "Magic Marmot","Soda Squid","Velvet Vulture","Kooky Kangaroo","Cherry Cobra","Frosty Fox",
+    "Nacho Nightingale","Gummy Gorilla","Twinkle Toucan","Breezy Bison","Pudding Pigeon","Jumpy Jellybean"
   ];
   const modifiers = {
     2:{name:"⚡ Double Trouble",desc:"Base points for winning the round are doubled."},
@@ -257,9 +264,7 @@ const db = getDatabase(firebaseApp);
     return (available.length ? available : themedNames)[Math.floor(Math.random()*(available.length || themedNames.length))];
   }
   function theme(name) {
-    if (/^(Obsidian|Granite|Basalt|Marble|Flint|Quartz|Slate|Pumice)\b/.test(name)) return {icon:"✊",label:"Rock username"};
-    if (/^(Origami|Papyrus|Parchment|Cardboard|Kraft|Vellum|Tissue|Newsprint)\b/.test(name)) return {icon:"✋",label:"Paper username"};
-    return {icon:"✌️",label:"Scissors username"};
+    return {icon:"🎲",label:"Random game username"};
   }
   function updateUsername() {
     $("chosenUsername").textContent = selectedUsername;
@@ -448,11 +453,11 @@ const db = getDatabase(firebaseApp);
     );
     if (preferredName && !used.has(preferredName.trim().toLowerCase())) return preferredName;
 
-    // First try unused themed names.
+    // First try unused random game names.
     const available = themedNames.filter(n => !used.has(n.toLowerCase()));
     if (available.length) return available[Math.floor(Math.random()*available.length)];
 
-    // Fallback if every themed name is already taken.
+    // Fallback if every random game name is already taken.
     const base = preferredName || randomName();
     let suffix = 2;
     let candidate = `${base} ${suffix}`;
@@ -774,9 +779,47 @@ const db = getDatabase(firebaseApp);
     showEndTeamMessage();
   }
 
-  async function joinRoom() {
-    const code = $("joinCode").value.trim().toUpperCase();
-    if (!code) return toast("Enter a room code first.");
+  async function loadOpenRooms() {
+    const wrap=$("openRooms");
+    if(!wrap) return;
+    wrap.innerHTML='<div class="rule-card"><span>Looking for open rooms…</span></div>';
+    try {
+      await ensureSignedIn();
+      const snap=await get(ref(db,"rooms"));
+      const all=snap.exists()?snap.val():{};
+      const rooms=Object.entries(all)
+        .filter(([code,r])=>r && r.status==="lobby")
+        .map(([code,r])=>{
+          const realPlayers=Object.values(r.players||{}).filter(p=>!p.bot);
+          return {code,count:realPlayers.length,createdAt:Number(r.createdAt||0)};
+        })
+        .filter(r=>r.count<8)
+        .sort((a,b)=>b.createdAt-a.createdAt)
+        .slice(0,12);
+
+      if(!rooms.length){
+        wrap.innerHTML='<div class="rule-card"><strong>No open rooms right now</strong><span>Create one and it will appear here for other players.</span></div>';
+        return;
+      }
+
+      wrap.innerHTML=rooms.map(r=>`
+        <button class="predict open-room-btn" data-room="${r.code}" style="width:100%;text-align:left">
+          <b>Room ${escapeHtml(r.code)}</b>
+          <small>${r.count} ${r.count===1?"player":"players"} waiting · tap to join</small>
+        </button>`).join("");
+
+      wrap.querySelectorAll(".open-room-btn").forEach(btn=>{
+        btn.onclick=()=>joinRoom(btn.dataset.room);
+      });
+    } catch(e) {
+      console.warn("Could not load open rooms",e);
+      wrap.innerHTML='<div class="rule-card"><strong>Rooms unavailable</strong><span>Try refreshing in a moment.</span></div>';
+    }
+  }
+
+  async function joinRoom(roomCode) {
+    const code = String(roomCode||"").trim().toUpperCase();
+    if (!code) return toast("Choose an open room first.");
     try {
       const user = await ensureSignedIn();
       const roomRef = ref(db, `rooms/${code}`);
@@ -824,7 +867,7 @@ const db = getDatabase(firebaseApp);
   $("addPlayer").onclick = addDemoPlayer;
   $("startBtn").onclick = startGame;
   $("leaveLobby").onclick = leaveOnlineRoom;
-  $("joinBtn").onclick = joinRoom;
+  $("refreshRooms").onclick = loadOpenRooms;
   $("joinCode").addEventListener("input",e => { e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6); });
   $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(room); toast("Room code copied!"); } catch { toast("Your room code is "+room); } };
   $("rematch").onclick = async () => {
@@ -833,12 +876,13 @@ const db = getDatabase(firebaseApp);
   };
   $("homeBtn").onclick = leaveOnlineRoom;
   $("statsBtn").onclick = renderMyStats;
-  $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); };
+  $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
     currentUser = credential.user;
     loadCommunityTeams();
+    loadOpenRooms();
   }).catch(error => {
     console.error(error);
     toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
