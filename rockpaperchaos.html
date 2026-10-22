@@ -138,9 +138,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         </div>
         <div class="start-grid">
           <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
-          <div class="option"><div class="emoji">🔑</div><h2>Join a room</h2><p>Got a code from a friend? Enter it here. Online joining can be connected later without changing the game UI.</p><input class="field" id="joinCode" maxlength="6" placeholder="ROOM CODE" style="text-transform:uppercase;letter-spacing:.14em"><button class="btn secondary wide" id="joinBtn">Join room</button></div>
+          <div class="option"><div class="emoji">🔑</div><h2>Join a room</h2><p>Got a code from a friend? Enter it to join their online room.</p><input class="field" id="joinCode" maxlength="6" placeholder="ROOM CODE" style="text-transform:uppercase;letter-spacing:.14em"><button class="btn secondary wide" id="joinBtn">Join room</button></div>
         </div>
-        <p class="note">No sign-up or nickname required: everyone gets a random Rock–Paper–Scissors-themed name. This version uses simulated demo rivals. The room interface is ready to be connected to an online room service later.</p>
+        <p class="note">No sign-up or nickname required: everyone gets a random Rock–Paper–Scissors-themed name. Room codes are synced online with Firebase.</p>
       </div>
     </section>
 
@@ -153,15 +153,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div><div class="player-list" id="lobbyPlayers"></div>
             <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add demo rival</button></div>
-            <p class="note">Demo rivals are simulated opponents so you can test the complete match flow.</p>
+            <p class="note">Friends who join with this room code appear here automatically. You can still add demo rivals for testing.</p>
           </div>
           <div>
             <div class="section-label">How it works</div>
             <div class="rule-card"><strong>🔮 Predict a rival</strong><span>Choose one opponent and guess what they will play. Correct predictions earn +2.</span></div>
             <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
-            <div class="rule-card"><strong>🏆 Majority + counter bonus</strong><span>With 3+ players, each player whose move counters another move gets +1. Add those bonuses to each move total. A two-move tie goes to the move with the counter bonus; if all three moves tie after bonuses, the round is a draw.</span></div>
+            <div class="rule-card"><strong>🏆 Majority + counter bonus</strong><span>With 3+ players, move totals count. Players whose move beats at least one other move get +1 bonus; RPS advantage breaks a power tie.</span></div>
             <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Round 2 doubles base points, round 4 reverses RPS, and round 6 rewards ties.</span></div>
-            <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Game state stays in this browser for now; the room layer can be connected to an online backend later.</p>
+            <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
         </div>
       </div>
@@ -186,7 +186,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
   </div>
 </div>
 <div id="toast" class="toast hidden" role="status"></div>
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBv4Fkg64WgZlLIUg_hKYZ3EP4bsUlAuO0",
+  authDomain: "rock-paper-chaos-4e6ea.firebaseapp.com",
+  databaseURL: "https://rock-paper-chaos-4e6ea-default-rtdb.firebaseio.com/",
+  projectId: "rock-paper-chaos-4e6ea",
+  storageBucket: "rock-paper-chaos-4e6ea.firebasestorage.app",
+  messagingSenderId: "735740483204",
+  appId: "1:735740483204:web:7da074fa5b21c2655e14d1"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getDatabase(firebaseApp);
+
 (() => {
   const $ = id => document.getElementById(id);
   const screens = ["home","lobby","game","end"];
@@ -203,13 +221,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     6:{name:"🪞 Mirror Madness",desc:"A tied head-to-head matchup awards both players +1."}
   };
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "";
-  // Multiplayer adapter boundary: keep UI/game rules independent from storage/networking.
-  // Later, replace these local room operations with Firebase/Supabase/WebSocket calls.
-  const roomService = {
-    mode: "local-demo",
-    async create() { return randomCode(); },
-    async join(code) { return {ok:false, code, reason:"Online room service not connected yet."}; }
-  };
+  let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
   function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join(""); }
@@ -231,31 +243,90 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
   function makePlayer(name, bot=false) {
     return {id:Math.max(0,...players.map(p => p.id))+1,name,bot,host:false,score:0,move:null,prediction:null};
   }
+  async function ensureSignedIn() {
+    if (auth.currentUser) {
+      currentUser = auth.currentUser;
+      return currentUser;
+    }
+    const credential = await signInAnonymously(auth);
+    currentUser = credential.user;
+    return currentUser;
+  }
+
+  function playerFromFirebase(uid, data) {
+    return {id:uid, uid, name:data.name || "Mystery Player", bot:!!data.bot, host:!!data.host,
+            score:Number(data.score || 0), move:null, prediction:null};
+  }
+
+  function listenToRoom(code) {
+    if (roomUnsubscribe) roomUnsubscribe();
+    roomUnsubscribe = onValue(ref(db, `rooms/${code}`), snapshot => {
+      if (!snapshot.exists()) {
+        if (onlineRoom) {
+          onlineRoom = false;
+          toast("This room was closed.");
+          show("home");
+        }
+        return;
+      }
+      const data = snapshot.val();
+      players = Object.entries(data.players || {}).map(([uid,p]) => playerFromFirebase(uid,p));
+      players.sort((a,b) => Number(b.host) - Number(a.host));
+      room = code;
+      isHost = data.hostUid === currentUser?.uid;
+      onlineRoom = true;
+      renderLobby();
+      if (data.status === "playing" && !isHost) {
+        toast("The host started the match.");
+      }
+    });
+  }
+
+  async function makeUniqueRoomCode() {
+    for (let i=0; i<12; i++) {
+      const code = randomCode();
+      if (!(await get(ref(db, `rooms/${code}`))).exists()) return code;
+    }
+    throw new Error("Could not generate a unique room code.");
+  }
+
   async function createRoom() {
-    players = [];
-    const host = makePlayer(selectedUsername);
-    host.host = true;
-    players.push(host);
-    room = await roomService.create();
-    round = 1;
-    renderLobby();
-    show("lobby");
+    try {
+      const user = await ensureSignedIn();
+      room = await makeUniqueRoomCode();
+      const now = Date.now();
+      await set(ref(db, `rooms/${room}`), {
+        hostUid:user.uid, status:"lobby", round:1, createdAt:now, updatedAt:now,
+        players:{[user.uid]:{name:selectedUsername,host:true,bot:false,score:0,joinedAt:now}}
+      });
+      await onDisconnect(ref(db, `rooms/${room}/players/${user.uid}`)).remove();
+      isHost = true;
+      onlineRoom = true;
+      listenToRoom(room);
+      show("lobby");
+    } catch (error) {
+      console.error(error);
+      toast("Couldn't create the room. Check Firebase Auth and Database rules.");
+    }
   }
   function renderLobby() {
     $("roomCode").textContent = room;
     $("playerCount").textContent = `${players.length}/8`;
     $("lobbyPlayers").innerHTML = players.map(p => `<div class="player"><div class="avatar">${escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)} <span style="font-size:11px;color:var(--muted)">${theme(p.name).icon}</span></span>${p.host?'<span class="host-tag">HOST</span>':p.bot?'<span class="host-tag">DEMO</span>':''}</div>`).join("");
-    $("addPlayer").disabled = players.length >= 8;
-    $("addPlayer").style.opacity = players.length >= 8 ? ".5" : "1";
-    $("startBtn").disabled = players.length < 2;
-    $("startBtn").style.opacity = players.length < 2 ? ".5" : "1";
+    $("addPlayer").disabled = players.length >= 8 || !isHost;
+    $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
+    $("startBtn").disabled = players.length < 2 || !isHost;
+    $("startBtn").style.opacity = (players.length < 2 || !isHost) ? ".5" : "1";
   }
-  function addDemoPlayer() {
+  async function addDemoPlayer() {
+    if (!isHost) return toast("Only the host can add demo rivals.");
     if (players.length >= 8) return toast("Room is full — 8 players max.");
     let name = randomName();
     while (players.some(p => p.name === name) && themedNames.some(n => !players.some(p => p.name === n))) name = randomName();
-    players.push(makePlayer(name,true));
-    renderLobby();
+    const botId = `bot_${Date.now()}_${Math.floor(Math.random()*10000)}`;
+    await set(ref(db, `rooms/${room}/players/${botId}`), {
+      name, bot:true, host:false, score:0, joinedAt:Date.now()
+    });
   }
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g,c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -265,8 +336,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     const wins = (a==="rock"&&b==="scissors") || (a==="paper"&&b==="rock") || (a==="scissors"&&b==="paper");
     return reverse ? (wins ? -1 : 1) : (wins ? 1 : -1);
   }
-  function startGame() {
+  async function startGame() {
     if (players.length < 2) return;
+    if (onlineRoom && !isHost) return toast("Only the host can start the match.");
+    if (onlineRoom && room) await update(ref(db, `rooms/${room}`), {status:"playing",round:1,updatedAt:Date.now()});
     players.forEach(p => {p.score=0;p.move=null;p.prediction=null;});
     round = 1;
     beginRound();
@@ -356,21 +429,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       moves.forEach(m => power[m] = count[m] + counterBonus[m]);
       const maxPower = Math.max(...Object.values(power));
       let winningMoves = moves.filter(m => power[m] === maxPower);
-
-      // If all three moves tie after counter bonuses, the round is a draw.
-      if (winningMoves.length === 3) {
-        winningMoves = [];
-      } else if (winningMoves.length === 2) {
-        // For a two-move tie, the move that counters the other wins.
-        const [a,b] = winningMoves;
-        winningMoves = [beats(a,b,reverse) > 0 ? a : b];
+      if (winningMoves.length > 1) {
+        const rpsWinners = winningMoves.filter(m => !winningMoves.some(other => other !== m && beats(other,m,reverse) > 0));
+        if (rpsWinners.length) winningMoves = rpsWinners;
       }
-
       players.forEach(p => { if (winningMoves.includes(p.move)) p.score += basePoints; });
       details.unshift(`Move power — Rock ${power.rock}, Paper ${power.paper}, Scissors ${power.scissors}`);
       details.unshift(winningMoves.length === 1
         ? `${winningMoves[0][0].toUpperCase()+winningMoves[0].slice(1)} wins the round: +${basePoints} to each player who chose it.`
-        : `All three moves are tied after counter bonuses: draw, no winning point.`);
+        : `Power tie: ${winningMoves.join(" and ")} share the round: +${basePoints} to each matching player.`);
     } else {
       const a = players[0], b = players[1];
       const result = beats(a.move,b.move,reverse);
@@ -407,18 +474,64 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     $("winnerSub").textContent = `${sorted[0].score} points · ${sorted.length} players · 7 rounds of chaos`;
     $("finalScores").innerHTML = sorted.map((p,i) => `<div class="result-row"><div><b>${i===0?"👑 ":""}${escapeHtml(p.name)}</b><div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div></div><b class="score">${p.score} pts</b></div>`).join("");
   }
+  async function joinRoom() {
+    const code = $("joinCode").value.trim().toUpperCase();
+    if (!code) return toast("Enter a room code first.");
+    try {
+      const user = await ensureSignedIn();
+      const roomRef = ref(db, `rooms/${code}`);
+      const snap = await get(roomRef);
+      if (!snap.exists()) return toast("Room not found. Check the code and try again.");
+      const data = snap.val();
+      if (data.status && data.status !== "lobby") return toast("That game has already started.");
+      const count = data.players ? Object.keys(data.players).length : 0;
+      if (!data.players?.[user.uid] && count >= 8) return toast("That room is full.");
+      await set(ref(db, `rooms/${code}/players/${user.uid}`), {
+        name:selectedUsername, host:data.hostUid === user.uid, bot:false, score:0, joinedAt:Date.now()
+      });
+      await onDisconnect(ref(db, `rooms/${code}/players/${user.uid}`)).remove();
+      room = code;
+      isHost = data.hostUid === user.uid;
+      onlineRoom = true;
+      listenToRoom(code);
+      show("lobby");
+    } catch (error) {
+      console.error(error);
+      toast("Couldn't join. Check Firebase Auth and Database rules.");
+    }
+  }
+
+  async function leaveOnlineRoom() {
+    clearInterval(timerInt);
+    if (onlineRoom && room && currentUser) {
+      try {
+        if (isHost) await remove(ref(db, `rooms/${room}`));
+        else await remove(ref(db, `rooms/${room}/players/${currentUser.uid}`));
+      } catch (error) { console.error(error); }
+    }
+    if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+    onlineRoom = false; isHost = false; room = ""; players = [];
+    show("home");
+  }
+
   $("createBtn").onclick = createRoom;
   $("refreshUsername").onclick = () => { const previous = selectedUsername; do { selectedUsername = randomName(); } while (selectedUsername===previous && themedNames.length>1); updateUsername(); };
   $("addPlayer").onclick = addDemoPlayer;
   $("startBtn").onclick = startGame;
-  $("leaveLobby").onclick = () => { clearInterval(timerInt); show("home"); };
-  $("joinBtn").onclick = async () => { const code = $("joinCode").value.trim().toUpperCase(); if (!code) return toast("Enter a room code first."); const result = await roomService.join(code); toast(result.ok ? `Joined room ${code}` : result.reason); };
+  $("leaveLobby").onclick = leaveOnlineRoom;
+  $("joinBtn").onclick = joinRoom;
   $("joinCode").addEventListener("input",e => { e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6); });
   $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(room); toast("Room code copied!"); } catch { toast("Your room code is "+room); } };
   $("rematch").onclick = startGame;
-  $("homeBtn").onclick = () => { clearInterval(timerInt); show("home"); };
+  $("homeBtn").onclick = leaveOnlineRoom;
   selectedUsername = "Obsidian Owl";
   updateUsername();
+  signInAnonymously(auth).then(credential => {
+    currentUser = credential.user;
+  }).catch(error => {
+    console.error(error);
+    toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
+  });
 })();
 </script>
 </body>
