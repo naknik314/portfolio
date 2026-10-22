@@ -313,6 +313,29 @@ const db = getDatabase(firebaseApp);
     throw new Error("Could not generate a unique room code.");
   }
 
+  function uniqueRoomName(preferredName, roomData) {
+    const used = new Set(
+      Object.values(roomData?.players || {})
+        .map(p => String(p.name || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+    if (preferredName && !used.has(preferredName.trim().toLowerCase())) return preferredName;
+
+    // First try unused themed names.
+    const available = themedNames.filter(n => !used.has(n.toLowerCase()));
+    if (available.length) return available[Math.floor(Math.random()*available.length)];
+
+    // Fallback if every themed name is already taken.
+    const base = preferredName || randomName();
+    let suffix = 2;
+    let candidate = `${base} ${suffix}`;
+    while (used.has(candidate.toLowerCase())) {
+      suffix++;
+      candidate = `${base} ${suffix}`;
+    }
+    return candidate;
+  }
+
   async function createRoom() {
     try {
       const user = await ensureSignedIn();
@@ -343,8 +366,8 @@ const db = getDatabase(firebaseApp);
   async function addDemoPlayer() {
     if (!isHost) return toast("Only the host can add demo rivals.");
     if (players.length >= 8) return toast("Room is full — 8 players max.");
-    let name = randomName();
-    while (players.some(p => p.name === name) && themedNames.some(n => !players.some(p => p.name === n))) name = randomName();
+    const roomSnap = await get(ref(db, `rooms/${room}`));
+    const name = uniqueRoomName(randomName(), roomSnap.val() || {});
     const botId = `bot_${Date.now()}_${Math.floor(Math.random()*10000)}`;
     await set(ref(db, `rooms/${room}/players/${botId}`), {
       name, bot:true, host:false, score:0, joinedAt:Date.now()
@@ -584,8 +607,10 @@ const db = getDatabase(firebaseApp);
       if (data.status && data.status !== "lobby") return toast("That game has already started.");
       const count = data.players ? Object.keys(data.players).length : 0;
       if (!data.players?.[user.uid] && count >= 8) return toast("That room is full.");
+      const assignedName = uniqueRoomName(selectedUsername, data);
+      selectedUsername = assignedName;
       await set(ref(db, `rooms/${code}/players/${user.uid}`), {
-        name:selectedUsername, host:data.hostUid === user.uid, bot:false, score:0, joinedAt:Date.now()
+        name:assignedName, host:data.hostUid === user.uid, bot:false, score:0, joinedAt:Date.now()
       });
       room = code;
       isHost = data.hostUid === user.uid;
