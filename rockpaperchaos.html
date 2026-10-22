@@ -130,6 +130,44 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 100%{opacity:0;transform:translate(-50%,-50%) scale(1.05)}
 }
 .paper-fall{left:50%;top:48%;opacity:0;animation:paperDuplicate 1.35s cubic-bezier(.2,.8,.2,1) forwards}@keyframes paperDuplicate{0%{opacity:0;transform:translate(-50%,-50%) scale(.45)}18%{opacity:1;transform:translate(-50%,-50%) scale(1)}55%{opacity:1;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(.95) rotate(var(--copy-r,0deg))}100%{opacity:0;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(1.04) rotate(var(--copy-r,0deg))}}.scissors-slash{top:-130px;left:-130px;animation:scissorsDiagonal 1.35s cubic-bezier(.25,.7,.25,1) forwards}@keyframes scissorsDiagonal{0%{transform:translate(-15vw,-15vh) rotate(-35deg) scale(.75);opacity:0}15%{opacity:1}100%{transform:translate(120vw,115vh) rotate(25deg) scale(1.08);opacity:0}}@media(prefers-reduced-motion:reduce){.winner-piece{animation-duration:.01ms!important}}
+
+    /* Subtle Rock / Paper / Scissors homepage pattern */
+    #homeScreen{
+      position:relative;
+      isolation:isolate;
+      overflow:hidden;
+    }
+    #homeScreen::before{
+      content:"🪨  📄  ✂️      ✂️  🪨  📄      📄  ✂️  🪨\A\A      📄  ✂️  🪨      🪨  📄  ✂️      ✂️  🪨  📄\A\A ✂️  🪨  📄      📄  ✂️  🪨      🪨  📄  ✂️\A\A      🪨  📄  ✂️      ✂️  🪨  📄      📄  ✂️  🪨";
+      white-space:pre;
+      position:absolute;
+      inset:-30px;
+      z-index:-1;
+      pointer-events:none;
+      user-select:none;
+      font-size:34px;
+      line-height:2.4;
+      letter-spacing:14px;
+      opacity:.055;
+      transform:rotate(-8deg) scale(1.08);
+      filter:grayscale(.15);
+    }
+    #homeScreen::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:radial-gradient(circle at 50% 38%, rgba(18,18,35,.12) 0%, rgba(18,18,35,.48) 72%, rgba(18,18,35,.72) 100%);
+    }
+    @media (max-width:600px){
+      #homeScreen::before{
+        font-size:27px;
+        letter-spacing:8px;
+        line-height:2.7;
+        opacity:.05;
+      }
+    }
 </style>
 </head>
 <body>
