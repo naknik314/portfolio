@@ -362,7 +362,7 @@ const db = getDatabase(firebaseApp);
 
 (() => {
   const $ = id => document.getElementById(id);
-  const screens = ["home","lobby","game","stats","end"];
+  const screens = ["home","lobby","chaosPoints","game","stats","end"];
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
   const botNames = ["Byte Bot","Pixel Bot","Circuit Bot","Beep Bot","Chaos Droid","Gear Bot","Zap Bot","Robo Rumble"];
@@ -1780,7 +1780,6 @@ $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await r
       toast("Couldn’t load My Stats.");
     }
   };
-})();
 
   async function refreshChaosPointsPageBalance(){
     const el=$("chaosPointsPageBalance");
@@ -1797,22 +1796,20 @@ $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await r
   }
 
 
-  function openChaosPointsScreen(){
-    document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
-    const screen=$("chaosPoints");
-    if(screen) screen.classList.remove("hidden");
-    refreshChaosPointsPageBalance();
-    refreshChaosBotLobby();
-    refreshPowerReversalLobby();
+  async function openChaosPointsScreen(){
+    show("chaosPoints");
+    await refreshChaosPointsPageBalance();
+    await refreshChaosBotLobby();
+    await refreshPowerReversalLobby();
   }
 
   function returnToLobbyFromChaosPoints(){
-    document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
-    const lobby=$("lobby");
-    if(lobby) lobby.classList.remove("hidden");
+    show("lobby");
   }
   $("openChaosPoints").onclick=openChaosPointsScreen;
   $("backFromChaosPoints").onclick=returnToLobbyFromChaosPoints;
+
+})();
 </script>
 </body>
 </html>
