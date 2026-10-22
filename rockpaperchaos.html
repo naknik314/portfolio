@@ -243,7 +243,35 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </details>
 
             <div class="divider"></div>
-            <div class="section-label">💠 Spend Your Chaos Points</div>
+            <button class="btn secondary wide" id="openChaosPoints">💠 Spend Chaos Points →</button>
+            <p class="note">Use Chaos Points for optional game features before the match starts.</p>
+
+            <button class="btn wide" id="startBtn">Start 7-round game →</button>
+            <p class="note">You need at least 2 players. Only the room host can start the match.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section id="chaosPoints" class="hidden">
+      <div class="panel">
+        <div class="screen-title">
+          <div>
+            <div class="eyebrow">Optional game extras</div>
+            <h2>💠 Spend Your Chaos Points</h2>
+            <div class="sub">Use your Chaos Points before the match begins.</div>
+          </div>
+          <button class="btn ghost" id="backFromChaosPoints">← Back to Lobby</button>
+        </div>
+
+        <div class="rule-card" style="margin-bottom:14px">
+          <strong>💠 Your Chaos Points</strong>
+          <span id="chaosPointsPageBalance">Loading balance…</span>
+          <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Mode costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP bonus.</b></span>
+        </div>
+
+        <div class="section-label">💠 Spend Your Chaos Points</div>
             <div class="rule-card">
               <strong>Special game options</strong>
               <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Mode costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP Chaos Bot Mode bonus.</b></span>
@@ -273,14 +301,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <span id="powerReversalStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
-            <button class="btn wide" id="startBtn">Start 7-round game →</button>
-            <p class="note">You need at least 2 players. Only the room host can start the match.</p>
-          </div>
-        </div>
+            
       </div>
     </section>
 
-    <section id="game" class="hidden">
+<section id="game" class="hidden">
       <div class="panel">
         <div class="game-top"><div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div><div class="timer" id="timer">20s</div></div>
         <div class="progress"><div id="progressFill"></div></div>
@@ -1735,8 +1760,8 @@ async function refreshTeamPowerUI() {
   };
   $("homeBtn").onclick = leaveOnlineRoom;
 $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
-$("powerReversalBtn").onclick = activatePowerReversal;
-$("chaosBotBtn").onclick = activateChaosBotChallenge;
+$("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
+$("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
@@ -1756,6 +1781,31 @@ $("chaosBotBtn").onclick = activateChaosBotChallenge;
     }
   };
 })();
+
+  async function refreshChaosPointsPageBalance(){
+    const el=$("chaosPointsPageBalance");
+    if(!el || !currentUser) return;
+    try{
+      const snap=await get(ref(db,`profiles/${currentUser.uid}`));
+      const p=snap.exists()?snap.val():blankProfile();
+      const cp=Number(p.chaosPoints==null ? (p.totalPoints||0) : p.chaosPoints);
+      el.textContent=`Current balance: ${cp} CP`;
+    }catch(e){
+      console.error(e);
+      el.textContent="Current balance unavailable";
+    }
+  }
+
+  $("openChaosPoints").onclick=async()=>{
+    show("chaosPoints");
+    await refreshChaosPointsPageBalance();
+    await refreshChaosBotLobby();
+    await refreshPowerReversalLobby();
+  };
+
+  $("backFromChaosPoints").onclick=()=>{
+    show("lobby");
+  };
 </script>
 </body>
 </html>
