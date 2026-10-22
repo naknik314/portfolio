@@ -201,8 +201,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
             <div class="rule-card" style="margin-top:12px">
 <strong>🤖 Chaos Bot Challenge — 25 Chaos Points</strong>
-<span>Optional harder computer-rival mode. Chaos bots predict more often, save powers for stronger moments, and target more strategically. They never get free points or see hidden moves.</span>
-<span>🏆 Win the game and earn a +25 Chaos Point challenge bonus.</span>
+<span>Optional harder computer-rival mode. Chaos bots predict more often, save powers for stronger moments, target more strategically, and each bot has a 50/50 chance of getting a swapped power. They never get free points or see hidden moves.</span>
+<span>🏆 Win the game and earn a +40 Chaos Point challenge bonus.</span>
 <button class="btn secondary wide" id="chaosBotBtn" style="margin-top:9px">🤖 Enable Chaos Bot Challenge — 25</button>
 <span id="chaosBotStatus" class="muted">Checking your Chaos Points…</span>
 </div>
@@ -463,8 +463,8 @@ const db = getDatabase(firebaseApp);
       </div>
       <div class="rule-card" style="margin-top:12px">
 <strong>🤖 Chaos Bot Challenge</strong>
-<span>Spend 25 Chaos Points before a game to face smarter computer rivals. They predict more often, time powers more strategically, and choose stronger targets — without free points or hidden information.</span>
-<span>🏆 Win the game for a +25 Chaos Point challenge bonus.</span>
+<span>Spend 25 Chaos Points before a game to face smarter computer rivals. They predict more often, time powers more strategically, choose stronger targets, and each bot has a 50/50 chance of getting a swapped power — without free points or hidden information.</span>
+<span>🏆 Win the game for a +40 Chaos Point challenge bonus.</span>
 </div>
 <div class="section-label">Winning-move points</div>
       <div class="results-list">
@@ -700,7 +700,7 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, powerSwap:null, chaosBotChallenge:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, powerSwap:null, chaosBotChallenge:null, chaosBotPowerVariants:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -714,7 +714,7 @@ const db = getDatabase(firebaseApp);
   }
 
   const CHAOS_BOT_COST=25;
-  const CHAOS_BOT_WIN_BONUS=25;
+  const CHAOS_BOT_WIN_BONUS=40;
 
   async function isChaosBotChallengeActive(){
     if(!room) return false;
@@ -1065,6 +1065,24 @@ const db = getDatabase(firebaseApp);
             const choices=["rock","paper","scissors"];
             botPower=choices[Math.floor(Math.random()*choices.length)];
             await set(botPowerRef,botPower);
+          }
+
+          // Chaos Bot Challenge: each bot gets a stable 50/50 chance of
+          // using the swapped counterpart of its normal power this game.
+          if(chaosBotMode){
+            const variantRef=ref(db,`rooms/${room}/chaosBotPowerVariants/${p.uid}`);
+            const variantSnap=await get(variantRef);
+            let swapped;
+            if(variantSnap.exists()) swapped=variantSnap.val()==="swapped";
+            else {
+              swapped=Math.random()<0.5;
+              await set(variantRef,swapped?"swapped":"normal");
+            }
+            if(swapped){
+              botPower=botPower==="rock"?"reverseRock":
+                       botPower==="paper"?"reversePaper":
+                       botPower==="scissors"?"reverseScissors":botPower;
+            }
           }
 
           const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`));
@@ -1583,7 +1601,7 @@ const db = getDatabase(firebaseApp);
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
