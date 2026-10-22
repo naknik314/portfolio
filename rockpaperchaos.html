@@ -193,6 +193,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <span>🎲 <b>Team Unpredictable — Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
 <span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
 </div>
+            <div class="rule-card" style="margin-top:12px">
+              <strong>🔄 Power Reversal — 50 Chaos Points</strong>
+              <span>Optional advanced twist: spend 50 Chaos Points to reverse your team power for this game only. Rock gets Lockdown, Paper gets Misprint, Scissors gets Cut Your Losses, and Team Unpredictable gets one at random.</span>
+              <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:9px">🔄 Activate Power Reversal — 50</button>
+              <span id="powerReversalStatus" class="muted">Checking your Chaos Points…</span>
+            </div>
             <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
         </div>
@@ -387,7 +393,7 @@ const db = getDatabase(firebaseApp);
 
   function blankProfile() {
     return {
-      gamesPlayed:0,wins:0,ties:0,totalPoints:0,
+      gamesPlayed:0,wins:0,ties:0,totalPoints:0,chaosPoints:0,
       moveWinPoints:{rock:0,paper:0,scissors:0},
       team:"unassigned",recentGames:{}
     };
@@ -417,6 +423,7 @@ const db = getDatabase(firebaseApp);
     const user=await ensureSignedIn();
     const snap=await get(ref(db,`profiles/${user.uid}`));
     const p=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+    if(snap.exists() && snap.val().chaosPoints==null) p.chaosPoints=Number(p.totalPoints||0);
     const team=teamMeta[p.team]||teamMeta.unassigned;
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
     const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
@@ -428,6 +435,16 @@ const db = getDatabase(firebaseApp);
         <div class="result-row"><b>Ties</b><b class="score">${Number(p.ties||0)}</b></div>
         <div class="result-row"><b>Win rate</b><b class="score">${rate}%</b></div>
         <div class="result-row"><b>Total points</b><b class="score">${Number(p.totalPoints||0)}</b></div>
+        <div class="result-row"><b>⚡ Chaos Points</b><b class="score">${Number(p.chaosPoints||0)}</b></div>
+      </div>
+      <div class="rule-card" style="margin-top:12px">
+        <strong>🔄 Power Reversal</strong>
+        <span>Spend 50 Chaos Points before a game to replace your normal team power with its reversed version for that game only.</span>
+        <span>🪨 <b>Lockdown:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
+        <span>📄 <b>Misprint:</b> Finds the highest negative round result and copies that loss to everyone except you.</span>
+        <span>✂️ <b>Cut Your Losses:</b> Cuts your own negative round points in half, rounded toward zero.</span>
+        <span>🎲 <b>Team Unpredictable:</b> Randomly receives one of the three reversed powers for that game.</span>
+        <span>Chaos Points are spendable. Total Points remain your permanent career total.</span>
       </div>
       <div class="section-label">Winning-move points</div>
       <div class="results-list">
@@ -470,6 +487,7 @@ const db = getDatabase(firebaseApp);
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
         totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
+        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(finalScores[uid]||0)),
         moveWinPoints,
         previousTeam:old.team||"unassigned",
         team,
@@ -659,7 +677,7 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -672,12 +690,61 @@ const db = getDatabase(firebaseApp);
     return null;
   }
 
+  const REVERSAL_COST=50;
+
+  function reversedPowerForTeam(team){
+    if(team==="rock") return {key:"reverseRock",name:"🪨 Lockdown",desc:"Blocks everyone else's positive round points when it successfully resolves."};
+    if(team==="paper") return {key:"reversePaper",name:"📄 Misprint",desc:"Copies the highest negative round result to everyone except you."};
+    if(team==="scissors") return {key:"reverseScissors",name:"✂️ Cut Your Losses",desc:"Cuts your own negative round points in half, rounded toward zero."};
+    return null;
+  }
+
+  async function refreshPowerReversalLobby(){
+    const btn=$("powerReversalBtn"), status=$("powerReversalStatus");
+    if(!btn || !status || !room || !currentUser) return;
+    const [profileSnap,activeSnap]=await Promise.all([
+      get(ref(db,`profiles/${currentUser.uid}`)),
+      get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`))
+    ]);
+    const raw=profileSnap.exists()?profileSnap.val():blankProfile();
+    const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+    const active=activeSnap.exists() && activeSnap.val()===true;
+    if(active){
+      btn.disabled=true; btn.style.opacity=".55"; btn.textContent="🔄 Power Reversal Active";
+      status.textContent=`Activated for this game. ${balance} Chaos Points remaining.`;
+    }else{
+      btn.disabled=balance<REVERSAL_COST; btn.style.opacity=btn.disabled?".55":"1";
+      btn.textContent=`🔄 Activate Power Reversal — ${REVERSAL_COST}`;
+      status.textContent=balance<REVERSAL_COST
+        ? `You have ${balance} Chaos Points. You need ${REVERSAL_COST}.`
+        : `You have ${balance} Chaos Points. Activation lasts for this game only.`;
+    }
+  }
+
+  async function activatePowerReversal(){
+    if(!room || !currentUser) return;
+    const activeRef=ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`);
+    const activeSnap=await get(activeRef);
+    if(activeSnap.exists() && activeSnap.val()===true) return refreshPowerReversalLobby();
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const snap=await get(profileRef);
+    const raw=snap.exists()?snap.val():blankProfile();
+    const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+    if(balance<REVERSAL_COST) return toast(`You need ${REVERSAL_COST} Chaos Points.`);
+    await update(profileRef,{chaosPoints:balance-REVERSAL_COST,updatedAt:Date.now()});
+    await set(activeRef,true);
+    toast("🔄 Power Reversal activated for this game!");
+    await refreshPowerReversalLobby();
+  }
+
   async function loadActiveTeamPower() {
     if(!room || !currentUser) return null;
     const profileSnap=await get(ref(db,`profiles/${currentUser.uid}`));
     const profile=profileSnap.exists()?profileSnap.val():blankProfile();
     let team=profile.team||"unassigned";
     const isUnpredictable=team==="unassigned";
+    const reversalSnap=await get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`));
+    const reversalActive=reversalSnap.exists() && reversalSnap.val()===true;
     if(isUnpredictable){
       const powerRef=ref(db,`rooms/${room}/unpredictablePowers/${currentUser.uid}`);
       const powerSnap=await get(powerRef);
@@ -688,10 +755,13 @@ const db = getDatabase(firebaseApp);
         await set(powerRef,team);
       }
     }
-    const power=powerForTeam(team);
+    const power=reversalActive?reversedPowerForTeam(team):powerForTeam(team);
     if(isUnpredictable && power){
       power.displayName=`🎲 Jack of All Trades → ${power.name.replace(/^[^ ]+ /,"")}`;
       power.desc=`Jack of All Trades randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
+    } else if(reversalActive && power){
+      power.displayName=`🔄 Your reversed team power: ${power.name}`;
+      power.desc=`Power Reversal is active for this game. ${power.desc}`;
     }
     return power;
   }
@@ -1015,6 +1085,19 @@ const db = getDatabase(firebaseApp);
       });
     }
 
+    // Power Reversal — Cut Your Losses: halve your own negative round result.
+    players.forEach(p=>{
+      if(submissions[p.uid]?.teamPower!=="reverseScissors") return;
+      const delta=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
+      if(delta<0){
+        const reduced=-Math.floor(Math.abs(delta)/2);
+        scores[p.uid]=Number(scoresBefore[p.uid]||0)+reduced;
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. SUCCESS: ${delta} became ${reduced}. 🔒 ✂️ Cut Your Losses USED UP — unavailable for the rest of this game.`);
+      } else {
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. NO EFFECT: ${p.name} had no negative points to cut. 🔒 ✂️ Cut Your Losses USED UP — unavailable for the rest of this game.`);
+      }
+    });
+
     // Team Scissors: Cut in Half. Rock Solid can block it.
     // Multiple attacks resolve in player order and each one cuts whatever
     // positive round gain remains after the previous attack.
@@ -1083,6 +1166,35 @@ const db = getDatabase(firebaseApp);
       }
     });
 
+    // Power Reversal — Misprint: copy the largest negative round result to everyone except the user.
+    players.forEach(p=>{
+      if(submissions[p.uid]?.teamPower!=="reversePaper") return;
+      const losses=players.filter(o=>o.uid!==p.uid)
+        .map(o=>Math.min(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0)));
+      const worst=losses.length?Math.min(...losses):0;
+      if(worst<0){
+        players.filter(o=>o.uid!==p.uid).forEach(o=>{ scores[o.uid]+=worst; });
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. SUCCESS: copied ${worst} points to everyone else. 🔒 📄 Misprint USED UP — unavailable for the rest of this game.`);
+      } else {
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. NO EFFECT: nobody else had negative round points to copy. 🔒 📄 Misprint USED UP — unavailable for the rest of this game.`);
+      }
+    });
+
+    // Power Reversal — Lockdown: block everyone else's positive final round gain.
+    players.forEach(p=>{
+      if(submissions[p.uid]?.teamPower!=="reverseRock") return;
+      let blocked=0;
+      players.filter(o=>o.uid!==p.uid).forEach(o=>{
+        const gain=Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0));
+        if(gain>0){ scores[o.uid]-=gain; blocked++; }
+      });
+      if(blocked>0){
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Lockdown. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. 🔒 🪨 Lockdown USED UP — unavailable for the rest of this game.`);
+      } else {
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Lockdown. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Lockdown USED UP — unavailable for the rest of this game.`);
+      }
+    });
+
     const roundPoints={};
     players.forEach(p=>{
       roundPoints[p.uid]=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
@@ -1129,7 +1241,7 @@ const db = getDatabase(firebaseApp);
       .replace(/ (🔒|♻️)/g,"<br>$1");
     safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
     // Bold the named used-up / not-used-up power status on the final line.
-    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Lockdown|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
     return safe;
   }
 
@@ -1144,9 +1256,9 @@ const db = getDatabase(firebaseApp);
     // A clash can animate both powers in sequence.
     const animatedPowers=[];
     powerNotices.forEach(line=>{
-      if(line.includes("Rock Solid") && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
-      if(line.includes("Copycat") && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
-      if(line.includes("Cut in Half") && !animatedPowers.includes("Scissors")) animatedPowers.push("Scissors");
+      if((line.includes("Rock Solid")||line.includes("Lockdown")) && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
+      if((line.includes("Copycat")||line.includes("Misprint")) && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
+      if((line.includes("Cut in Half")||line.includes("Cut Your Losses")) && !animatedPowers.includes("Scissors")) animatedPowers.push("Scissors");
     });
     animatedPowers.forEach((powerName,index)=>{
       setTimeout(()=>celebrateWinningMove(powerName),250+(index*1450));
@@ -1339,7 +1451,7 @@ const db = getDatabase(firebaseApp);
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
@@ -1349,6 +1461,7 @@ const db = getDatabase(firebaseApp);
   };
   $("homeBtn").onclick = leaveOnlineRoom;
 $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
+$("powerReversalBtn").onclick = activatePowerReversal;
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
