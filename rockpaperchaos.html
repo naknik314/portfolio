@@ -650,9 +650,9 @@ const db = getDatabase(firebaseApp);
   }
 
   function powerForTeam(team) {
-    if(team==="rock") return {key:"rock",name:"🪨 Rock Solid",desc:"Block your negative points and protect your positive points from Cut in Half this round."};
-    if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive points another player earns this round."};
-    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive points earned this round in half."};
+    if(team==="rock") return {key:"rock",name:"🪨 Rock Solid",desc:"Protect yourself this round: blocks negative prediction points and stops Cut in Half from reducing your positive points. It does not block Copycat."};
+    if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive net points another player earns this round. You do not take their points away."};
+    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive net points earned this round in half, rounded down. Rock Solid can block it."};
     return null;
   }
 
@@ -825,10 +825,8 @@ const db = getDatabase(firebaseApp);
       const humanReady=humans.every(p=>submissions[p.uid]?.locked);
       if (isHost && humanReady) {
         const completed={...submissions};
-        players.filter(p=>p.bot).forEach(p=>{
+        for (const p of players.filter(p=>p.bot)) {
           let prediction=null;
-          // Computer rivals follow the same optional prediction rule as people.
-          // Round 4 disables predictions for everyone.
           if(round!==4 && Math.random()<0.7){
             const targets=players.filter(other=>other.uid!==p.uid);
             if(targets.length){
@@ -839,13 +837,41 @@ const db = getDatabase(firebaseApp);
               };
             }
           }
+
+          // Each computer rival gets one random team power for the whole game.
+          const botPowerRef=ref(db,`rooms/${room}/unpredictablePowers/${p.uid}`);
+          const botPowerSnap=await get(botPowerRef);
+          let botPower=botPowerSnap.exists()?botPowerSnap.val():null;
+          if(!botPower){
+            const choices=["rock","paper","scissors"];
+            botPower=choices[Math.floor(Math.random()*choices.length)];
+            await set(botPowerRef,botPower);
+          }
+
+          const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`));
+          const alreadyUsed=usedSnap.exists() && usedSnap.val()===true;
+          const useChance=round>=7?1:round>=6?.80:round>=5?.55:round>=3?.32:.18;
+          let teamPower=null, teamPowerTarget=null;
+
+          if(round!==4 && !alreadyUsed && Math.random()<useChance){
+            teamPower=botPower;
+            if(teamPower==="scissors"){
+              const targets=players.filter(other=>other.uid!==p.uid);
+              if(targets.length) teamPowerTarget=targets[Math.floor(Math.random()*targets.length)].uid;
+              else teamPower=null;
+            }
+            if(teamPower) await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
+          }
+
           completed[p.uid]={
             move:moves[Math.floor(Math.random()*3)],
             prediction,
+            teamPower,
+            teamPowerTarget,
             locked:true,
             submittedAt:Date.now()
           };
-        });
+        }
         await resolveSharedRound(completed);
       }
     }, {onlyOnce:false});
