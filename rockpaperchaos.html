@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rock Paper Chaos</title>
+<style>
+:root {
+  --site-primary: #7546D8;
+  --site-on-primary: #FFFFFF;
+  --site-secondary: #FFE0EB;
+  --site-on-secondary: #46203A;
+  --site-background: #F6F2FF;
+  --site-on-background: #211A35;
+  --site-font-body: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --site-font-heading: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --site-heading-scale: 1;
+  --site-spacing-scale: 1;
+  --site-radius-scale: 1;
+  --site-decoration-opacity: 1;
+  --bg: light-dark(#F6F2FF,#11101A);
+  --panel: light-dark(#FFFFFF,#1D1A2A);
+  --panel2: light-dark(#EFE9FF,#292438);
+  --text: light-dark(#211A35,#F8F4FF);
+  --muted: light-dark(#706984,#B6AEC8);
+  --line: light-dark(#E2D9F5,#3A334D);
+  --purple: var(--site-primary);
+  --pink: #FF668C;
+  --mint: #49D9B8;
+  --gold: #FFC966;
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--text); background: var(--bg); font-family: var(--site-font-body); }
+button { font: inherit; cursor: pointer; border: 0; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+#app { min-height: 100vh; width: 100%; background-color: var(--site-background); background: radial-gradient(ellipse at 10% 0%,light-dark(#E7DCFF,#29203F),transparent 42%), radial-gradient(ellipse at 100% 80%,light-dark(#FFE6ED,#3A1D32),transparent 35%),var(--bg); color: var(--text); padding: calc(22px * var(--site-spacing-scale)) 16px 42px; }
+.wrap { max-width: 980px; margin: 0 auto; }
+.top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:26px; }
+.brand { display:flex; align-items:center; gap:11px; font-weight:950; letter-spacing:-.04em; font-size:20px; }
+.logo { display:grid; place-items:center; width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,var(--purple),var(--pink)); color:white; font-size:23px; }
+.pill { font-size:11px; border:1px solid var(--line); border-radius:999px; padding:7px 11px; color:var(--muted); background:var(--panel); white-space:nowrap; }
+.hero { text-align:center; padding:15px 0 25px; }
+.eyebrow { color:var(--purple); font-weight:900; letter-spacing:.14em; text-transform:uppercase; font-size:11px; }
+.hero h1 { font-family:var(--site-font-heading); font-size:calc(clamp(40px,8vw,72px) * var(--site-heading-scale)); line-height:.97; letter-spacing:-.07em; margin:13px 0; }
+.hero h1 span { color:var(--pink); }
+.hero p { max-width:570px; margin:0 auto; color:var(--muted); line-height:1.65; }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:calc(24px * var(--site-radius-scale)); padding:clamp(18px,4vw,30px); box-shadow:0 18px 60px #24154a12; }
+.start-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.option { background:var(--panel2); border:1px solid var(--line); border-radius:18px; padding:20px; display:flex; flex-direction:column; align-items:flex-start; min-height:210px; }
+.option .emoji { font-size:30px; margin-bottom:12px; }
+.option h2 { margin:0 0 7px; font-size:20px; letter-spacing:-.03em; }
+.option p { margin:0 0 20px; color:var(--muted); font-size:14px; line-height:1.55; flex:1; }
+.btn { padding:12px 17px; border-radius:13px; background:var(--purple); color:var(--site-on-primary); font-weight:850; transition:transform .15s,filter .15s; }
+.btn:hover { filter:brightness(1.08); transform:translateY(-1px); }
+.btn.secondary { background:var(--panel); color:var(--text); border:1px solid var(--line); }
+.btn.ghost { background:transparent; color:var(--muted); padding:8px; }
+.wide { width:100%; }
+.field { width:100%; padding:12px 13px; border-radius:12px; background:var(--panel); border:1px solid var(--line); color:var(--text); margin-bottom:10px; }
+.hidden { display:none !important; }
+.note { font-size:12px; color:var(--muted); line-height:1.5; margin-top:16px; }
+.screen-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
+.screen-title h2 { margin:0; font-size:25px; letter-spacing:-.04em; }
+.sub { color:var(--muted); font-size:13px; margin-top:5px; }
+.code { font-size:29px; letter-spacing:.2em; font-weight:950; color:var(--purple); background:var(--panel2); padding:12px 18px; border-radius:14px; text-align:center; }
+.lobby-layout { display:grid; grid-template-columns:1.1fr .9fr; gap:18px; }
+.section-label { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--muted); font-weight:900; margin:0 0 12px; }
+.player-list { display:grid; gap:9px; }
+.player { display:flex; align-items:center; gap:10px; background:var(--panel2); border-radius:13px; padding:10px 12px; }
+.avatar { width:35px; height:35px; display:grid; place-items:center; border-radius:11px; background:linear-gradient(135deg,#A88AFF,#FF91B2); color:#251A40; font-weight:950; flex-shrink:0; }
+.player .name { font-weight:750; flex:1; }
+.host-tag { font-size:10px; color:var(--mint); font-weight:900; }
+.add-row { display:flex; gap:8px; margin-top:12px; }
+.add-row .field { margin:0; min-width:0; }
+.rule-card { padding:14px; background:var(--panel2); border-radius:14px; margin-bottom:10px; }
+.rule-card strong { display:block; margin-bottom:4px; }
+.rule-card span { font-size:13px; color:var(--muted); line-height:1.45; display:block; }
+.game-top { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:18px; }
+.round-label { font-size:12px; color:var(--muted); font-weight:850; text-transform:uppercase; letter-spacing:.1em; }
+.timer { font-weight:950; color:var(--pink); font-size:20px; }
+.progress { height:6px; background:var(--panel2); border-radius:999px; overflow:hidden; margin:12px 0 22px; }
+.progress > div { height:100%; background:linear-gradient(90deg,var(--purple),var(--pink)); width:0; transition:width .3s; }
+.modifier { border:1px solid #8B5CF655; background:linear-gradient(100deg,#8B5CF61A,#FF668C12); border-radius:16px; padding:14px; margin-bottom:18px; }
+.modifier b { display:block; margin-bottom:4px; }
+.modifier span { color:var(--muted); font-size:13px; }
+.choices { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0 18px; }
+.choice { background:var(--panel2); border:2px solid var(--line); border-radius:18px; padding:17px 8px; display:grid; place-items:center; gap:8px; color:var(--text); font-weight:850; }
+.choice .hand { font-size:42px; }
+.choice.selected { border-color:var(--purple); background:light-dark(#EEE7FF,#33274D); box-shadow:0 0 0 3px #8B5CF622; }
+.prediction-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.predict { padding:10px; border:1px solid var(--line); border-radius:12px; background:var(--panel2); color:var(--text); text-align:left; }
+.predict.selected { border-color:var(--mint); background:light-dark(#E3FFF6,#173A36); }
+.predict small { display:block; color:var(--muted); margin-top:3px; }
+.score-table { width:100%; border-collapse:collapse; }
+.score-table td,.score-table th { text-align:left; padding:11px 7px; border-bottom:1px solid var(--line); font-size:13px; }
+.score-table th { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.1em; }
+.score-table td:last-child,.score-table th:last-child { text-align:right; }
+.score { font-weight:950; color:var(--purple); }
+.results-list { display:grid; gap:8px; margin:15px 0; }
+.result-row { display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:13px; background:var(--panel2); gap:10px; }
+.muted { color:var(--muted); }
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+.toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:11px 16px; border-radius:12px; font-size:13px; font-weight:750; z-index:4; max-width:90vw; text-align:center; }
+.badge { font-size:11px; background:light-dark(#E5FFF6,#173A36); color:light-dark(#087B63,#7BF0CF); padding:6px 9px; border-radius:999px; font-weight:900; }
+.divider { height:1px; background:var(--line); margin:18px 0; }
+@media(max-width:680px) {
+  .start-grid,.lobby-layout { grid-template-columns:1fr; }
+  .option { min-height:0; }
+  .hero { padding-top:8px; }
+  .top { margin-bottom:15px; }
+  .panel { border-radius:20px; }
+  .choices { gap:7px; }
+  .choice { padding:13px 5px; }
+  .choice .hand { font-size:36px; }
+  .screen-title { align-items:flex-start; }
+  .code { font-size:24px; }
+  .prediction-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="wrap">
+    <header class="top">
+      <div class="brand"><div class="logo" aria-label="Rock, paper, and scissors party icon">🎉</div><span>ROCK PAPER CHAOS</span></div>
+      <span class="pill">PARTY MODE · 2–8 PLAYERS</span>
+    </header>
+
+    <section id="home">
+      <div class="hero">
+        <div class="eyebrow">Read the room. Predict the move. Own the chaos.</div>
+        <h1>Rock. Paper.<br><span>Chaos.</span></h1>
+        <p>Guess what your rivals will play, choose your own move, and see who can outthink the room.</p>
+      </div>
+      <div class="panel">
+        <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div><div class="section-label" style="margin-bottom:5px">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">✊</span><span id="chosenUsername">Obsidian Owl</span></div></div>
+          <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
+        </div>
+        <div class="start-grid">
+          <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
+          <div class="option"><div class="emoji">🔑</div><h2>Join a room</h2><p>Got a code from a friend? Enter it here. Online joining can be connected later without changing the game UI.</p><input class="field" id="joinCode" maxlength="6" placeholder="ROOM CODE" style="text-transform:uppercase;letter-spacing:.14em"><button class="btn secondary wide" id="joinBtn">Join room</button></div>
+        </div>
+        <p class="note">No sign-up or nickname required: everyone gets a random Rock–Paper–Scissors-themed name. This version uses simulated demo rivals. The room interface is ready to be connected to an online room service later.</p>
+      </div>
+    </section>
+
+    <section id="lobby" class="hidden">
+      <div class="panel">
+        <div class="screen-title"><div><div class="eyebrow">The pre-game huddle</div><h2>Room lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div><button class="btn ghost" id="leaveLobby">← Home</button></div>
+        <div class="lobby-layout">
+          <div>
+            <div class="section-label">Share your room code</div><div class="code" id="roomCode">------</div><button class="btn secondary wide" id="copyCode" style="margin-top:10px">Copy room code</button>
+            <div class="divider"></div>
+            <div class="section-label">Players <span id="playerCount">1/8</span></div><div class="player-list" id="lobbyPlayers"></div>
+            <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add demo rival</button></div>
+            <p class="note">Demo rivals are simulated opponents so you can test the complete match flow.</p>
+          </div>
+          <div>
+            <div class="section-label">How it works</div>
+            <div class="rule-card"><strong>🔮 Predict a rival</strong><span>Choose one opponent and guess what they will play. Correct predictions earn +2.</span></div>
+            <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
+            <div class="rule-card"><strong>🏆 Majority + counter bonus</strong><span>With 3+ players, each player whose move counters another move gets +1. Add those bonuses to each move total. A two-move tie goes to the move with the counter bonus; if all three moves tie after bonuses, the round is a draw.</span></div>
+            <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Round 2 doubles base points, round 4 reverses RPS, and round 6 rewards ties.</span></div>
+            <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Game state stays in this browser for now; the room layer can be connected to an online backend later.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="game" class="hidden">
+      <div class="panel">
+        <div class="game-top"><div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div><div class="timer" id="timer">20s</div></div>
+        <div class="progress"><div id="progressFill"></div></div>
+        <div class="modifier" id="modifier"><b>🔮 Read the room</b><span>Predict a rival, then choose your move.</span></div>
+        <div id="playArea"></div>
+      </div>
+    </section>
+
+    <section id="end" class="hidden">
+      <div class="panel">
+        <div class="result-hero" style="text-align:center;padding:18px 0"><div style="font-size:58px">🏆</div><div class="eyebrow">The chaos champion</div><h2 id="winnerTitle">Victory!</h2><p id="winnerSub" class="muted">The bluff was strong with this one.</p></div>
+        <div class="section-label">Final leaderboard</div><div id="finalScores" class="results-list"></div>
+        <div class="actions"><button class="btn" id="rematch">Run it back ↻</button><button class="btn secondary" id="homeBtn">Back to home</button></div>
+      </div>
+    </section>
+  </div>
+</div>
+<div id="toast" class="toast hidden" role="status"></div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const screens = ["home","lobby","game","end"];
+  const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
+  const moves = Object.keys(hands);
+  const themedNames = [
+    "Obsidian Owl","Granite Griffin","Basalt Badger","Marble Mantis","Flint Fox","Quartz Quokka","Slate Shark","Pumice Panda",
+    "Origami Otter","Papyrus Phoenix","Parchment Pup","Cardboard Cat","Kraft Koala","Vellum Viper","Tissue Tiger","Newsprint Newt",
+    "Shears Sparrow","Snips Snake","Tailor Tortoise","Clipper Cobra","Bonsai Beetle","Pruner Panther","Scissor Shrike","Cobalt Cutter"
+  ];
+  const modifiers = {
+    2:{name:"⚡ Double Trouble",desc:"Base points for winning the round are doubled."},
+    4:{name:"🔄 Reverse Gear",desc:"The winning cycle reverses for this round."},
+    6:{name:"🪞 Mirror Madness",desc:"A tied head-to-head matchup awards both players +1."}
+  };
+  let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "";
+  // Multiplayer adapter boundary: keep UI/game rules independent from storage/networking.
+  // Later, replace these local room operations with Firebase/Supabase/WebSocket calls.
+  const roomService = {
+    mode: "local-demo",
+    async create() { return randomCode(); },
+    async join(code) { return {ok:false, code, reason:"Online room service not connected yet."}; }
+  };
+  function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
+  function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
+  function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join(""); }
+  function randomName() {
+    const used = new Set(players.map(p => p.name));
+    const available = themedNames.filter(n => !used.has(n));
+    return (available.length ? available : themedNames)[Math.floor(Math.random()*(available.length || themedNames.length))];
+  }
+  function theme(name) {
+    if (/^(Obsidian|Granite|Basalt|Marble|Flint|Quartz|Slate|Pumice)\b/.test(name)) return {icon:"✊",label:"Rock username"};
+    if (/^(Origami|Papyrus|Parchment|Cardboard|Kraft|Vellum|Tissue|Newsprint)\b/.test(name)) return {icon:"✋",label:"Paper username"};
+    return {icon:"✌️",label:"Scissors username"};
+  }
+  function updateUsername() {
+    $("chosenUsername").textContent = selectedUsername;
+    $("chosenIcon").textContent = theme(selectedUsername).icon;
+    $("chosenIcon").setAttribute("aria-label",theme(selectedUsername).label);
+  }
+  function makePlayer(name, bot=false) {
+    return {id:Math.max(0,...players.map(p => p.id))+1,name,bot,host:false,score:0,move:null,prediction:null};
+  }
+  async function createRoom() {
+    players = [];
+    const host = makePlayer(selectedUsername);
+    host.host = true;
+    players.push(host);
+    room = await roomService.create();
+    round = 1;
+    renderLobby();
+    show("lobby");
+  }
+  function renderLobby() {
+    $("roomCode").textContent = room;
+    $("playerCount").textContent = `${players.length}/8`;
+    $("lobbyPlayers").innerHTML = players.map(p => `<div class="player"><div class="avatar">${escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)} <span style="font-size:11px;color:var(--muted)">${theme(p.name).icon}</span></span>${p.host?'<span class="host-tag">HOST</span>':p.bot?'<span class="host-tag">DEMO</span>':''}</div>`).join("");
+    $("addPlayer").disabled = players.length >= 8;
+    $("addPlayer").style.opacity = players.length >= 8 ? ".5" : "1";
+    $("startBtn").disabled = players.length < 2;
+    $("startBtn").style.opacity = players.length < 2 ? ".5" : "1";
+  }
+  function addDemoPlayer() {
+    if (players.length >= 8) return toast("Room is full — 8 players max.");
+    let name = randomName();
+    while (players.some(p => p.name === name) && themedNames.some(n => !players.some(p => p.name === n))) name = randomName();
+    players.push(makePlayer(name,true));
+    renderLobby();
+  }
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g,c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function beats(a,b,reverse=false) {
+    if (a === b) return 0;
+    const wins = (a==="rock"&&b==="scissors") || (a==="paper"&&b==="rock") || (a==="scissors"&&b==="paper");
+    return reverse ? (wins ? -1 : 1) : (wins ? 1 : -1);
+  }
+  function startGame() {
+    if (players.length < 2) return;
+    players.forEach(p => {p.score=0;p.move=null;p.prediction=null;});
+    round = 1;
+    beginRound();
+  }
+  function beginRound() {
+    clearInterval(timerInt);
+    selectedMove = null; targetId = null; predictedMove = null;
+    players.forEach(p => {p.move=null;p.prediction=null;});
+    show("game");
+    $("roundLabel").textContent = `ROUND ${round} OF 7`;
+    $("phaseLabel").textContent = "Choose & predict";
+    $("progressFill").style.width = `${((round-1)/7)*100}%`;
+    const modifier = modifiers[round];
+    $("modifier").innerHTML = modifier ? `<b>${modifier.name}</b><span>${modifier.desc}</span>` : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
+    renderMovePicker();
+    startTimer(25,() => {
+      if (!selectedMove) selectedMove = "rock";
+      if (!targetId) targetId = players.find(p => p.id !== players[0].id)?.id;
+      if (!predictedMove) predictedMove = "rock";
+      resolveRound();
+    });
+  }
+  function startTimer(seconds,callback) {
+    clearInterval(timerInt);
+    deadline = Date.now() + seconds*1000;
+    const tick = () => {
+      const left = Math.max(0,Math.ceil((deadline-Date.now())/1000));
+      $("timer").textContent = `${left}s`;
+      if (left <= 0) { clearInterval(timerInt); callback(); }
+    };
+    tick();
+    timerInt = setInterval(tick,250);
+  }
+  function renderMovePicker() {
+    $("playArea").innerHTML = `
+      <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
+      <p class="muted" style="margin-top:0">Pick rock, paper, or scissors for yourself.</p>
+      <div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>
+      <div class="divider"></div>
+      <h3 style="margin-bottom:6px">🔮 Predict a rival's move</h3>
+      <p class="muted" style="margin-top:0">Choose one opponent, then guess their move. Correct prediction = +2 points.</p>
+      <div class="prediction-grid">${players.filter(p => p.id !== players[0].id).map(p => `<button class="predict ${targetId===p.id?"selected":""}" data-target="${p.id}">${escapeHtml(p.name)}<small>${p.bot?"Demo rival":"Player"}</small></button>`).join("")}</div>
+      <div id="predictedMovePicker" class="hidden"></div>
+      <div class="divider"></div>
+      <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices & reveal →</button>
+      <p class="note">Your choices stay hidden until the reveal. In this local demo, rivals are simulated.</p>`;
+    $("playArea").querySelectorAll("[data-move]").forEach(button => button.onclick = () => { selectedMove = button.dataset.move; renderMovePicker(); });
+    $("playArea").querySelectorAll("[data-target]").forEach(button => button.onclick = () => { targetId = Number(button.dataset.target); renderMovePicker(); });
+    const predWrap = document.createElement("div");
+    predWrap.innerHTML = `<div class="divider"></div><h3 style="margin-bottom:6px">What do you think they'll play?</h3><div class="choices" style="margin-bottom:0">${moves.map(m => `<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
+    $("playArea").querySelector("#predictedMovePicker").replaceWith(predWrap);
+    predWrap.id = "predictedMovePicker";
+    predWrap.classList.remove("hidden");
+    predWrap.querySelectorAll("[data-guess]").forEach(button => button.onclick = () => { predictedMove = button.dataset.guess; renderMovePicker(); });
+    const lock = $("lockBtn");
+    lock.disabled = !(selectedMove && targetId && predictedMove);
+    lock.style.opacity = lock.disabled ? ".5" : "1";
+    lock.onclick = () => { if (selectedMove && targetId && predictedMove) resolveRound(); };
+  }
+  function resolveRound() {
+    clearInterval(timerInt);
+    if (!selectedMove) selectedMove = "rock";
+    if (!targetId) targetId = players.find(p => p.id !== players[0].id)?.id;
+    if (!predictedMove) predictedMove = "rock";
+    players[0].move = selectedMove;
+    players[0].prediction = {targetId,move:predictedMove};
+    players.slice(1).forEach(p => {
+      p.move = moves[Math.floor(Math.random()*moves.length)];
+      p.prediction = null;
+    });
+    const reverse = round === 4;
+    const basePoints = round === 2 ? 2 : 1;
+    const details = [];
+    if (players.length >= 3) {
+      const count = {rock:0,paper:0,scissors:0};
+      const counterBonus = {rock:0,paper:0,scissors:0};
+      players.forEach(p => count[p.move]++);
+      players.forEach(p => {
+        const countersSomeone = players.some(other => other.id !== p.id && beats(p.move,other.move,reverse) > 0);
+        if (countersSomeone) {
+          p.score += 1;
+          counterBonus[p.move]++;
+          details.push(`${p.name} gets +1 counter bonus`);
+        }
+      });
+      const power = {};
+      moves.forEach(m => power[m] = count[m] + counterBonus[m]);
+      const maxPower = Math.max(...Object.values(power));
+      let winningMoves = moves.filter(m => power[m] === maxPower);
+
+      // If all three moves tie after counter bonuses, the round is a draw.
+      if (winningMoves.length === 3) {
+        winningMoves = [];
+      } else if (winningMoves.length === 2) {
+        // For a two-move tie, the move that counters the other wins.
+        const [a,b] = winningMoves;
+        winningMoves = [beats(a,b,reverse) > 0 ? a : b];
+      }
+
+      players.forEach(p => { if (winningMoves.includes(p.move)) p.score += basePoints; });
+      details.unshift(`Move power — Rock ${power.rock}, Paper ${power.paper}, Scissors ${power.scissors}`);
+      details.unshift(winningMoves.length === 1
+        ? `${winningMoves[0][0].toUpperCase()+winningMoves[0].slice(1)} wins the round: +${basePoints} to each player who chose it.`
+        : `All three moves are tied after counter bonuses: draw, no winning point.`);
+    } else {
+      const a = players[0], b = players[1];
+      const result = beats(a.move,b.move,reverse);
+      if (result > 0) { a.score += basePoints; details.push(`${a.name} beats ${b.name}: +${basePoints}`); }
+      else if (result < 0) { b.score += basePoints; details.push(`${b.name} beats ${a.name}: +${basePoints}`); }
+      else if (round === 6) { a.score++; b.score++; details.push("Tie: both players get +1"); }
+      else details.push("Head-to-head tie: no points this round.");
+    }
+    const target = players.find(p => p.id === targetId);
+    if (target && target.move === predictedMove) {
+      players[0].score += 2;
+      details.unshift(`Correct prediction! +2 points for ${players[0].name}.`);
+    }
+    renderReveal(details,reverse,basePoints);
+  }
+  function renderReveal(details,reverse,basePoints) {
+    $("phaseLabel").textContent = "Phase 3 · The reveal";
+    $("timer").textContent = "REVEAL";
+    $("progressFill").style.width = `${round/7*100}%`;
+    $("playArea").innerHTML = `
+      <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${round===2?"⚡":round===4?"🔄":round===6?"🪞":"💥"}</div>
+      <h2 style="margin:5px 0;letter-spacing:-.04em">${round===2?"Double Trouble!":round===4?"Reverse Gear!":round===6?"Mirror Madness!":"The moves are revealed!"}</h2>
+      <p class="muted" style="margin:0">${reverse?"Winning cycle reversed this round.":modifiers[round]?.desc || "Standard scoring this round."}</p></div>
+      <div class="results-list">${players.map(p => `<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.id===players[0].id?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[p.move]} ${p.move}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
+      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,9).map(d => "• "+escapeHtml(d)).join("<br>")}</div>
+      <div class="actions"><button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button></div>`;
+    $("nextRound").onclick = () => { if (round===7) finishGame(); else { round++; beginRound(); } };
+  }
+  function finishGame() {
+    clearInterval(timerInt);
+    show("end");
+    const sorted = [...players].sort((a,b) => b.score-a.score);
+    $("winnerTitle").textContent = sorted.length>1 && sorted[0].score===sorted[1].score ? "It's a tie!" : `${sorted[0].name} wins!`;
+    $("winnerSub").textContent = `${sorted[0].score} points · ${sorted.length} players · 7 rounds of chaos`;
+    $("finalScores").innerHTML = sorted.map((p,i) => `<div class="result-row"><div><b>${i===0?"👑 ":""}${escapeHtml(p.name)}</b><div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div></div><b class="score">${p.score} pts</b></div>`).join("");
+  }
+  $("createBtn").onclick = createRoom;
+  $("refreshUsername").onclick = () => { const previous = selectedUsername; do { selectedUsername = randomName(); } while (selectedUsername===previous && themedNames.length>1); updateUsername(); };
+  $("addPlayer").onclick = addDemoPlayer;
+  $("startBtn").onclick = startGame;
+  $("leaveLobby").onclick = () => { clearInterval(timerInt); show("home"); };
+  $("joinBtn").onclick = async () => { const code = $("joinCode").value.trim().toUpperCase(); if (!code) return toast("Enter a room code first."); const result = await roomService.join(code); toast(result.ok ? `Joined room ${code}` : result.reason); };
+  $("joinCode").addEventListener("input",e => { e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6); });
+  $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(room); toast("Room code copied!"); } catch { toast("Your room code is "+room); } };
+  $("rematch").onclick = startGame;
+  $("homeBtn").onclick = () => { clearInterval(timerInt); show("home"); };
+  selectedUsername = "Obsidian Owl";
+  updateUsername();
+})();
+</script>
+</body>
+</html>
