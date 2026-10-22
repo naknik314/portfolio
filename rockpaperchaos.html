@@ -141,6 +141,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div class="option"><div class="emoji">🔑</div><h2>Join a room</h2><p>Got a code from a friend? Enter it to join their online room.</p><input class="field" id="joinCode" maxlength="6" placeholder="ROOM CODE" style="text-transform:uppercase;letter-spacing:.14em"><button class="btn secondary wide" id="joinBtn">Join room</button></div>
         </div>
         <p class="note">No sign-up or nickname required: everyone gets a random Rock–Paper–Scissors-themed name. Room codes are synced online with Firebase.</p>
+        <div class="divider"></div>
+        <div class="section-label">Community teams</div>
+        <div class="prediction-grid" id="teamCounts">
+          <div class="rule-card" style="text-align:center"><strong>🪨 Team Rock</strong><span id="teamRockCount">0 players</span></div>
+          <div class="rule-card" style="text-align:center"><strong>📄 Team Paper</strong><span id="teamPaperCount">0 players</span></div>
+          <div class="rule-card" style="text-align:center"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span></div>
+        </div>
+        <button class="btn secondary wide" id="statsBtn" style="margin-top:10px">My stats 🎲</button>
       </div>
     </section>
 
@@ -173,6 +181,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <div class="progress"><div id="progressFill"></div></div>
         <div class="modifier" id="modifier"><b>🔮 Read the room</b><span>Predict a rival, then choose your move.</span></div>
         <div id="playArea"></div>
+      </div>
+    </section>
+
+    <section id="stats" class="hidden">
+      <div class="panel">
+        <div class="screen-title"><div><div class="eyebrow">Device profile</div><h2>My stats</h2><div class="sub">Saved to this browser's anonymous player identity.</div></div><button class="btn ghost" id="statsHome">← Home</button></div>
+        <div id="statsContent"></div>
       </div>
     </section>
 
@@ -216,7 +231,7 @@ const db = getDatabase(firebaseApp);
 
 (() => {
   const $ = id => document.getElementById(id);
-  const screens = ["home","lobby","game","end"];
+  const screens = ["home","lobby","game","stats","end"];
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
   const themedNames = [
@@ -253,6 +268,104 @@ const db = getDatabase(firebaseApp);
   function makePlayer(name, bot=false) {
     return {id:Math.max(0,...players.map(p => p.id))+1,name,bot,host:false,score:0,move:null,prediction:null};
   }
+  const teamMeta = {
+    rock:{label:"Team Rock",icon:"🪨"},
+    paper:{label:"Team Paper",icon:"📄"},
+    scissors:{label:"Team Scissors",icon:"✂️"},
+    unassigned:{label:"Unassigned",icon:"🎲"}
+  };
+
+  function blankProfile() {
+    return {
+      gamesPlayed:0,wins:0,ties:0,totalPoints:0,
+      moveWinPoints:{rock:0,paper:0,scissors:0},
+      team:"unassigned",recentGames:{}
+    };
+  }
+
+  function chooseTeam(moveWinPoints={}, oldTeam="unassigned") {
+    const vals={rock:Number(moveWinPoints.rock||0),paper:Number(moveWinPoints.paper||0),scissors:Number(moveWinPoints.scissors||0)};
+    const max=Math.max(vals.rock,vals.paper,vals.scissors);
+    if(max<=0) return "unassigned";
+    const leaders=Object.keys(vals).filter(k=>vals[k]===max);
+    if(leaders.length===1) return leaders[0];
+    return leaders.includes(oldTeam) ? oldTeam : "unassigned";
+  }
+
+  async function loadCommunityTeams() {
+    try {
+      const snap=await get(ref(db,"profiles"));
+      const counts={rock:0,paper:0,scissors:0};
+      if(snap.exists()) Object.values(snap.val()).forEach(p=>{ if(counts[p.team]!==undefined) counts[p.team]++; });
+      $("teamRockCount").textContent=`${counts.rock} ${counts.rock===1?"player":"players"}`;
+      $("teamPaperCount").textContent=`${counts.paper} ${counts.paper===1?"player":"players"}`;
+      $("teamScissorsCount").textContent=`${counts.scissors} ${counts.scissors===1?"player":"players"}`;
+    } catch(e) { console.warn("Team counts unavailable",e); }
+  }
+
+  async function renderMyStats() {
+    const user=await ensureSignedIn();
+    const snap=await get(ref(db,`profiles/${user.uid}`));
+    const p=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+    const team=teamMeta[p.team]||teamMeta.unassigned;
+    const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
+    const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
+    $("statsContent").innerHTML=`
+      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span>Your team changes automatically when a different move leads your winning-move stats.</span></div>
+      <div class="results-list">
+        <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
+        <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
+        <div class="result-row"><b>Ties</b><b class="score">${Number(p.ties||0)}</b></div>
+        <div class="result-row"><b>Win rate</b><b class="score">${rate}%</b></div>
+        <div class="result-row"><b>Total points</b><b class="score">${Number(p.totalPoints||0)}</b></div>
+      </div>
+      <div class="section-label">Winning-move points</div>
+      <div class="results-list">
+        <div class="result-row"><b>🪨 Rock</b><b class="score">${Number(p.moveWinPoints?.rock||0)}</b></div>
+        <div class="result-row"><b>📄 Paper</b><b class="score">${Number(p.moveWinPoints?.paper||0)}</b></div>
+        <div class="result-row"><b>✂️ Scissors</b><b class="score">${Number(p.moveWinPoints?.scissors||0)}</b></div>
+      </div>
+      <div class="section-label">Recent games</div>
+      <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${Number(g.players||0)} players</div></div><b class="score">${Number(g.points||0)} pts</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
+    show("stats");
+  }
+
+  async function saveFinishedGameStats(finalScores, gameMoveWinPoints) {
+    const gameId=room || `game_${Date.now()}`;
+    const maxScore=Math.max(...Object.values(finalScores).map(Number));
+    const winners=Object.keys(finalScores).filter(uid=>Number(finalScores[uid])===maxScore);
+    const isTie=winners.length>1;
+
+    await Promise.all(players.filter(p=>!p.bot).map(async p=>{
+      const uid=p.uid;
+      const profileRef=ref(db,`profiles/${uid}`);
+      const snap=await get(profileRef);
+      const old=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+      if(old.recentGames?.[gameId]) return; // prevents double-counting the same game
+
+      const moveWinPoints={
+        rock:Number(old.moveWinPoints?.rock||0)+Number(gameMoveWinPoints?.[uid]?.rock||0),
+        paper:Number(old.moveWinPoints?.paper||0)+Number(gameMoveWinPoints?.[uid]?.paper||0),
+        scissors:Number(old.moveWinPoints?.scissors||0)+Number(gameMoveWinPoints?.[uid]?.scissors||0)
+      };
+      const team=chooseTeam(moveWinPoints,old.team);
+      const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
+      const recentGames={...(old.recentGames||{})};
+      recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now()};
+      const trimmed=Object.entries(recentGames).sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0)).slice(0,10);
+      const trimmedObj=Object.fromEntries(trimmed);
+
+      await set(profileRef,{
+        gamesPlayed:Number(old.gamesPlayed||0)+1,
+        wins:Number(old.wins||0)+(result==="Win"?1:0),
+        ties:Number(old.ties||0)+(result==="Tie"?1:0),
+        totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
+        moveWinPoints,team,recentGames:trimmedObj,updatedAt:Date.now()
+      });
+    }));
+    await loadCommunityTeams();
+  }
+
   async function ensureSignedIn() {
     if (auth.currentUser) {
       currentUser = auth.currentUser;
@@ -396,7 +509,7 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, rounds:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -497,6 +610,10 @@ const db = getDatabase(firebaseApp);
     const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
     const scores=scoresSnap.val() || {};
     players.forEach(p=>{ if(scores[p.uid]==null) scores[p.uid]=0; });
+    const moveLedgerSnap=await get(ref(db, `rooms/${room}/moveWinPoints`));
+    const moveLedger=moveLedgerSnap.val() || {};
+    players.forEach(p=>{ if(!moveLedger[p.uid]) moveLedger[p.uid]={rock:0,paper:0,scissors:0}; });
+    const addMoveWin=(uid,move,points)=>{ moveLedger[uid][move]=Number(moveLedger[uid][move]||0)+Number(points||0); };
     const details=[];
     const played={};
     players.forEach(p=>played[p.uid]=submissions[p.uid]?.move || "rock");
@@ -509,7 +626,7 @@ const db = getDatabase(firebaseApp);
 
       // Majority points first. A full three-way tie is a draw.
       if (majority.length===1) {
-        players.filter(p=>played[p.uid]===majority[0]).forEach(p=>scores[p.uid]+=1*multiplier);
+        players.filter(p=>played[p.uid]===majority[0]).forEach(p=>{scores[p.uid]+=1*multiplier;addMoveWin(p.uid,played[p.uid],1*multiplier);});
         details.push(`${majority[0][0].toUpperCase()+majority[0].slice(1)} has the majority: +${1*multiplier} to each matching player.`);
       } else {
         details.push("Majority is tied: no majority points.");
@@ -525,6 +642,7 @@ const db = getDatabase(firebaseApp);
         const countersPresent=players.some(o=>o.uid!==p.uid && beats(myMove,played[o.uid],reverse)>0);
         if(isMinority && countersPresent){
           scores[p.uid]+=1*multiplier;
+          addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
           details.push(`${p.name} gets +${1*multiplier} minority counter bonus.`);
         }
@@ -544,8 +662,8 @@ const db = getDatabase(firebaseApp);
     } else {
       const a=players[0], b=players[1];
       const r=beats(played[a.uid],played[b.uid],reverse);
-      if(r>0){scores[a.uid]+=1*multiplier;details.push(`${a.name} wins: +${1*multiplier}.`);}
-      else if(r<0){scores[b.uid]+=1*multiplier;details.push(`${b.name} wins: +${1*multiplier}.`);}
+      if(r>0){scores[a.uid]+=1*multiplier;addMoveWin(a.uid,played[a.uid],1*multiplier);details.push(`${a.name} wins: +${1*multiplier}.`);}
+      else if(r<0){scores[b.uid]+=1*multiplier;addMoveWin(b.uid,played[b.uid],1*multiplier);details.push(`${b.name} wins: +${1*multiplier}.`);}
       else details.push("Head-to-head tie: no win point.");
     }
 
@@ -570,7 +688,7 @@ const db = getDatabase(firebaseApp);
 
     const results={scores,details,reverse,basePoints:multiplier,moves:played};
     await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
-    await update(ref(db, `rooms/${room}`), {scores,updatedAt:Date.now()});
+    await update(ref(db, `rooms/${room}`), {scores,moveWinPoints:moveLedger,updatedAt:Date.now()});
   }
 
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={}) {
@@ -590,8 +708,14 @@ const db = getDatabase(firebaseApp);
   async function advanceRound() {
     if(!isHost) return;
     if(round===7){
-      const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
-      await update(ref(db, `rooms/${room}`), {status:"finished",scores:scoresSnap.val()||{},updatedAt:Date.now()});
+      const roomSnap=await get(ref(db, `rooms/${room}`));
+      const roomData=roomSnap.val()||{};
+      const finalScores=roomData.scores||{};
+      if(!roomData.statsSaved){
+        await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{});
+        await update(ref(db, `rooms/${room}`), {statsSaved:true});
+      }
+      await update(ref(db, `rooms/${room}`), {status:"finished",scores:finalScores,updatedAt:Date.now()});
     } else {
       round++;
       await update(ref(db, `rooms/${room}`), {round,updatedAt:Date.now()});
@@ -664,13 +788,16 @@ const db = getDatabase(firebaseApp);
   $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(room); toast("Room code copied!"); } catch { toast("Your room code is "+room); } };
   $("rematch").onclick = async () => {
     if (!isHost) return toast("Only the host can start a rematch.");
-    await update(ref(db, `rooms/${room}`), {status:"lobby",round:1,rounds:null,scores:null,updatedAt:Date.now()});
+    await update(ref(db, `rooms/${room}`), {status:"lobby",round:1,rounds:null,scores:null,moveWinPoints:null,statsSaved:false,updatedAt:Date.now()});
   };
   $("homeBtn").onclick = leaveOnlineRoom;
+  $("statsBtn").onclick = renderMyStats;
+  $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); };
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
     currentUser = credential.user;
+    loadCommunityTeams();
   }).catch(error => {
     console.error(error);
     toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
