@@ -701,7 +701,12 @@ const db = getDatabase(firebaseApp);
     if(!btn) return;
     activeTeamPower=await loadActiveTeamPower();
     if(!activeTeamPower) return;
-    $("teamPowerName").textContent=activeTeamPower.displayName||activeTeamPower.name;
+    const shownPowerName=activeTeamPower.displayName||activeTeamPower.name;
+    // Regular teams get a clear "Your team power" label.
+    // Team Unpredictable keeps the Jack of All Trades wording so its random-power identity is clear.
+    $("teamPowerName").textContent=activeTeamPower.displayName
+      ? shownPowerName
+      : `Your team power: ${shownPowerName}`;
     $("teamPowerDesc").textContent=activeTeamPower.desc+" One use per game.";
     const targetSelect=$("scissorsTarget");
     if(activeTeamPower.key==="scissors"){
