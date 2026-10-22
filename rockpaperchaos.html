@@ -1089,6 +1089,18 @@ const db = getDatabase(firebaseApp);
     setTimeout(()=>{layer.classList.remove("active");layer.innerHTML="";},cls==="paper-fall"?2300:2500);
   }
 
+  function formatPowerNotice(line){
+    let safe=escapeHtml(String(line||""));
+    safe=safe
+      .replace(/^(⚡ POWER USED|⚡ POWER ATTEMPT|⚡ POWER CLASH)/,"<strong>$1</strong>")
+      .replace(/ (SUCCESS:|NO EFFECT:)/g,"<br><strong>$1</strong>")
+      .replace(/ (BLOCKED by)/g,"<br><strong>$1</strong>")
+      .replace(/ (🔒|♻️)/g,"<br>$1");
+    // Bold the named used-up / not-used-up power status on the final line.
+    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    return safe;
+  }
+
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={}) {
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
@@ -1109,13 +1121,13 @@ const db = getDatabase(firebaseApp);
     });
     $("playArea").innerHTML=`
       <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
-      ${powerNotices.length?`<div class="rule-card" style="margin-bottom:14px">
-        ${powerNotices.map(line=>`<span>${escapeHtml(line)}</span>`).join("")}
-      </div>`:`<div class="rule-card" style="margin-bottom:14px">
+      ${powerNotices.length?`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
+        ${powerNotices.map(line=>`<span style="display:block;line-height:1.7;margin-bottom:8px">${formatPowerNotice(line)}</span>`).join("")}
+      </div>`:`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
         <span>⚡ No team power was used this round.</span>
       </div>`}
       <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b><div class="muted" style="font-size:12px;margin-top:4px">${Number(roundPoints[p.uid]||0)>0?"+":""}${Number(roundPoints[p.uid]||0)} this round</div></div></div>`).join("")}</div>
-      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
+      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT")).slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
     if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
   }
