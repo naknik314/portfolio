@@ -189,7 +189,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import { getDatabase, ref, set, get, update, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+import { getDatabase, ref, set, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBv4Fkg64WgZlLIUg_hKYZ3EP4bsUlAuO0",
@@ -222,6 +222,7 @@ const db = getDatabase(firebaseApp);
   };
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "";
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
+  // Player membership is removed only by the Leave action, not by temporary network disconnects.
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
   function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join(""); }
@@ -321,7 +322,6 @@ const db = getDatabase(firebaseApp);
         hostUid:user.uid, status:"lobby", round:1, createdAt:now, updatedAt:now,
         players:{[user.uid]:{name:selectedUsername,host:true,bot:false,score:0,joinedAt:now}}
       });
-      await onDisconnect(ref(db, `rooms/${room}/players/${user.uid}`)).remove();
       isHost = true;
       onlineRoom = true;
       listenToRoom(room);
@@ -571,7 +571,6 @@ const db = getDatabase(firebaseApp);
       await set(ref(db, `rooms/${code}/players/${user.uid}`), {
         name:selectedUsername, host:data.hostUid === user.uid, bot:false, score:0, joinedAt:Date.now()
       });
-      await onDisconnect(ref(db, `rooms/${code}/players/${user.uid}`)).remove();
       room = code;
       isHost = data.hostUid === user.uid;
       onlineRoom = true;
