@@ -445,6 +445,14 @@ const db = getDatabase(firebaseApp);
         <div class="result-row"><b>⚡ Chaos Points</b><b class="score">${Number(p.chaosPoints||0)}</b></div>
       </div>
       <div class="rule-card" style="margin-top:12px">
+        <strong>⚡ Team Powers — one use per game</strong>
+        <span>🪨 Team Rock gets <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+        <span>📄 Team Paper gets <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
+        <span>✂️ Team Scissors gets <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
+        <span>🎲 <b>Team Unpredictable gets Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
+        <span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
+      </div>
+      <div class="rule-card" style="margin-top:12px">
         <strong>🔄 Power Swap</strong>
         <span>You need at least 50 Chaos Points to activate Power Swap. Nothing is charged when you activate it; 50 points are spent only if you actually use the swapped power. If you never use it, you keep your points.</span>
         <span>🪨 <b>Lockdown:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
