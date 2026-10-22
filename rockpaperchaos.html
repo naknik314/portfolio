@@ -700,7 +700,6 @@ const db = getDatabase(firebaseApp);
     }
     const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
     const used=usedSnap.exists() && usedSnap.val()===true;
-    const targetSelect=$("scissorsTarget");
 
     if(used){
       teamPowerArmed=false;
