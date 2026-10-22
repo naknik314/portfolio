@@ -235,11 +235,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <details class="rule-card" style="margin-top:12px">
               <summary style="cursor:pointer;font-weight:850">⚡ Learn more about Team Powers</summary>
               <span style="margin-top:10px">Each player gets one normal team power per game. Powers cannot be used in Round 4.</span>
-              <span>🪨 <b>Rock Solid</b> — blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+              <span>🪨 <b>Barricade</b> — blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
               <span>📄 <b>Copycat</b> — copies the highest positive points another player earns that round.</span>
               <span>✂️ <b>Cut in Half</b> — cuts another player's positive round points in half, rounded down.</span>
               <span>🎲 <b>Jack of All Trades</b> — Team Unpredictable randomly gets one of the three powers each game.</span>
-              <span>If Rock Solid blocks Cut in Half, the Scissors player keeps Cut in Half for later.</span>
+              <span>If Barricade blocks Cut in Half, the Scissors player keeps Cut in Half for later.</span>
             </details>
 
             <div class="divider"></div>
@@ -264,7 +264,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about swapped powers</summary>
                 <span style="display:block;margin-top:10px">Activate before the game. Activation itself costs 0 CP; 50 CP is spent only if you actually use the swapped power.</span>
-                <span>🪨 Rock Solid → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.</span>
+                <span>🪨 Barricade → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.</span>
                 <span>📄 Copycat → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
                 <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
                 <span>🎲 Team Unpredictable gets the swapped version of its random power.</span>
@@ -752,9 +752,9 @@ const db = getDatabase(firebaseApp);
   }
 
   function powerForTeam(team) {
-    if(team==="rock") return {key:"rock",name:"🪨 Rock Solid",desc:"Protect yourself this round: blocks negative prediction points and stops Cut in Half from reducing your positive points. It does not block Copycat."};
+    if(team==="rock") return {key:"rock",name:"🪨 Barricade",desc:"Protect yourself this round: blocks negative prediction points and stops Cut in Half from reducing your positive points. It does not block Copycat."};
     if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive net points another player earns this round. You do not take their points away."};
-    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive net points earned this round in half, rounded down. Rock Solid can block it."};
+    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive net points earned this round in half, rounded down. Barricade can block it."};
     return null;
   }
 
@@ -871,7 +871,7 @@ const db = getDatabase(firebaseApp);
     await refreshPowerReversalLobby();
     await refreshChaosBotLobby();
     // If the move screen is already rendered, immediately reload the active
-    // power from Firebase so Copycat/Rock Solid/Cut in Half changes to its
+    // power from Firebase so Copycat/Barricade/Cut in Half changes to its
     // alternate version without requiring a page reload.
     if($("teamPowerBtn")) await refreshTeamPowerUI();
   }
@@ -1334,7 +1334,7 @@ async function refreshTeamPowerUI() {
           let appliedPenalty=penalty*multiplier;
           const power=submissions[p.uid]?.teamPower;
           if(power==="rock" && appliedPenalty>0){
-            details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid, which protects against negative prediction points and Cut in Half. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 🪨 Rock Solid USED UP — unavailable for the rest of this game.`);
+            details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative prediction points and Cut in Half. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 🪨 Barricade USED UP — unavailable for the rest of this game.`);
             appliedPenalty=0;
           } else {
             details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
@@ -1356,7 +1356,7 @@ async function refreshTeamPowerUI() {
       }
     });
 
-    // Team Scissors: Cut in Half. Rock Solid can block it.
+    // Team Scissors: Cut in Half. Barricade can block it.
     // Multiple attacks resolve in player order and each one cuts whatever
     // positive round gain remains after the previous attack.
     const cutTargets={};
@@ -1382,7 +1382,7 @@ async function refreshTeamPowerUI() {
         return;
       }
       if(submissions[target.uid]?.teamPower==="rock"){
-        details.push(`⚡ POWER CLASH — ${p.name} tried ✂️ Cut in Half on ${target.name}. BLOCKED by 🪨 Rock Solid. 🔒 ${target.name}'s Rock Solid is USED UP. ♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`);
+        details.push(`⚡ POWER CLASH — ${p.name} tried ✂️ Cut in Half on ${target.name}. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`);
         restoreScissorsPower.push(p.uid);
         return;
       }
@@ -1419,9 +1419,9 @@ async function refreshTeamPowerUI() {
 
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="rock") return;
-      const alreadyReported=details.some(line=>line.includes(p.name) && line.includes("Rock Solid"));
+      const alreadyReported=details.some(line=>line.includes(p.name) && line.includes("Barricade"));
       if(!alreadyReported){
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid, which protects against negative prediction points and Cut in Half. NO EFFECT: there was no prediction penalty or Cut in Half attack to block. 🔒 🪨 Rock Solid USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative prediction points and Cut in Half. NO EFFECT: there was no prediction penalty or Cut in Half attack to block. 🔒 🪨 Barricade USED UP — unavailable for the rest of this game.`);
       }
     });
 
@@ -1514,8 +1514,8 @@ async function refreshTeamPowerUI() {
       .replace(/ (🔒|♻️)/g,"<br>$1");
     safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
     // Bold the named used-up / not-used-up power status on the final line.
-    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
-    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
+    safe=safe.replace(/(🪨 Barricade|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    safe=safe.replace(/(🪨 Barricade|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
     return safe;
   }
 
@@ -1530,7 +1530,7 @@ async function refreshTeamPowerUI() {
     // A clash can animate both powers in sequence.
     const animatedPowers=[];
     powerNotices.forEach(line=>{
-      if((line.includes("Rock Solid")||line.includes("Stonewall")) && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
+      if((line.includes("Barricade")||line.includes("Stonewall")) && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
       if((line.includes("Copycat")||line.includes("Misprint")) && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
       if((line.includes("Cut in Half")||line.includes("Cut Your Losses")) && !animatedPowers.includes("Scissors")) animatedPowers.push("Scissors");
     });
