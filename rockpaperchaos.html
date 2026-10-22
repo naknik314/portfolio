@@ -157,7 +157,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <div class="screen-title"><div><div class="eyebrow">The pre-game huddle</div><h2>Room lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div><button class="btn ghost" id="leaveLobby">← Home</button></div>
         <div class="lobby-layout">
           <div>
-            <div class="section-label">Share your room code</div><div class="code" id="roomCode">------</div><button class="btn secondary wide" id="copyCode" style="margin-top:10px">Copy room code</button>
+            <div class="section-label">Your room</div><div class="code" id="roomCode">------</div><div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open room to pick.</div>
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div><div class="player-list" id="lobbyPlayers"></div>
             <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add computer rival</button></div>
@@ -194,8 +194,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     <section id="end" class="hidden">
       <div class="panel">
         <div class="result-hero" style="text-align:center;padding:18px 0"><div style="font-size:58px">🏆</div><div class="eyebrow">The chaos champion</div><h2 id="winnerTitle">Victory!</h2><p id="winnerSub" class="muted">The bluff was strong with this one.</p></div>
+        <div id="teamEndMessage" class="rule-card" style="margin:14px 0;text-align:center;display:none"></div>
         <div class="section-label">Final leaderboard</div><div id="finalScores" class="results-list"></div>
-        <div id="teamEndMessage" class="rule-card" style="margin-top:14px;text-align:center;display:none"></div>
         <div class="actions"><button class="btn" id="rematch">Run it back ↻</button><button class="btn secondary" id="homeBtn">Back to home</button></div>
       </div>
     </section>
@@ -936,6 +936,8 @@ const db = getDatabase(firebaseApp);
     if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
     onlineRoom = false; isHost = false; room = ""; players = [];
     show("home");
+    loadCommunityTeams();
+    loadOpenRooms();
   }
 
   $("createBtn").onclick = createRoom;
@@ -944,11 +946,20 @@ const db = getDatabase(firebaseApp);
   $("startBtn").onclick = startGame;
   $("leaveLobby").onclick = leaveOnlineRoom;
   $("refreshRooms").onclick = loadOpenRooms;
-  $("joinCode").addEventListener("input",e => { e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6); });
-  $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(room); toast("Room code copied!"); } catch { toast("Your room code is "+room); } };
+
   $("rematch").onclick = async () => {
-    if (!isHost) return toast("Only the host can start a rematch.");
-    await update(ref(db, `rooms/${room}`), {status:"lobby",round:1,rounds:null,scores:null,moveWinPoints:null,statsSaved:false,updatedAt:Date.now()});
+    if (!onlineRoom || !room) return toast("This game room is no longer active.");
+    if (!isHost) return toast("Only the host can start the rematch.");
+    try {
+      await update(ref(db, `rooms/${room}`), {
+        status:"lobby",round:1,rounds:null,scores:null,
+        moveWinPoints:null,statsSaved:false,updatedAt:Date.now()
+      });
+      toast("Rematch ready!");
+    } catch(error) {
+      console.error(error);
+      toast("Couldn’t start the rematch. Try again.");
+    }
   };
   $("homeBtn").onclick = leaveOnlineRoom;
   $("statsBtn").onclick = renderMyStats;
