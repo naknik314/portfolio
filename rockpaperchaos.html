@@ -730,7 +730,7 @@ const db = getDatabase(firebaseApp);
     if(targetSelect) targetSelect.disabled=round===4;
     btn.disabled=round===4;
     btn.style.opacity=btn.disabled?".5":"1";
-    btn.textContent=round===4?"Unavailable in Round 4":teamPowerArmed?"⚡ Team Power Armed":"⚡ Use Team Power";
+    btn.textContent=round===4?"Unavailable in Round 4":teamPowerArmed?"⚡ Team Power Active":"⚡ Use Team Power";
   }
 
   function beginRound(writeState=true) {
@@ -938,7 +938,21 @@ const db = getDatabase(firebaseApp);
       players.forEach(p=>{
         const myMove=played[p.uid];
         const isMinority=players.some(o=>count[played[o.uid]] > count[myMove]);
-        const countersPresent=players.some(o=>o.uid!==p.uid && beats(myMove,played[o.uid],reverse)>0);
+        // Counter bonus follows the active RPS relationship:
+        // Normal: Paper > Rock, Rock > Scissors, Scissors > Paper.
+        // Round 6 reverse: Rock > Paper, Paper > Scissors, Scissors > Rock.
+        const countersPresent=players.some(o=>{
+          if(o.uid===p.uid) return false;
+          const otherMove=played[o.uid];
+          if(!reverse){
+            return (myMove==="paper" && otherMove==="rock") ||
+                   (myMove==="rock" && otherMove==="scissors") ||
+                   (myMove==="scissors" && otherMove==="paper");
+          }
+          return (myMove==="rock" && otherMove==="paper") ||
+                 (myMove==="paper" && otherMove==="scissors") ||
+                 (myMove==="scissors" && otherMove==="rock");
+        });
         if(isMinority && countersPresent){
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
@@ -1108,6 +1122,7 @@ const db = getDatabase(firebaseApp);
       .replace(/ (SUCCESS:|NO EFFECT:)/g,"<br><strong>$1</strong>")
       .replace(/ (BLOCKED by)/g,"<br><strong>$1</strong>")
       .replace(/ (🔒|♻️)/g,"<br>$1");
+    safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
     // Bold the named used-up / not-used-up power status on the final line.
     safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
     return safe;
