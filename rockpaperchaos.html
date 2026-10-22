@@ -459,7 +459,7 @@ const db = getDatabase(firebaseApp);
   // Player membership is removed only by the Leave action, not by temporary network disconnects.
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
-  function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32), "chaosPoints"]).join(""); }
+  function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join(""); }
   function randomName() {
     const used = new Set(players.map(p => p.name));
     const available = themedNames.filter(n => !used.has(n));
@@ -706,8 +706,7 @@ const db = getDatabase(firebaseApp);
     $("playerCount").textContent = `${players.length}/8`;
     $("lobbyPlayers").innerHTML = players.map(p => {
       const removeBtn = (isHost && p.bot)
-        ? `<button class="btn ghost remove-computer" data-uid="${escapeHtml(p.uid)}" style="padding:6px 9px;
-    refreshChaosBotLobby();font-size:11px;margin-left:auto">Remove</button>`
+        ? `<button class="btn ghost remove-computer" data-uid="${escapeHtml(p.uid)}" style="padding:6px 9px;font-size:11px;margin-left:auto">Remove</button>`
         : "";
       return `<div class="player"><div class="avatar">${p.bot?"🤖":escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)}</span>${p.host?'<span class="host-tag">HOST</span>':(p.bot?'<span class="host-tag">COMPUTER</span>':'')}${removeBtn}</div>`;
     }).join("");
@@ -718,6 +717,7 @@ const db = getDatabase(firebaseApp);
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     $("startBtn").disabled = players.length < 2 || !isHost;
     $("startBtn").style.opacity = (players.length < 2 || !isHost) ? ".5" : "1";
+    refreshChaosBotLobby();
   }
   async function removeComputerPlayer(uid) {
     if (!isHost) return toast("Only the host can remove computer players.");
