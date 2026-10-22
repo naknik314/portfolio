@@ -246,16 +246,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="section-label">💠 Spend Your Chaos Points</div>
             <div class="rule-card">
               <strong>Special game options</strong>
-              <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Challenge costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP challenge bonus.</b></span>
+              <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Mode costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP Chaos Bot Mode bonus.</b></span>
             </div>
 
             <div class="rule-card">
-              <strong>🤖 Chaos Bot Challenge</strong>
+              <strong>🤖 Chaos Bot Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about the challenge</summary>
-                <span style="display:block;margin-top:10px">Chaos bots predict more often, time powers more strategically, choose stronger targets, and each bot can receive a swapped power. In Chaos Mode, a computer rival using Cut in Half can halve a target's TOTAL game score. Bots never see hidden moves or receive free points.</span>
+                <span style="display:block;margin-top:10px">Chaos Bot Mode only works when at least one computer rival is in the game. Chaos bots predict more often, time powers more strategically, choose stronger targets, and each bot can receive a swapped power. In Chaos Mode, a computer rival using Cut in Half can halve a target's TOTAL game score. Bots never see hidden moves or receive free points.</span>
               </details>
-              <button class="btn secondary wide" id="chaosBotBtn" style="margin-top:10px">🤖 Enable Chaos Bot Challenge — 25</button>
+              <button class="btn secondary wide" id="chaosBotBtn" style="margin-top:10px">🤖 Enable Chaos Bot Mode — 25 CP</button>
               <span id="chaosBotStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
@@ -269,7 +269,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
                 <span>🎲 Team Unpredictable gets the swapped version of its random power.</span>
               </details>
-              <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:10px">⚡ Activate Power Swap — 50</button>
+              <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:10px">⚡ Activate Power Swap — 50 CP when used</button>
               <span id="powerReversalStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
@@ -507,7 +507,7 @@ const db = getDatabase(firebaseApp);
       <div class="rule-card" style="margin-top:12px">
         <strong>💠 Spend Your Chaos Points</strong>
         <span>⚡ <b>Power Swap:</b> Have at least 50 CP to activate it; 50 CP is spent only if you actually use the swapped power.</span>
-        <span>🤖 <b>Chaos Bot Challenge:</b> Costs 25 CP to enter. Win the challenge for a +40 CP bonus.</span>
+        <span>🤖 <b>Chaos Bot Mode:</b> Costs 25 CP to enter. Win in Chaos Bot Mode for a +40 CP bonus.</span>
         <span>Full explanations and activation buttons are available in the game setup room.</span>
       </div>
 <div class="section-label">Winning-move points</div>
@@ -681,7 +681,8 @@ const db = getDatabase(firebaseApp);
     $("playerCount").textContent = `${players.length}/8`;
     $("lobbyPlayers").innerHTML = players.map(p => {
       const removeBtn = (isHost && p.bot)
-        ? `<button class="btn ghost remove-computer" data-uid="${escapeHtml(p.uid)}" style="padding:6px 9px;font-size:11px;margin-left:auto">Remove</button>`
+        ? `<button class="btn ghost remove-computer" data-uid="${escapeHtml(p.uid)}" style="padding:6px 9px;
+    refreshChaosBotLobby();font-size:11px;margin-left:auto">Remove</button>`
         : "";
       return `<div class="player"><div class="avatar">${p.bot?"🤖":escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)}</span>${p.host?'<span class="host-tag">HOST</span>':(p.bot?'<span class="host-tag">COMPUTER</span>':'')}${removeBtn}</div>`;
     }).join("");
@@ -776,9 +777,17 @@ const db = getDatabase(firebaseApp);
     const raw=ps.exists()?ps.val():blankProfile();
     const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
     const active=ms.exists() && ms.val()===true;
-    btn.disabled=active || balance<CHAOS_BOT_COST;
+    const hasBot=players.some(p=>p && p.bot);
+    btn.disabled=active || balance<CHAOS_BOT_COST || !hasBot;
+    if(!active && !hasBot){
+      btn.textContent="🤖 Add a computer rival to enable Chaos Bot Mode";
+      status.textContent="Chaos Bot Mode only works when at least one computer rival is in the game.";
+    }else if(!active){
+      btn.textContent="🤖 Enable Chaos Bot Mode — 25 CP";
+    }
+
     btn.style.opacity=btn.disabled?".55":"1";
-    btn.textContent=active?"🤖 Chaos Bot Challenge Active":`🤖 Enable Chaos Bot Challenge — ${CHAOS_BOT_COST}`;
+    btn.textContent=active?"🤖 Chaos Bot Mode Active":`🤖 Enable Chaos Bot Mode — ${CHAOS_BOT_COST}`;
     status.textContent=active
       ? `Harder bots enabled. ${balance} Chaos Points remaining.`
       : balance<CHAOS_BOT_COST
@@ -787,6 +796,12 @@ const db = getDatabase(firebaseApp);
   }
 
   async function activateChaosBotChallenge(){
+    if(!players.some(p=>p && p.bot)){
+      toast("Add a computer rival before enabling Chaos Bot Mode.");
+      await refreshChaosBotLobby();
+      return;
+    }
+
     if(!room || !currentUser) return;
     const modeRef=ref(db,`rooms/${room}/chaosBotChallenge/${currentUser.uid}`);
     if((await get(modeRef)).val()===true) return refreshChaosBotLobby();
@@ -797,7 +812,7 @@ const db = getDatabase(firebaseApp);
     if(balance<CHAOS_BOT_COST) return toast(`You need ${CHAOS_BOT_COST} Chaos Points.`);
     await update(profileRef,{chaosPoints:balance-CHAOS_BOT_COST,updatedAt:Date.now()});
     await set(modeRef,true);
-    toast("🤖 Chaos Bot Challenge enabled!");
+    toast("🤖 Chaos Bot Mode enabled!");
     await refreshChaosBotLobby();
   }
 
@@ -921,6 +936,13 @@ const db = getDatabase(firebaseApp);
   }
 
 async function refreshTeamPowerUI() {
+    const resetPowerBtn=$("teamPowerBtn");
+    if(resetPowerBtn){
+      resetPowerBtn.dataset.powerUsed="false";
+      resetPowerBtn.removeAttribute("aria-disabled");
+      resetPowerBtn.style.cursor="";
+    }
+
     // Always derive the power fresh from Firebase. This prevents a cached
     // normal power (for example Copycat) from surviving after Power Swap
     // has been activated.
@@ -1041,9 +1063,22 @@ async function refreshTeamPowerUI() {
       wrap.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{predictedMove=b.dataset.guess;renderMovePicker();});
     }
     $("teamPowerBtn").onclick=async()=>{
+    const usedPowerBtn=$("teamPowerBtn");
+    if(usedPowerBtn?.dataset.powerUsed==="true"){
+      toast("This power has already been used.");
+      return;
+    }
+
       if(round===4) return toast("Team powers are unavailable in Round 4.");
       const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
       if(usedSnap.exists() && usedSnap.val()===true){
+      if(btn){
+        btn.dataset.powerUsed="true";
+        btn.setAttribute("aria-disabled","true");
+        btn.style.opacity=".5";
+        btn.style.cursor="not-allowed";
+      }
+
         teamPowerArmed=false;
         await refreshTeamPowerUI();
         return toast("Your team power is already used up for this game.");
@@ -1141,7 +1176,7 @@ async function refreshTeamPowerUI() {
             await set(botPowerRef,botPower);
           }
 
-          // Chaos Bot Challenge: each bot gets a stable 50/50 chance of
+          // Chaos Bot Mode: each bot gets a stable 50/50 chance of
           // using the swapped counterpart of its normal power this game.
           if(chaosBotMode){
             const variantRef=ref(db,`rooms/${room}/chaosBotPowerVariants/${p.uid}`);
@@ -1352,7 +1387,7 @@ async function refreshTeamPowerUI() {
         return;
       }
       // CHAOS BOT RULE: when a computer rival uses normal Cut in Half during
-      // the Chaos Bot Challenge, it attacks the target's TOTAL game score.
+      // the Chaos Bot Mode, it attacks the target's TOTAL game score.
       // Everywhere else, Cut in Half keeps its normal round-points behavior.
       if(chaosBotMode && p.bot){
         const total=Math.max(0,Number(scores[target.uid]||0));
