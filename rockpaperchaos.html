@@ -700,7 +700,7 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, chaosBotChallenge:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, powerSwap:null, chaosBotChallenge:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -804,6 +804,7 @@ const db = getDatabase(firebaseApp);
     // Activation is free, but the player must currently have the full cost.
     // Chaos Points are charged only when the swapped power is actually used.
     await set(activeRef,true);
+    await set(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`),true);
     toast("🔄 Power Swap ready — 50 Chaos Points will be spent only if you use it.");
     await refreshPowerReversalLobby();
     await refreshChaosBotLobby();
@@ -819,8 +820,12 @@ const db = getDatabase(firebaseApp);
     const profile=profileSnap.exists()?profileSnap.val():blankProfile();
     let team=profile.team||"unassigned";
     const isUnpredictable=team==="unassigned";
-    const reversalSnap=await get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`));
-    const reversalActive=reversalSnap.exists() && reversalSnap.val()===true;
+    const [reversalSnap,swapSnap]=await Promise.all([
+      get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`)),
+      get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`))
+    ]);
+    const reversalActive=(reversalSnap.exists() && reversalSnap.val()===true) ||
+                         (swapSnap.exists() && swapSnap.val()===true);
     if(isUnpredictable){
       const powerRef=ref(db,`rooms/${room}/unpredictablePowers/${currentUser.uid}`);
       const powerSnap=await get(powerRef);
@@ -843,6 +848,11 @@ const db = getDatabase(firebaseApp);
   }
 
   async function refreshTeamPowerUI() {
+    // Always derive the power fresh from Firebase. This prevents a cached
+    // normal power (for example Copycat) from surviving after Power Swap
+    // has been activated.
+    activeTeamPower = await loadActiveTeamPower();
+
     const btn=$("teamPowerBtn");
     if(!btn) return;
     activeTeamPower=await loadActiveTeamPower();
@@ -1554,7 +1564,7 @@ const db = getDatabase(firebaseApp);
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,chaosBotChallenge:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
