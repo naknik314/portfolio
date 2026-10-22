@@ -115,9 +115,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
   .code { font-size:24px; }
   .prediction-grid { grid-template-columns:1fr 1fr; }
 }
+
+/* Winning-move celebration */
+#winnerAnimation{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999;display:none}#winnerAnimation.active{display:block}.winner-piece{position:absolute;font-size:clamp(54px,9vw,110px);filter:drop-shadow(0 8px 8px rgba(0,0,0,.28));will-change:transform,opacity}.rock-rain{top:-130px;animation:rockSlam 1.15s cubic-bezier(.2,.8,.25,1) forwards}@keyframes rockSlam{0%{transform:translateY(-20vh) scale(.75) rotate(-15deg);opacity:0}18%{opacity:1}72%{transform:translateY(76vh) scale(1.08) rotate(8deg)}82%{transform:translateY(71vh) scale(.98)}100%{transform:translateY(78vh);opacity:0}}.paper-fall{top:-120px;animation:paperLeaf 2.7s ease-in-out forwards}@keyframes paperLeaf{0%{transform:translate(0,-10vh) rotate(-18deg);opacity:0}12%{opacity:1}30%{transform:translate(55px,20vh) rotate(18deg)}52%{transform:translate(-45px,43vh) rotate(-14deg)}74%{transform:translate(50px,66vh) rotate(16deg)}100%{transform:translate(-20px,105vh) rotate(-8deg);opacity:0}}.scissors-slash{top:-130px;left:-130px;animation:scissorsDiagonal 1.35s cubic-bezier(.25,.7,.25,1) forwards}@keyframes scissorsDiagonal{0%{transform:translate(-15vw,-15vh) rotate(-35deg) scale(.75);opacity:0}15%{opacity:1}100%{transform:translate(120vw,115vh) rotate(25deg) scale(1.08);opacity:0}}@media(prefers-reduced-motion:reduce){.winner-piece{animation-duration:.01ms!important}}
 </style>
 </head>
 <body>
+<div id="winnerAnimation" aria-hidden="true"></div>
 <div id="app">
   <div class="wrap">
     <header class="top">
@@ -1039,6 +1043,24 @@ const db = getDatabase(firebaseApp);
     await update(ref(db, `rooms/${room}`), {scores,moveWinPoints:moveLedger,updatedAt:Date.now()});
   }
 
+  function celebrateWinningMove(revealWinner){
+    const layer=$("winnerAnimation"); if(!layer)return;
+    layer.innerHTML=""; layer.classList.remove("active");
+    const winner=String(revealWinner||"").toLowerCase(); let icon="",cls="",count=0;
+    if(winner.includes("rock")){icon="🪨";cls="rock-rain";count=9;}
+    else if(winner.includes("paper")){icon="📄";cls="paper-fall";count=7;}
+    else if(winner.includes("scissors")){icon="✂️";cls="scissors-slash";count=5;}
+    else return;
+    for(let i=0;i<count;i++){
+      const el=document.createElement("div"); el.className=`winner-piece ${cls}`; el.textContent=icon;
+      if(cls==="rock-rain"||cls==="paper-fall") el.style.left=`${6+Math.random()*86}%`;
+      else {el.style.left=`${-18-Math.random()*18}%`;el.style.top=`${-28-Math.random()*28}%`;}
+      el.style.animationDelay=`${i*(cls==="paper-fall"?.16:.09)}s`; layer.appendChild(el);
+    }
+    layer.classList.add("active");
+    setTimeout(()=>{layer.classList.remove("active");layer.innerHTML="";},cls==="paper-fall"?3900:2500);
+  }
+
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={}) {
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
@@ -1046,6 +1068,17 @@ const db = getDatabase(firebaseApp);
     const icon=round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
     const title=round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
     const powerNotices=(details||[]).filter(line=>line.includes("POWER USED")||line.includes("POWER CLASH")||line.includes("POWER ATTEMPT"));
+    // Big animations are reserved for team-power moments so they stay special.
+    // A clash can animate both powers in sequence.
+    const animatedPowers=[];
+    powerNotices.forEach(line=>{
+      if(line.includes("Rock Solid") && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
+      if(line.includes("Copycat") && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
+      if(line.includes("Cut in Half") && !animatedPowers.includes("Scissors")) animatedPowers.push("Scissors");
+    });
+    animatedPowers.forEach((powerName,index)=>{
+      setTimeout(()=>celebrateWinningMove(powerName),250+(index*1450));
+    });
     $("playArea").innerHTML=`
       <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
       ${powerNotices.length?`<div class="rule-card" style="margin-bottom:14px">
