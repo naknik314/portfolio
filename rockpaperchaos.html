@@ -195,7 +195,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 </div>
             <div class="rule-card" style="margin-top:12px">
               <strong>🔄 Power Reversal — 50 Chaos Points</strong>
-              <span>Optional advanced twist: spend 50 Chaos Points to reverse your team power for this game only. Rock gets Lockdown, Paper gets Misprint, Scissors gets Cut Your Losses, and Team Unpredictable gets one at random.</span>
+              <span>Optional advanced twist: you need 50 Chaos Points available to activate Power Reversal, but they are charged only if you actually use the reversed power. Rock gets Lockdown, Paper gets Misprint, Scissors gets Cut Your Losses, and Team Unpredictable gets one at random.</span>
               <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:9px">🔄 Activate Power Reversal — 50</button>
               <span id="powerReversalStatus" class="muted">Checking your Chaos Points…</span>
             </div>
@@ -439,7 +439,7 @@ const db = getDatabase(firebaseApp);
       </div>
       <div class="rule-card" style="margin-top:12px">
         <strong>🔄 Power Reversal</strong>
-        <span>Spend 50 Chaos Points before a game to replace your normal team power with its reversed version for that game only.</span>
+        <span>You need at least 50 Chaos Points to activate Power Reversal. Nothing is charged when you activate it; 50 points are spent only if you actually use the reversed power. If you never use it, you keep your points.</span>
         <span>🪨 <b>Lockdown:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
         <span>📄 <b>Misprint:</b> Finds the highest negative round result and copies that loss to everyone except you.</span>
         <span>✂️ <b>Cut Your Losses:</b> Cuts your own negative round points in half, rounded toward zero.</span>
@@ -711,7 +711,7 @@ const db = getDatabase(firebaseApp);
     const active=activeSnap.exists() && activeSnap.val()===true;
     if(active){
       btn.disabled=true; btn.style.opacity=".55"; btn.textContent="🔄 Power Reversal Active";
-      status.textContent=`Activated for this game. ${balance} Chaos Points remaining.`;
+      status.textContent=`Ready for this game. You still have ${balance} Chaos Points; ${REVERSAL_COST} will be spent only if you use the reversed power.`;
     }else{
       btn.disabled=balance<REVERSAL_COST; btn.style.opacity=btn.disabled?".55":"1";
       btn.textContent=`🔄 Activate Power Reversal — ${REVERSAL_COST}`;
@@ -730,11 +730,19 @@ const db = getDatabase(firebaseApp);
     const snap=await get(profileRef);
     const raw=snap.exists()?snap.val():blankProfile();
     const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
-    if(balance<REVERSAL_COST) return toast(`You need ${REVERSAL_COST} Chaos Points.`);
-    await update(profileRef,{chaosPoints:balance-REVERSAL_COST,updatedAt:Date.now()});
+    if(balance<REVERSAL_COST){
+      await refreshPowerReversalLobby();
+      return toast(`You need ${REVERSAL_COST} Chaos Points to activate Power Reversal.`);
+    }
+    // Activation is free, but the player must currently have the full cost.
+    // Chaos Points are charged only when the reversed power is actually used.
     await set(activeRef,true);
-    toast("🔄 Power Reversal activated for this game!");
+    toast("🔄 Power Reversal ready — 50 Chaos Points will be spent only if you use it.");
     await refreshPowerReversalLobby();
+    // If the move screen is already rendered, immediately reload the active
+    // power from Firebase so Copycat/Rock Solid/Cut in Half changes to its
+    // reversed version without requiring a page reload.
+    if($("teamPowerBtn")) await refreshTeamPowerUI();
   }
 
   async function loadActiveTeamPower() {
@@ -874,6 +882,9 @@ const db = getDatabase(firebaseApp);
       await refreshTeamPowerUI();
     };
     refreshTeamPowerUI();
+    // Re-check Firebase after the move UI is built so a purchased Power
+    // Reversal always appears on this round's Choose Your Move screen.
+    setTimeout(()=>refreshTeamPowerUI(),0);
 
     const ready = !!selectedMove;
     $("lockBtn").disabled=!ready;
@@ -901,8 +912,27 @@ const db = getDatabase(firebaseApp);
       submittedAt:Date.now()
     });
     if(canUseTeamPower){
-      await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
-      teamPowerArmed=false;
+      // Reversed powers cost Chaos Points only when actually used.
+      if(String(activeTeamPower?.key||"").startsWith("reverse")){
+        const profileRef=ref(db,`profiles/${uid}`);
+        const profileSnap=await get(profileRef);
+        const raw=profileSnap.exists()?profileSnap.val():blankProfile();
+        const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+        if(balance<REVERSAL_COST){
+          // Safety fallback: don't consume/submit a reversed power if the
+          // balance changed before lock-in.
+          await update(ref(db,`${roundPath()}/submissions/${uid}`),{teamPower:null,teamPowerTarget:null});
+          teamPowerArmed=false;
+          toast(`You need ${REVERSAL_COST} Chaos Points to use Power Reversal.`);
+        } else {
+          await update(profileRef,{chaosPoints:balance-REVERSAL_COST,updatedAt:Date.now()});
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+          teamPowerArmed=false;
+        }
+      } else {
+        await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+        teamPowerArmed=false;
+      }
     }
     $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🔒</div><h2>Locked in!</h2><p class="muted">Waiting for everyone else…</p></div>`;
     $("phaseLabel").textContent="Waiting for players";
