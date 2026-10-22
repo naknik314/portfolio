@@ -700,7 +700,7 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, powerSwap:null, chaosBotChallenge:null, chaosBotPowerVariants:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -882,8 +882,6 @@ async function refreshTeamPowerUI() {
     // has been activated.
     activeTeamPower = await loadActiveTeamPower();
     renderExactMovePower();
-    const displayedPowerName = displayedPowerName || "No team power";
-    const displayedPowerDesc = displayedPowerDesc || "";
 
     const btn=$("teamPowerBtn");
     if(!btn) return;
