@@ -561,12 +561,33 @@ const db = getDatabase(firebaseApp);
   function renderLobby() {
     $("roomCode").textContent = room;
     $("playerCount").textContent = `${players.length}/8`;
-    $("lobbyPlayers").innerHTML = players.map(p => `<div class="player"><div class="avatar">${escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)} <span style="font-size:11px;color:var(--muted)">${theme(p.name).icon}</span></span>${p.host?'<span class="host-tag">HOST</span>':(p.bot?'<span class="host-tag">COMPUTER</span>':'')}</div>`).join("");
+    $("lobbyPlayers").innerHTML = players.map(p => {
+      const removeBtn = (isHost && p.bot)
+        ? `<button class="btn ghost remove-computer" data-uid="${escapeHtml(p.uid)}" style="padding:6px 9px;font-size:11px;margin-left:auto">Remove</button>`
+        : "";
+      return `<div class="player"><div class="avatar">${p.bot?"🤖":escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)}</span>${p.host?'<span class="host-tag">HOST</span>':(p.bot?'<span class="host-tag">COMPUTER</span>':'')}${removeBtn}</div>`;
+    }).join("");
+    $("lobbyPlayers").querySelectorAll(".remove-computer").forEach(btn => {
+      btn.onclick = () => removeComputerPlayer(btn.dataset.uid);
+    });
     $("addPlayer").disabled = players.length >= 8 || !isHost;
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     $("startBtn").disabled = players.length < 2 || !isHost;
     $("startBtn").style.opacity = (players.length < 2 || !isHost) ? ".5" : "1";
   }
+  async function removeComputerPlayer(uid) {
+    if (!isHost) return toast("Only the host can remove computer players.");
+    const target = players.find(p => p.uid === uid);
+    if (!target || !target.bot) return toast("That player isn’t a computer.");
+    try {
+      await remove(ref(db, `rooms/${room}/players/${uid}`));
+      toast(`${target.name} removed.`);
+    } catch (error) {
+      console.error(error);
+      toast("Couldn’t remove that computer player.");
+    }
+  }
+
   async function addDemoPlayer() {
     if (!isHost) return toast("Only the host can add computer rivals.");
     if (players.length >= 8) return toast("Room is full — 8 players max.");
@@ -574,8 +595,18 @@ const db = getDatabase(firebaseApp);
     const roomData = roomSnap.val() || {};
     const existingNames = new Set(Object.values(roomData.players || {}).map(p => String(p.name || "").toLowerCase()));
     const availableBotNames = botNames.filter(n => !existingNames.has(n.toLowerCase()));
-    const baseBotName = (availableBotNames.length ? availableBotNames : botNames)[Math.floor(Math.random() * (availableBotNames.length || botNames.length))];
-    const name = uniqueRoomName(baseBotName, roomData);
+    let name;
+    if (availableBotNames.length) {
+      name = availableBotNames[Math.floor(Math.random() * availableBotNames.length)];
+    } else {
+      const baseBotName = botNames[Math.floor(Math.random() * botNames.length)];
+      let suffix = 2;
+      name = `${baseBotName} ${suffix}`;
+      while (existingNames.has(name.toLowerCase())) {
+        suffix++;
+        name = `${baseBotName} ${suffix}`;
+      }
+    }
     const botId = `bot_${Date.now()}_${Math.floor(Math.random()*10000)}`;
     await set(ref(db, `rooms/${room}/players/${botId}`), {
       name, bot:true, host:false, score:0, joinedAt:Date.now()
@@ -962,8 +993,7 @@ const db = getDatabase(firebaseApp);
     }
   };
   $("homeBtn").onclick = leaveOnlineRoom;
-  $("statsBtn").onclick = renderMyStats;
-  $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
+$("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
@@ -975,6 +1005,14 @@ const db = getDatabase(firebaseApp);
     toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
   });
 })();
+  $("statsBtn").onclick = async () => {
+    try {
+      await renderMyStats();
+    } catch (error) {
+      console.error(error);
+      toast("Couldn’t load My Stats.");
+    }
+  };
 </script>
 </body>
 </html>
