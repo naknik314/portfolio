@@ -117,28 +117,138 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 }
 
 /* Winning-move celebration */
-#winnerAnimation{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999;display:none}#winnerAnimation.active{display:block}.winner-piece{position:absolute;font-size:clamp(54px,9vw,110px);filter:drop-shadow(0 8px 8px rgba(0,0,0,.28));will-change:transform,opacity}.rock-rain{
-      position:absolute;
-      left:50% !important;
-      top:48%;
-      font-size:clamp(4rem,12vw,8rem);
-      opacity:0;
-      transform:translate(-50%,-50%) scale(.8);
-      animation:rockShake 1.25s ease-in-out forwards;
-      filter:drop-shadow(0 10px 14px rgba(0,0,0,.35));
-    }
-    @keyframes rockShake{
-      0%{opacity:0;transform:translate(-50%,-50%) scale(.72)}
-      15%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-      25%{transform:translate(calc(-50% - 10px),-50%) rotate(-5deg) scale(1.03)}
-      34%{transform:translate(calc(-50% + 10px),-50%) rotate(5deg) scale(1.03)}
-      43%{transform:translate(calc(-50% - 8px),-50%) rotate(-4deg) scale(1.02)}
-      52%{transform:translate(calc(-50% + 8px),-50%) rotate(4deg) scale(1.02)}
-      61%{transform:translate(calc(-50% - 5px),-50%) rotate(-2deg)}
-      70%{transform:translate(calc(-50% + 5px),-50%) rotate(2deg)}
-      82%{opacity:1;transform:translate(-50%,-50%) rotate(0deg) scale(1)}
-      100%{opacity:0;transform:translate(-50%,-50%) scale(1.08)}
-    };
+#winnerAnimation{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999;display:none}#winnerAnimation.active{display:block}.winner-piece{position:absolute;font-size:clamp(54px,9vw,110px);filter:drop-shadow(0 8px 8px rgba(0,0,0,.28));will-change:transform,opacity}.rock-rain{left:50% !important;top:48% !important;font-size:clamp(4rem,12vw,8rem);opacity:0;animation:rockSlam 1.25s ease-in-out forwards}@keyframes rockSlam{
+0%{opacity:0;transform:translate(-50%,-50%) scale(.75)}
+15%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+26%{transform:translate(calc(-50% - 10px),-50%) rotate(-5deg)}
+36%{transform:translate(calc(-50% + 10px),-50%) rotate(5deg)}
+46%{transform:translate(calc(-50% - 7px),-50%) rotate(-4deg)}
+56%{transform:translate(calc(-50% + 7px),-50%) rotate(4deg)}
+66%{transform:translate(calc(-50% - 4px),-50%) rotate(-2deg)}
+76%{transform:translate(calc(-50% + 4px),-50%) rotate(2deg)}
+86%{opacity:1;transform:translate(-50%,-50%) rotate(0)}
+100%{opacity:0;transform:translate(-50%,-50%) scale(1.05)}
+}
+.paper-fall{left:50%;top:48%;opacity:0;animation:paperDuplicate 1.35s cubic-bezier(.2,.8,.2,1) forwards}@keyframes paperDuplicate{0%{opacity:0;transform:translate(-50%,-50%) scale(.45)}18%{opacity:1;transform:translate(-50%,-50%) scale(1)}55%{opacity:1;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(.95) rotate(var(--copy-r,0deg))}100%{opacity:0;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(1.04) rotate(var(--copy-r,0deg))}}.scissors-slash{top:-130px;left:-130px;animation:scissorsDiagonal 1.35s cubic-bezier(.25,.7,.25,1) forwards}@keyframes scissorsDiagonal{0%{transform:translate(-15vw,-15vh) rotate(-35deg) scale(.75);opacity:0}15%{opacity:1}100%{transform:translate(120vw,115vh) rotate(25deg) scale(1.08);opacity:0}}@media(prefers-reduced-motion:reduce){.winner-piece{animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="winnerAnimation" aria-hidden="true"></div>
+<div id="app">
+  <div class="wrap">
+    <header class="top">
+      <div class="brand"><div class="logo" aria-label="Dice icon">🎲</div><span>RPS WITH A TWIST</span></div>
+      <span class="pill">PARTY MODE · 2–8 PLAYERS</span>
+    </header>
+
+    <section id="home">
+      <div class="hero">
+        <div class="eyebrow">Read the room. Predict the move. Own the chaos.</div>
+        <h1>Rock. Paper.<br><span>Chaos.</span></h1>
+        <p>Guess what your rivals will play, choose your own move, and see who can outthink the room.</p>
+      </div>
+      <div class="panel">
+        <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div><div class="section-label" style="color:var(--muted)">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
+          <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
+        </div>
+        <div class="start-grid">
+          <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
+          <div class="option"><div class="emoji">🚪</div><h2>Join an open room</h2><p>Pick a waiting room below — no code to type.</p><div id="openRooms" class="results-list" style="margin-top:10px"><div class="rule-card"><span>Looking for open rooms…</span></div></div><button class="btn secondary wide" id="refreshRooms" style="margin-top:10px">↻ Refresh rooms</button></div>
+        </div>
+        <p class="note">Kid-friendly by design — random game names + tap-to-join rooms mean no real names or personal info need to be typed in.</p>
+        <div class="divider"></div>
+        <div class="section-label">Community teams</div>
+        <div class="prediction-grid" id="teamCounts">
+          <div class="rule-card" style="text-align:center"><strong>🪨 Team Rock</strong><span id="teamRockCount">0 players</span></div>
+          <div class="rule-card" style="text-align:center"><strong>📄 Team Paper</strong><span id="teamPaperCount">0 players</span></div>
+          <div class="rule-card" style="text-align:center"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span></div>
+        </div>
+        <button class="btn secondary wide" id="statsBtn" style="margin-top:10px">My stats 🎲</button>
+      </div>
+    </section>
+
+    <section id="lobby" class="hidden">
+      <div class="panel">
+        <div class="screen-title"><div><div class="eyebrow">The pre-game huddle</div><h2>Room lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div><button class="btn ghost" id="leaveLobby">← Home</button></div>
+        <div class="lobby-layout">
+          <div>
+            <div class="section-label">Your room</div><div class="code" id="roomCode">------</div><div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open room to pick.</div>
+            <div class="divider"></div>
+            <div class="section-label">Players <span id="playerCount">1/8</span></div><div class="player-list" id="lobbyPlayers"></div>
+            <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add computer rival</button></div>
+            <p class="note">Friends who join with this room code appear here automatically. You can also add computer rivals for testing.</p>
+          </div>
+          <div>
+            <div class="section-label">How it works</div>
+            <div class="rule-card"><strong>🔮 Predict a rival</strong><span>Choose one opponent and guess what they will play. Correct predictions earn +2.</span></div>
+            <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
+            <div class="rule-card"><strong>🏆 Majority + minority counter bonus</strong><span>With 3+ players, move totals count. You only get the +1 counter bonus when your move is in the minority AND it beats another move chosen that round. Example: 1 Rock vs 2 Scissors → the Rock player gets the minority counter bonus.</span></div>
+            <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Round 2 doubles base points, round 4 reverses RPS, and round 6 rewards ties.</span></div>
+            <div class="rule-card" style="margin-top:12px">
+<strong>⚡ Team Powers — one use per game</strong>
+<span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+<span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
+<span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
+<span>🎲 <b>Team Unpredictable — Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
+<span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
+</div>
+            <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="game" class="hidden">
+      <div class="panel">
+        <div class="game-top"><div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div><div class="timer" id="timer">20s</div></div>
+        <div class="progress"><div id="progressFill"></div></div>
+        <div class="modifier" id="modifier"><b>🔮 Read the room</b><span>Predict a rival, then choose your move.</span></div>
+        <div id="playArea"></div>
+      </div>
+    </section>
+
+    <section id="stats" class="hidden">
+      <div class="panel">
+        <div class="screen-title"><div><div class="eyebrow">Device profile</div><h2>My stats</h2><div class="sub">Saved to this browser's anonymous player identity.</div></div><button class="btn ghost" id="statsHome">← Home</button></div>
+        <div id="statsContent"></div>
+        <div class="rule-card" style="margin-top:12px">
+<strong>⚡ Team Powers — one use per game</strong>
+<span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+<span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
+<span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
+<span>🎲 <b>Team Unpredictable — Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
+<span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
+</div>
+      </div>
+    </section>
+
+    <section id="end" class="hidden">
+      <div class="panel">
+        <div class="result-hero" style="text-align:center;padding:18px 0"><div style="font-size:58px">🏆</div><div class="eyebrow">The chaos champion</div><h2 id="winnerTitle">Victory!</h2><p id="winnerSub" class="muted">The bluff was strong with this one.</p></div>
+        <div id="teamEndMessage" class="rule-card" style="margin:14px 0;text-align:center;display:none"></div>
+        <div class="section-label">Final leaderboard</div><div id="finalScores" class="results-list"></div>
+        <div class="actions"><button class="btn" id="rematch">Run it back ↻</button><button class="btn secondary" id="homeBtn">Back to home</button></div>
+      </div>
+    </section>
+  </div>
+</div>
+<div id="toast" class="toast hidden" role="status"></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
+import { getDatabase, ref, set, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBv4Fkg64WgZlLIUg_hKYZ3EP4bsUlAuO0",
+  authDomain: "rock-paper-chaos-4e6ea.firebaseapp.com",
+  databaseURL: "https://rock-paper-chaos-4e6ea-default-rtdb.firebaseio.com/",
+  projectId: "rock-paper-chaos-4e6ea",
+  storageBucket: "rock-paper-chaos-4e6ea.firebasestorage.app",
+  messagingSenderId: "735740483204",
+  appId: "1:735740483204:web:7da074fa5b21c2655e14d1"
+};
 
 const firebaseApp = initializeApp(firebaseConfig);
 
@@ -967,7 +1077,7 @@ const db = getDatabase(firebaseApp);
     const layer=$("winnerAnimation"); if(!layer)return;
     layer.innerHTML=""; layer.classList.remove("active");
     const winner=String(revealWinner||"").toLowerCase(); let icon="",cls="",count=0;
-    if(winner.includes("rock")){icon="🪨";cls="rock-rain";count=1;}
+    if(winner.includes("rock")){icon="🪨";cls="rock-rain";count=9;}
     else if(winner.includes("paper")){icon="📄";cls="paper-fall";count=7;}
     else if(winner.includes("scissors")){icon="✂️";cls="scissors-slash";count=5;}
     else return;
