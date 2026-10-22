@@ -459,7 +459,7 @@ const db = getDatabase(firebaseApp);
   // Player membership is removed only by the Leave action, not by temporary network disconnects.
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
-  function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join(""); }
+  function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32), "chaosPoints"]).join(""); }
   function randomName() {
     const used = new Set(players.map(p => p.name));
     const available = themedNames.filter(n => !used.has(n));
@@ -1796,16 +1796,23 @@ $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await r
     }
   }
 
-  $("openChaosPoints").onclick=async()=>{
-    show("chaosPoints");
-    await refreshChaosPointsPageBalance();
-    await refreshChaosBotLobby();
-    await refreshPowerReversalLobby();
-  };
 
-  $("backFromChaosPoints").onclick=()=>{
-    show("lobby");
-  };
+  function openChaosPointsScreen(){
+    document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+    const screen=$("chaosPoints");
+    if(screen) screen.classList.remove("hidden");
+    refreshChaosPointsPageBalance();
+    refreshChaosBotLobby();
+    refreshPowerReversalLobby();
+  }
+
+  function returnToLobbyFromChaosPoints(){
+    document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+    const lobby=$("lobby");
+    if(lobby) lobby.classList.remove("hidden");
+  }
+  $("openChaosPoints").onclick=openChaosPointsScreen;
+  $("backFromChaosPoints").onclick=returnToLobbyFromChaosPoints;
 </script>
 </body>
 </html>
