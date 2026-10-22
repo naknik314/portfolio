@@ -201,7 +201,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
             <div class="rule-card" style="margin-top:12px">
 <strong>🤖 Chaos Bot Challenge — 25 Chaos Points</strong>
-<span>Optional harder computer-rival mode. Chaos bots predict more often, save powers for stronger moments, target more strategically, and each bot has a 50/50 chance of getting a swapped power. They never get free points or see hidden moves.</span>
+<span>Optional harder computer-rival mode. Chaos bots predict more often, save powers for stronger moments, target more strategically, and each bot has a 50/50 chance of getting a swapped power. In Chaos Mode, a computer rival's Cut in Half attacks the target's TOTAL game score instead of only that round's positive points. They never get free points or see hidden moves.</span>
 <span>🏆 Win the game and earn a +40 Chaos Point challenge bonus.</span>
 <button class="btn secondary wide" id="chaosBotBtn" style="margin-top:9px">🤖 Enable Chaos Bot Challenge — 25</button>
 <span id="chaosBotStatus" class="muted">Checking your Chaos Points…</span>
@@ -463,7 +463,7 @@ const db = getDatabase(firebaseApp);
       </div>
       <div class="rule-card" style="margin-top:12px">
 <strong>🤖 Chaos Bot Challenge</strong>
-<span>Spend 25 Chaos Points before a game to face smarter computer rivals. They predict more often, time powers more strategically, choose stronger targets, and each bot has a 50/50 chance of getting a swapped power — without free points or hidden information.</span>
+<span>Spend 25 Chaos Points before a game to face smarter computer rivals. They predict more often, time powers more strategically, choose stronger targets, and each bot has a 50/50 chance of getting a swapped power. In Chaos Mode, a computer rival's Cut in Half can halve a target's TOTAL game score — without free points or hidden information.</span>
 <span>🏆 Win the game for a +40 Chaos Point challenge bonus.</span>
 </div>
 <div class="section-label">Winning-move points</div>
@@ -1307,16 +1307,31 @@ async function refreshTeamPowerUI() {
         restoreScissorsPower.push(p.uid);
         return;
       }
-      // Use the target's CURRENT positive net gain. This lets multiple
-      // Cut in Half powers on the same player resolve one after another.
-      const gain=Math.max(0,Number(scores[target.uid]||0)-Number(scoresBefore[target.uid]||0));
-      if(gain>0){
-        const reduced=Math.floor(gain/2);
-        scores[target.uid]-=(gain-reduced);
-        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's current positive round points in half. SUCCESS: +${gain} became +${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
+      // CHAOS BOT RULE: when a computer rival uses normal Cut in Half during
+      // the Chaos Bot Challenge, it attacks the target's TOTAL game score.
+      // Everywhere else, Cut in Half keeps its normal round-points behavior.
+      if(chaosBotMode && p.bot){
+        const total=Math.max(0,Number(scores[target.uid]||0));
+        if(total>0){
+          const reduced=Math.floor(total/2);
+          scores[target.uid]=reduced;
+          details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. 🔥 CHAOS HIT: ${target.name}'s TOTAL game score was cut from ${total} to ${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
+        } else {
+          details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
+          restoreScissorsPower.push(p.uid);
+        }
       } else {
-        details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no positive points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
-        restoreScissorsPower.push(p.uid);
+        // Normal Cut in Half: use the target's CURRENT positive net gain.
+        // Multiple powers on the same player resolve one after another.
+        const gain=Math.max(0,Number(scores[target.uid]||0)-Number(scoresBefore[target.uid]||0));
+        if(gain>0){
+          const reduced=Math.floor(gain/2);
+          scores[target.uid]-=(gain-reduced);
+          details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's current positive round points in half. SUCCESS: +${gain} became +${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
+        } else {
+          details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no positive points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
+          restoreScissorsPower.push(p.uid);
+        }
       }
     });
     for(const uid of restoreScissorsPower){
