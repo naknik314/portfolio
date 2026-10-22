@@ -189,6 +189,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
 import { getDatabase, ref, set, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -202,6 +203,14 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
+
+// Firebase App Check with reCAPTCHA Enterprise / Fraud Defense.
+// Keep enforcement OFF in Firebase until valid requests appear in App Check metrics.
+const appCheck = initializeAppCheck(firebaseApp, {
+  provider: new ReCaptchaEnterpriseProvider("6Lf7MPotAAAAAC-5gUX6xmE2PACjxvOusAm1R1Z7"),
+  isTokenAutoRefreshEnabled: true
+});
+
 const auth = getAuth(firebaseApp);
 const db = getDatabase(firebaseApp);
 
