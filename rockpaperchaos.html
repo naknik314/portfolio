@@ -477,7 +477,8 @@ const db = getDatabase(firebaseApp);
       players = Object.entries(data.players || {}).map(([uid,p]) => playerFromFirebase(uid,p));
       players.sort((a,b) => Number(b.host)-Number(a.host));
       room = code;
-      isHost = data.hostUid === currentUser?.uid;
+      isHost = data.hostUid === currentUser?.uid ||
+        players.some(p => p.uid === currentUser?.uid && p.host === true);
       onlineRoom = true;
 
       if (data.status === "lobby") {
@@ -963,14 +964,27 @@ const db = getDatabase(firebaseApp);
       const requestedName = selectedUsername;
       const assignedName = uniqueRoomName(requestedName, data);
       selectedUsername = assignedName;
+
+      const existingPlayers = Object.entries(data.players || {});
+      const validHumanHost = existingPlayers.some(([uid,p]) =>
+        uid === data.hostUid && p && !p.bot
+      );
+      const claimHost = !validHumanHost || data.hostUid === user.uid;
+
       await set(ref(db, `rooms/${code}/players/${user.uid}`), {
-        name:assignedName, host:data.hostUid === user.uid, bot:false, score:0, joinedAt:Date.now()
+        name:assignedName, host:claimHost, bot:false, score:0, joinedAt:Date.now()
       });
+      if (claimHost && data.hostUid !== user.uid) {
+        await update(ref(db, `rooms/${code}`), {
+          hostUid:user.uid,
+          updatedAt:Date.now()
+        });
+      }
       if (assignedName !== requestedName) {
         setTimeout(() => toast(`${requestedName} was already taken. You're playing as ${assignedName}.`), 250);
       }
       room = code;
-      isHost = data.hostUid === user.uid;
+      isHost = claimHost;
       onlineRoom = true;
       listenToRoom(code);
       show("lobby");
@@ -1028,7 +1042,6 @@ $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRoo
     console.error(error);
     toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
   });
-})();
   $("statsBtn").onclick = async () => {
     try {
       await renderMyStats();
@@ -1037,6 +1050,7 @@ $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRoo
       toast("Couldn’t load My Stats.");
     }
   };
+})();
 </script>
 </body>
 </html>
