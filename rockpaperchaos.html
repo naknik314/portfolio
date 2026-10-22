@@ -189,9 +189,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div><div class="section-label" style="color:var(--muted)">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
           <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
-          <div style="height:10px"></div>
-          <button class="btn secondary wide" id="statsBtn" style="margin-top:10px">My stats 🎲</button>
         </div>
+        <button class="btn secondary wide" id="statsBtn" style="margin-top:10px">My stats 🎲</button>
         <div class="start-grid">
           <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
           <div class="option"><div class="emoji">🚪</div><h2>Join an open room</h2><p>Pick a waiting room below — no code to type.</p><div id="openRooms" class="results-list" style="margin-top:10px"><div class="rule-card"><span>Looking for open rooms…</span></div></div><button class="btn secondary wide" id="refreshRooms" style="margin-top:10px">↻ Refresh rooms</button></div>
@@ -210,43 +209,72 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 
     <section id="lobby" class="hidden">
       <div class="panel">
-        <div class="screen-title"><div><div class="eyebrow">The pre-game huddle</div><h2>Room lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div><button class="btn ghost" id="leaveLobby">← Home</button></div>
+        <div class="screen-title">
+          <div><div class="eyebrow">The pre-game huddle</div><h2>Room lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div>
+          <button class="btn ghost" id="leaveLobby">← Home</button>
+        </div>
         <div class="lobby-layout">
           <div>
-            <div class="section-label">Your room</div><div class="code" id="roomCode">------</div><div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open room to pick.</div>
+            <div class="section-label">Your room</div>
+            <div class="code" id="roomCode">------</div>
+            <div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open room to pick.</div>
             <div class="divider"></div>
-            <div class="section-label">Players <span id="playerCount">1/8</span></div><div class="player-list" id="lobbyPlayers"></div>
+            <div class="section-label">Players <span id="playerCount">1/8</span></div>
+            <div class="player-list" id="lobbyPlayers"></div>
             <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add computer rival</button></div>
             <p class="note">Friends who join with this room code appear here automatically. You can also add computer rivals for testing.</p>
           </div>
+
           <div>
             <div class="section-label">How it works</div>
             <div class="rule-card"><strong>🔮 Predict a rival</strong><span>Choose one opponent and guess what they will play. Correct predictions earn +2.</span></div>
             <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
-            <div class="rule-card"><strong>🏆 Majority + minority c<div class="card" style="margin-top:14px">
-          <b>💠 Spend Your Chaos Points</b>
-          <div class="muted" style="margin-top:6px">
-            Use Chaos Points for special game options: <b>⚡ Power Swap</b> costs 50 CP when you actually use the swapped power, and <b>🤖 Chaos Bot Challenge</b> costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP challenge bonus.
-          </div>
-        </div>
+            <div class="rule-card"><strong>🏆 Majority + minority counter bonus</strong><span>With 3+ players, move totals count. You only get the +1 counter bonus when your move is in the minority AND it beats another move chosen that round. Example: 1 Rock vs 2 Scissors → the Rock player gets the minority counter bonus.</span></div>
+            <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Special rounds can double points, disable predictions, or reverse which moves beat which.</span></div>
 
-        <div class="card" id="setupPowerGuide" style="margin-top:16px">
-          <h3 style="margin-top:0">⚡ Team Powers & Power Swap</h3>
-          <div class="muted">
-            Each player gets one normal team power per game. Powers cannot be used in Round 4.<br><br>
-            🪨 <b>Rock Solid</b> — blocks negative prediction points and protects your positive round points from Cut in Half.<br>
-            📄 <b>Copycat</b> — copies the highest positive points another player earns that round.<br>
-            ✂️ <b>Cut in Half</b> — cuts another player's positive round points in half, rounded down.<br>
-            🎲 <b>Jack of All Trades</b> — Team Unpredictable randomly gets one of those three powers each game.<br><br>
-            <b>⚡ Power Swap — 50 Chaos Points when used</b><br>
-            Activate Power Swap before the game to replace your normal power with its swapped version. You only pay the 50 CP if you actually use it.<br><br>
-            🪨 Rock Solid → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.<br>
-            📄 Copycat → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.<br>
-            ✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.<br>
-            🎲 Team Unpredictable receives the swapped version of its random power.
-          </div>
-        </div>
-<button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
+            <details class="rule-card" style="margin-top:12px">
+              <summary style="cursor:pointer;font-weight:850">⚡ Learn more about Team Powers</summary>
+              <span style="margin-top:10px">Each player gets one normal team power per game. Powers cannot be used in Round 4.</span>
+              <span>🪨 <b>Rock Solid</b> — blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+              <span>📄 <b>Copycat</b> — copies the highest positive points another player earns that round.</span>
+              <span>✂️ <b>Cut in Half</b> — cuts another player's positive round points in half, rounded down.</span>
+              <span>🎲 <b>Jack of All Trades</b> — Team Unpredictable randomly gets one of the three powers each game.</span>
+              <span>If Rock Solid blocks Cut in Half, the Scissors player keeps Cut in Half for later.</span>
+            </details>
+
+            <div class="divider"></div>
+            <div class="section-label">💠 Spend Your Chaos Points</div>
+            <div class="rule-card">
+              <strong>Special game options</strong>
+              <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Challenge costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP challenge bonus.</b></span>
+            </div>
+
+            <div class="rule-card">
+              <strong>🤖 Chaos Bot Challenge</strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about the challenge</summary>
+                <span style="display:block;margin-top:10px">Chaos bots predict more often, time powers more strategically, choose stronger targets, and each bot can receive a swapped power. In Chaos Mode, a computer rival using Cut in Half can halve a target's TOTAL game score. Bots never see hidden moves or receive free points.</span>
+              </details>
+              <button class="btn secondary wide" id="chaosBotBtn" style="margin-top:10px">🤖 Enable Chaos Bot Challenge — 25</button>
+              <span id="chaosBotStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <div class="rule-card">
+              <strong>⚡ Power Swap</strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about swapped powers</summary>
+                <span style="display:block;margin-top:10px">Activate before the game. Activation itself costs 0 CP; 50 CP is spent only if you actually use the swapped power.</span>
+                <span>🪨 Rock Solid → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.</span>
+                <span>📄 Copycat → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
+                <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
+                <span>🎲 Team Unpredictable gets the swapped version of its random power.</span>
+              </details>
+              <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:10px">⚡ Activate Power Swap — 50</button>
+              <span id="powerReversalStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <button class="btn wide" id="startBtn">Start 7-round game →</button>
+            <p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
         </div>
       </div>
@@ -265,14 +293,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       <div class="panel">
         <div class="screen-title"><div><div class="eyebrow">Device profile</div><h2>My stats</h2><div class="sub">Saved to this browser's anonymous player identity.</div></div><button class="btn ghost" id="statsHome">← Home</button></div>
         <div id="statsContent"></div>
-        <div class="rule-card" style="margin-top:12px">
-<strong>⚡ Team Powers — one use per game</strong>
-<span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
-<span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
-<span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
-<span>🎲 <b>Team Unpredictable — Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
-<span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
-</div>
       </div>
     </section>
 
@@ -485,27 +505,11 @@ const db = getDatabase(firebaseApp);
         <div class="result-row"><b>⚡ Chaos Points</b><b class="score">${Number(p.chaosPoints||0)}</b></div>
       </div>
       <div class="rule-card" style="margin-top:12px">
-        <strong>⚡ Team Powers — one use per game</strong>
-        <span>🪨 Team Rock gets <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
-        <span>📄 Team Paper gets <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
-        <span>✂️ Team Scissors gets <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
-        <span>🎲 <b>Team Unpredictable gets Jack of All Trades:</b> Randomly gets Rock Solid, Copycat, or Cut in Half for that game.</span>
-        <span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
+        <strong>💠 Spend Your Chaos Points</strong>
+        <span>⚡ <b>Power Swap:</b> Have at least 50 CP to activate it; 50 CP is spent only if you actually use the swapped power.</span>
+        <span>🤖 <b>Chaos Bot Challenge:</b> Costs 25 CP to enter. Win the challenge for a +40 CP bonus.</span>
+        <span>Full explanations and activation buttons are available in the game setup room.</span>
       </div>
-      <div class="rule-card" style="margin-top:12px">
-        <strong>🔄 Power Swap</strong>
-        <span>You need at least 50 Chaos Points to activate Power Swap. Nothing is charged when you activate it; 50 points are spent only if you actually use the swapped power. If you never use it, you keep your points.</span>
-        <span>🪨 <b>Stonewall:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
-        <span>📄 <b>Misprint:</b> Finds the highest negative round result and copies that loss to everyone except you.</span>
-        <span>✂️ <b>Cut Your Losses:</b> Cancels all of your negative points for that round, reducing your round loss to 0.</span>
-        <span>🎲 <b>Team Unpredictable:</b> Randomly receives one of the three swapped powers for that game.</span>
-        <span>Chaos Points are spendable. Total Points remain your permanent career total.</span>
-      </div>
-      <div class="rule-card" style="margin-top:12px">
-<strong>🤖 Chaos Bot Challenge</strong>
-<span>Spend 25 Chaos Points before a game to face smarter computer rivals. They predict more often, time powers more strategically, choose stronger targets, and each bot has a 50/50 chance of getting a swapped power. In Chaos Mode, a computer rival's Cut in Half can halve a target's TOTAL game score — without free points or hidden information.</span>
-<span>🏆 Win the game for a +40 Chaos Point challenge bonus.</span>
-</div>
 <div class="section-label">Winning-move points</div>
       <div class="results-list">
         <div class="result-row"><b>🪨 Rock</b><b class="score">${Number(p.moveWinPoints?.rock||0)}</b></div>
