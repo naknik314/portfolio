@@ -195,7 +195,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 </div>
             <div class="rule-card" style="margin-top:12px">
               <strong>🔄 Power Swap — 50 Chaos Points</strong>
-              <span>Optional advanced twist: swap your normal team power for its alternate power for this game. You need 50 Chaos Points available to activate it, but they are charged only if you actually use the swapped power. Rock gets Lockdown, Paper gets Misprint, Scissors gets Cut Your Losses, and Team Unpredictable gets one at random.</span>
+              <span>Optional advanced twist: swap your normal team power for its alternate power for this game. You need 50 Chaos Points available to activate it, but they are charged only if you actually use the swapped power. Rock gets Stonewall, Paper gets Misprint, Scissors gets Cut Your Losses, and Team Unpredictable gets one at random.</span>
               <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:9px">🔄 Activate Power Swap — 50</button>
               <span id="powerReversalStatus" class="muted">Checking your Chaos Points…</span>
             </div>
@@ -455,7 +455,7 @@ const db = getDatabase(firebaseApp);
       <div class="rule-card" style="margin-top:12px">
         <strong>🔄 Power Swap</strong>
         <span>You need at least 50 Chaos Points to activate Power Swap. Nothing is charged when you activate it; 50 points are spent only if you actually use the swapped power. If you never use it, you keep your points.</span>
-        <span>🪨 <b>Lockdown:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
+        <span>🪨 <b>Stonewall:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
         <span>📄 <b>Misprint:</b> Finds the highest negative round result and copies that loss to everyone except you.</span>
         <span>✂️ <b>Cut Your Losses:</b> Cancels all of your negative points for that round, reducing your round loss to 0.</span>
         <span>🎲 <b>Team Unpredictable:</b> Randomly receives one of the three swapped powers for that game.</span>
@@ -760,7 +760,7 @@ const db = getDatabase(firebaseApp);
   const REVERSAL_COST=50;
 
   function reversedPowerForTeam(team){
-    if(team==="rock") return {key:"reverseRock",name:"🪨 Lockdown",desc:"Blocks everyone else's positive round points when it successfully resolves."};
+    if(team==="rock") return {key:"reverseRock",name:"🪨 Stonewall",desc:"Blocks everyone else's positive round points when it successfully resolves."};
     if(team==="paper") return {key:"reversePaper",name:"📄 Misprint",desc:"Copies the highest negative points another player earns that round to everyone except you. If nobody earns negative points, it has NO EFFECT."};
     if(team==="scissors") return {key:"reverseScissors",name:"✂️ Cut Your Losses",desc:"Cancels all of your negative points for that round, reducing your round loss to 0."};
     return null;
@@ -1374,7 +1374,7 @@ async function refreshTeamPowerUI() {
       }
     });
 
-    // Power Swap — Lockdown: block everyone else's positive final round gain.
+    // Power Swap — Stonewall: block everyone else's positive final round gain.
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="reverseRock") return;
       let blocked=0;
@@ -1383,9 +1383,9 @@ async function refreshTeamPowerUI() {
         if(gain>0){ scores[o.uid]-=gain; blocked++; }
       });
       if(blocked>0){
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Lockdown. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. 🔒 🪨 Lockdown USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Lockdown. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Lockdown USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
       }
     });
 
@@ -1435,8 +1435,8 @@ async function refreshTeamPowerUI() {
       .replace(/ (🔒|♻️)/g,"<br>$1");
     safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
     // Bold the named used-up / not-used-up power status on the final line.
-    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Lockdown|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
-    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Lockdown|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
+    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    safe=safe.replace(/(🪨 Rock Solid|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
     return safe;
   }
 
@@ -1451,7 +1451,7 @@ async function refreshTeamPowerUI() {
     // A clash can animate both powers in sequence.
     const animatedPowers=[];
     powerNotices.forEach(line=>{
-      if((line.includes("Rock Solid")||line.includes("Lockdown")) && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
+      if((line.includes("Rock Solid")||line.includes("Stonewall")) && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
       if((line.includes("Copycat")||line.includes("Misprint")) && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
       if((line.includes("Cut in Half")||line.includes("Cut Your Losses")) && !animatedPowers.includes("Scissors")) animatedPowers.push("Scissors");
     });
