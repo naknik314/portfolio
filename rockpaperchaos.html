@@ -199,7 +199,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:9px">🔄 Activate Power Reversal — 50</button>
               <span id="powerReversalStatus" class="muted">Checking your Chaos Points…</span>
             </div>
-            <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
+            <div class="rule-card" style="margin-top:12px">
+<strong>🤖 Chaos Bot Challenge — 25 Chaos Points</strong>
+<span>Optional harder computer-rival mode. Chaos bots predict more often, save powers for stronger moments, and target more strategically. They never get free points or see hidden moves.</span>
+<span>🏆 Win the game and earn a +25 Chaos Point challenge bonus.</span>
+<button class="btn secondary wide" id="chaosBotBtn" style="margin-top:9px">🤖 Enable Chaos Bot Challenge — 25</button>
+<span id="chaosBotStatus" class="muted">Checking your Chaos Points…</span>
+</div>
+<button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
         </div>
       </div>
@@ -442,11 +449,16 @@ const db = getDatabase(firebaseApp);
         <span>You need at least 50 Chaos Points to activate Power Reversal. Nothing is charged when you activate it; 50 points are spent only if you actually use the reversed power. If you never use it, you keep your points.</span>
         <span>🪨 <b>Lockdown:</b> Blocks everyone else's positive round points when it successfully resolves.</span>
         <span>📄 <b>Misprint:</b> Finds the highest negative round result and copies that loss to everyone except you.</span>
-        <span>✂️ <b>Cut Your Losses:</b> Cuts your own negative round points in half, rounded toward zero.</span>
+        <span>✂️ <b>Cut Your Losses:</b> Cancels all of your negative points for that round, reducing your round loss to 0.</span>
         <span>🎲 <b>Team Unpredictable:</b> Randomly receives one of the three reversed powers for that game.</span>
         <span>Chaos Points are spendable. Total Points remain your permanent career total.</span>
       </div>
-      <div class="section-label">Winning-move points</div>
+      <div class="rule-card" style="margin-top:12px">
+<strong>🤖 Chaos Bot Challenge</strong>
+<span>Spend 25 Chaos Points before a game to face smarter computer rivals. They predict more often, time powers more strategically, and choose stronger targets — without free points or hidden information.</span>
+<span>🏆 Win the game for a +25 Chaos Point challenge bonus.</span>
+</div>
+<div class="section-label">Winning-move points</div>
       <div class="results-list">
         <div class="result-row"><b>🪨 Rock</b><b class="score">${Number(p.moveWinPoints?.rock||0)}</b></div>
         <div class="result-row"><b>📄 Paper</b><b class="score">${Number(p.moveWinPoints?.paper||0)}</b></div>
@@ -477,6 +489,9 @@ const db = getDatabase(firebaseApp);
       };
       const team=chooseTeam(moveWinPoints,old.team);
       const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
+      const challengeSnap=await get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`));
+      const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
+      const challengeBonus=(challengeActive && result==="Win" && players.some(x=>x.bot))?CHAOS_BOT_WIN_BONUS:0;
       const recentGames={...(old.recentGames||{})};
       recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now()};
       const trimmed=Object.entries(recentGames).sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0)).slice(0,10);
@@ -487,7 +502,7 @@ const db = getDatabase(firebaseApp);
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
         totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
-        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(finalScores[uid]||0)),
+        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(finalScores[uid]||0))+challengeBonus,
         moveWinPoints,
         previousTeam:old.team||"unassigned",
         team,
@@ -677,7 +692,7 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, powerReversal:null, chaosBotChallenge:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -690,12 +705,56 @@ const db = getDatabase(firebaseApp);
     return null;
   }
 
+  const CHAOS_BOT_COST=25;
+  const CHAOS_BOT_WIN_BONUS=25;
+
+  async function isChaosBotChallengeActive(){
+    if(!room) return false;
+    const snap=await get(ref(db,`rooms/${room}/chaosBotChallenge`));
+    return snap.exists() && Object.values(snap.val()||{}).some(Boolean);
+  }
+
+  async function refreshChaosBotLobby(){
+    const btn=$("chaosBotBtn"), status=$("chaosBotStatus");
+    if(!btn || !status || !room || !currentUser) return;
+    const [ps,ms]=await Promise.all([
+      get(ref(db,`profiles/${currentUser.uid}`)),
+      get(ref(db,`rooms/${room}/chaosBotChallenge/${currentUser.uid}`))
+    ]);
+    const raw=ps.exists()?ps.val():blankProfile();
+    const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+    const active=ms.exists() && ms.val()===true;
+    btn.disabled=active || balance<CHAOS_BOT_COST;
+    btn.style.opacity=btn.disabled?".55":"1";
+    btn.textContent=active?"🤖 Chaos Bot Challenge Active":`🤖 Enable Chaos Bot Challenge — ${CHAOS_BOT_COST}`;
+    status.textContent=active
+      ? `Harder bots enabled. ${balance} Chaos Points remaining.`
+      : balance<CHAOS_BOT_COST
+        ? `You have ${balance} Chaos Points. You need ${CHAOS_BOT_COST}.`
+        : `Costs ${CHAOS_BOT_COST}. Win for a +${CHAOS_BOT_WIN_BONUS} Chaos Point bonus.`;
+  }
+
+  async function activateChaosBotChallenge(){
+    if(!room || !currentUser) return;
+    const modeRef=ref(db,`rooms/${room}/chaosBotChallenge/${currentUser.uid}`);
+    if((await get(modeRef)).val()===true) return refreshChaosBotLobby();
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const snap=await get(profileRef);
+    const raw=snap.exists()?snap.val():blankProfile();
+    const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+    if(balance<CHAOS_BOT_COST) return toast(`You need ${CHAOS_BOT_COST} Chaos Points.`);
+    await update(profileRef,{chaosPoints:balance-CHAOS_BOT_COST,updatedAt:Date.now()});
+    await set(modeRef,true);
+    toast("🤖 Chaos Bot Challenge enabled!");
+    await refreshChaosBotLobby();
+  }
+
   const REVERSAL_COST=50;
 
   function reversedPowerForTeam(team){
     if(team==="rock") return {key:"reverseRock",name:"🪨 Lockdown",desc:"Blocks everyone else's positive round points when it successfully resolves."};
     if(team==="paper") return {key:"reversePaper",name:"📄 Misprint",desc:"Copies the highest negative round result to everyone except you."};
-    if(team==="scissors") return {key:"reverseScissors",name:"✂️ Cut Your Losses",desc:"Cuts your own negative round points in half, rounded toward zero."};
+    if(team==="scissors") return {key:"reverseScissors",name:"✂️ Cut Your Losses",desc:"Cancels all of your negative points for that round, reducing your round loss to 0."};
     return null;
   }
 
@@ -739,6 +798,7 @@ const db = getDatabase(firebaseApp);
     await set(activeRef,true);
     toast("🔄 Power Reversal ready — 50 Chaos Points will be spent only if you use it.");
     await refreshPowerReversalLobby();
+    await refreshChaosBotLobby();
     // If the move screen is already rendered, immediately reload the active
     // power from Firebase so Copycat/Rock Solid/Cut in Half changes to its
     // reversed version without requiring a page reload.
@@ -946,9 +1006,10 @@ const db = getDatabase(firebaseApp);
       const humanReady=humans.every(p=>submissions[p.uid]?.locked);
       if (isHost && humanReady) {
         const completed={...submissions};
+        const chaosBotMode=await isChaosBotChallengeActive();
         for (const p of players.filter(p=>p.bot)) {
           let prediction=null;
-          if(round!==4 && Math.random()<0.7){
+          if(round!==4 && Math.random()<(chaosBotMode?0.88:0.70)){
             const targets=players.filter(other=>other.uid!==p.uid);
             if(targets.length){
               const target=targets[Math.floor(Math.random()*targets.length)];
@@ -971,14 +1032,18 @@ const db = getDatabase(firebaseApp);
 
           const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`));
           const alreadyUsed=usedSnap.exists() && usedSnap.val()===true;
-          const useChance=round>=7?1:round>=6?.80:round>=5?.55:round>=3?.32:.18;
+          const useChance=chaosBotMode?(round>=7?1:round>=6?.92:round>=5?.72:round>=3?.50:.30):(round>=7?1:round>=6?.80:round>=5?.55:round>=3?.32:.18);
           let teamPower=null, teamPowerTarget=null;
 
           if(round!==4 && !alreadyUsed && Math.random()<useChance){
             teamPower=botPower;
             if(teamPower==="scissors"){
               const targets=players.filter(other=>other.uid!==p.uid);
-              if(targets.length) teamPowerTarget=targets[Math.floor(Math.random()*targets.length)].uid;
+              if(targets.length){
+                teamPowerTarget=(chaosBotMode
+                  ? [...targets].sort((a,b)=>Number(b.score||0)-Number(a.score||0))[0]
+                  : targets[Math.floor(Math.random()*targets.length)]).uid;
+              }
               else teamPower=null;
             }
             if(teamPower) await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
@@ -1120,9 +1185,8 @@ const db = getDatabase(firebaseApp);
       if(submissions[p.uid]?.teamPower!=="reverseScissors") return;
       const delta=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
       if(delta<0){
-        const reduced=-Math.floor(Math.abs(delta)/2);
-        scores[p.uid]=Number(scoresBefore[p.uid]||0)+reduced;
-        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. SUCCESS: ${delta} became ${reduced}. 🔒 ✂️ Cut Your Losses USED UP — unavailable for the rest of this game.`);
+        scores[p.uid]=Number(scoresBefore[p.uid]||0);
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. SUCCESS: canceled ${delta} negative points, reducing the round loss to 0. 🔒 ✂️ Cut Your Losses USED UP — unavailable for the rest of this game.`);
       } else {
         details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. NO EFFECT: ${p.name} had no negative points to cut. 🔒 ✂️ Cut Your Losses USED UP — unavailable for the rest of this game.`);
       }
@@ -1481,7 +1545,7 @@ const db = getDatabase(firebaseApp);
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,chaosBotChallenge:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
@@ -1492,6 +1556,7 @@ const db = getDatabase(firebaseApp);
   $("homeBtn").onclick = leaveOnlineRoom;
 $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
 $("powerReversalBtn").onclick = activatePowerReversal;
+$("chaosBotBtn").onclick = activateChaosBotChallenge;
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
