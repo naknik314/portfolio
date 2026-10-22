@@ -771,11 +771,15 @@ const db = getDatabase(firebaseApp);
     if(!btn || !status || !room || !currentUser) return;
     const [profileSnap,activeSnap]=await Promise.all([
       get(ref(db,`profiles/${currentUser.uid}`)),
-      get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`))
+      get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`))
     ]);
     const raw=profileSnap.exists()?profileSnap.val():blankProfile();
     const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
-    const active=activeSnap.exists() && activeSnap.val()===true;
+    let active=activeSnap.exists() && activeSnap.val()===true;
+    if(!active){
+      const legacySnap=await get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`));
+      active=legacySnap.exists() && legacySnap.val()===true;
+    }
     if(active){
       btn.disabled=true; btn.style.opacity=".55"; btn.textContent="🔄 Power Swap Active";
       status.textContent=`Ready for this game. You still have ${balance} Chaos Points; ${REVERSAL_COST} will be spent only if you use the swapped power.`;
@@ -790,7 +794,7 @@ const db = getDatabase(firebaseApp);
 
   async function activatePowerReversal(){
     if(!room || !currentUser) return;
-    const activeRef=ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`);
+    const activeRef=ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`);
     const activeSnap=await get(activeRef);
     if(activeSnap.exists() && activeSnap.val()===true) return refreshPowerReversalLobby();
     const profileRef=ref(db,`profiles/${currentUser.uid}`);
@@ -804,7 +808,6 @@ const db = getDatabase(firebaseApp);
     // Activation is free, but the player must currently have the full cost.
     // Chaos Points are charged only when the swapped power is actually used.
     await set(activeRef,true);
-    await set(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`),true);
     toast("🔄 Power Swap ready — 50 Chaos Points will be spent only if you use it.");
     await refreshPowerReversalLobby();
     await refreshChaosBotLobby();
@@ -820,12 +823,12 @@ const db = getDatabase(firebaseApp);
     const profile=profileSnap.exists()?profileSnap.val():blankProfile();
     let team=profile.team||"unassigned";
     const isUnpredictable=team==="unassigned";
-    const [reversalSnap,swapSnap]=await Promise.all([
-      get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`)),
-      get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`))
+    const [swapSnap,legacySnap]=await Promise.all([
+      get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`)),
+      get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`))
     ]);
-    const reversalActive=(reversalSnap.exists() && reversalSnap.val()===true) ||
-                         (swapSnap.exists() && swapSnap.val()===true);
+    const reversalActive=(swapSnap.exists() && swapSnap.val()===true) ||
+                         (legacySnap.exists() && legacySnap.val()===true);
     if(isUnpredictable){
       const powerRef=ref(db,`rooms/${room}/unpredictablePowers/${currentUser.uid}`);
       const powerSnap=await get(powerRef);
@@ -862,8 +865,9 @@ const db = getDatabase(firebaseApp);
     const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
     const prefix=isSwap ? "Your swapped team power" : "Your team power";
+    const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
 
-    desc.innerHTML=`<b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game. Powers cannot be used in Round 4.</span>`;
+    desc.innerHTML=`<b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game. Powers cannot be used in Round 4.</span>`;
 
     if(teamPowerArmed){
       btn.textContent=`⚡ ${powerName} Active`;
