@@ -129,7 +129,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 86%{opacity:1;transform:translate(-50%,-50%) rotate(0)}
 100%{opacity:0;transform:translate(-50%,-50%) scale(1.05)}
 }
-.paper-fall{left:50%;top:48%;opacity:0;animation:paperDuplicate 1.35s cubic-bezier(.2,.8,.2,1) forwards}@keyframes paperDuplicate{0%{opacity:0;transform:translate(-50%,-50%) scale(.45)}18%{opacity:1;transform:translate(-50%,-50%) scale(1)}55%{opacity:1;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(.95) rotate(var(--copy-r,0deg))}100%{opacity:0;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(1.04) rotate(var(--copy-r,0deg))}}.scissors-slash{top:-130px;left:-130px;animation:scissorsDiagonal 1.35s cubic-bezier(.25,.7,.25,1) forwards}@keyframes scissorsDiagonal{0%{transform:translate(-15vw,-15vh) rotate(-35deg) scale(.75);opacity:0}15%{opacity:1}100%{transform:translate(120vw,115vh) rotate(25deg) scale(1.08);opacity:0}}@media(prefers-reduced-motion:reduce){.winner-piece{animation-duration:.01ms!important}}
+.paper-fall{left:50%;top:48%;opacity:0;animation:paperReprint 1.35s cubic-bezier(.2,.8,.2,1) forwards}@keyframes paperReprint{0%{opacity:0;transform:translate(-50%,-50%) scale(.45)}18%{opacity:1;transform:translate(-50%,-50%) scale(1)}55%{opacity:1;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(.95) rotate(var(--copy-r,0deg))}100%{opacity:0;transform:translate(calc(-50% + var(--copy-x,0px)),calc(-50% + var(--copy-y,0px))) scale(1.04) rotate(var(--copy-r,0deg))}}.scissors-slash{top:-130px;left:-130px;animation:scissorsDiagonal 1.35s cubic-bezier(.25,.7,.25,1) forwards}@keyframes scissorsDiagonal{0%{transform:translate(-15vw,-15vh) rotate(-35deg) scale(.75);opacity:0}15%{opacity:1}100%{transform:translate(120vw,115vh) rotate(25deg) scale(1.08);opacity:0}}@media(prefers-reduced-motion:reduce){.winner-piece{animation-duration:.01ms!important}}
 
     /* Subtle Rock / Paper / Scissors homepage pattern */
     #homeScreen{
@@ -236,7 +236,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <summary style="cursor:pointer;font-weight:850">⚡ Learn more about Team Powers</summary>
               <span style="margin-top:10px">Each player gets one normal team power per game. Powers cannot be used in Round 4.</span>
               <span>🪨 <b>Barricade</b> — blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
-              <span>📄 <b>Copycat</b> — copies the highest positive points another player earns that round.</span>
+              <span>📄 <b>Reprint</b> — copies the highest positive points another player earns that round.</span>
               <span>✂️ <b>Cut in Half</b> — cuts another player's positive round points in half, rounded down.</span>
               <span>🎲 <b>Jack of All Trades</b> — Team Unpredictable randomly gets one of the three powers each game.</span>
               <span>If Barricade blocks Cut in Half, the Scissors player keeps Cut in Half for later.</span>
@@ -265,7 +265,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <summary style="cursor:pointer;font-weight:800">Learn about swapped powers</summary>
                 <span style="display:block;margin-top:10px">Activate before the game. Activation itself costs 0 CP; 50 CP is spent only if you actually use the swapped power.</span>
                 <span>🪨 Barricade → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.</span>
-                <span>📄 Copycat → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
+                <span>📄 Reprint → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
                 <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
                 <span>🎲 Team Unpredictable gets the swapped version of its random power.</span>
               </details>
@@ -752,8 +752,8 @@ const db = getDatabase(firebaseApp);
   }
 
   function powerForTeam(team) {
-    if(team==="rock") return {key:"rock",name:"🪨 Barricade",desc:"Protect yourself this round: blocks negative prediction points and stops Cut in Half from reducing your positive points. It does not block Copycat."};
-    if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive net points another player earns this round. You do not take their points away."};
+    if(team==="rock") return {key:"rock",name:"🪨 Barricade",desc:"Protect yourself this round: blocks negative prediction points and stops Cut in Half from reducing your positive points. It does not block Reprint."};
+    if(team==="paper") return {key:"paper",name:"📄 Reprint",desc:"Copy the highest positive net points another player earns this round. You do not take their points away."};
     if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive net points earned this round in half, rounded down. Barricade can block it."};
     return null;
   }
@@ -871,7 +871,7 @@ const db = getDatabase(firebaseApp);
     await refreshPowerReversalLobby();
     await refreshChaosBotLobby();
     // If the move screen is already rendered, immediately reload the active
-    // power from Firebase so Copycat/Barricade/Cut in Half changes to its
+    // power from Firebase so Reprint/Barricade/Cut in Half changes to its
     // alternate version without requiring a page reload.
     if($("teamPowerBtn")) await refreshTeamPowerUI();
   }
@@ -944,7 +944,7 @@ async function refreshTeamPowerUI() {
     }
 
     // Always derive the power fresh from Firebase. This prevents a cached
-    // normal power (for example Copycat) from surviving after Power Swap
+    // normal power (for example Reprint) from surviving after Power Swap
     // has been activated.
     activeTeamPower = await loadActiveTeamPower();
     renderExactMovePower();
@@ -1433,9 +1433,9 @@ async function refreshTeamPowerUI() {
       const copied=highestGain;
       if(copied>0){
         scores[p.uid]+=copied;
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 📄 Copycat USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 📄 Reprint USED UP — unavailable for the rest of this game.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat, which copies the highest positive points another player earns that round. NO EFFECT: nobody else earned positive points to copy. 🔒 📄 Copycat USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. NO EFFECT: nobody else earned positive points to copy. 🔒 📄 Reprint USED UP — unavailable for the rest of this game.`);
       }
     });
 
@@ -1514,8 +1514,8 @@ async function refreshTeamPowerUI() {
       .replace(/ (🔒|♻️)/g,"<br>$1");
     safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
     // Bold the named used-up / not-used-up power status on the final line.
-    safe=safe.replace(/(🪨 Barricade|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
-    safe=safe.replace(/(🪨 Barricade|📄 Copycat|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
+    safe=safe.replace(/(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    safe=safe.replace(/(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
     return safe;
   }
 
@@ -1531,7 +1531,7 @@ async function refreshTeamPowerUI() {
     const animatedPowers=[];
     powerNotices.forEach(line=>{
       if((line.includes("Barricade")||line.includes("Stonewall")) && !animatedPowers.includes("Rock")) animatedPowers.push("Rock");
-      if((line.includes("Copycat")||line.includes("Misprint")) && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
+      if((line.includes("Reprint")||line.includes("Misprint")) && !animatedPowers.includes("Paper")) animatedPowers.push("Paper");
       if((line.includes("Cut in Half")||line.includes("Cut Your Losses")) && !animatedPowers.includes("Scissors")) animatedPowers.push("Scissors");
     });
     animatedPowers.forEach((powerName,index)=>{
