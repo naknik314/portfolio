@@ -573,7 +573,7 @@ const db = getDatabase(firebaseApp);
         const r = data.rounds?.[sharedRound];
         if (r?.phase === "reveal" && r.results) {
           applyScores(r.results.scores || {});
-          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, false, r.results.moves || {}, r.results.revealWinner || "Draw!", r.results.roundPoints || {});
+          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, false, r.results.moves || {}, r.results.revealWinner || "Draw!", r.results.roundPoints || {}, r.results.scores || {});
         }
       }
     });
@@ -1427,7 +1427,7 @@ async function refreshTeamPowerUI() {
     return safe;
   }
 
-  function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={}) {
+  function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
     $("progressFill").style.width=`${round/7*100}%`;
@@ -1452,7 +1452,7 @@ async function refreshTeamPowerUI() {
       </div>`:`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
         <span>⚡ No team power was used this round.</span>
       </div>`}
-      <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b><div class="muted" style="font-size:12px;margin-top:4px">${Number(roundPoints[p.uid]||0)>0?"+":""}${Number(roundPoints[p.uid]||0)} this round</div></div></div>`).join("")}</div>
+      <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${Number(resultScores[p.uid] ?? p.score ?? 0)} pts</b><div class="muted" style="font-size:12px;margin-top:4px">${Number(roundPoints[p.uid]||0)>0?"+":""}${Number(roundPoints[p.uid]||0)} this round</div></div></div>`).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT")).slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
     if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
