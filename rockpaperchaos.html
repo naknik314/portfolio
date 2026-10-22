@@ -324,7 +324,7 @@ const db = getDatabase(firebaseApp);
     4:{name:"🔄 Reverse Gear",desc:"The winning cycle reverses for this round."},
     6:{name:"🪞 Mirror Madness",desc:"A tied head-to-head matchup awards both players +1."}
   };
-  let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "";
+  let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
   // Player membership is removed only by the Leave action, not by temporary network disconnects.
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
@@ -389,7 +389,7 @@ const db = getDatabase(firebaseApp);
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
     const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
     $("statsContent").innerHTML=`
-      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span>Your team changes automatically when a different move leads your winning-move stats. Team Unpredictable means you need more games to unlock a move team.</span></div>
+      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span>${p.team==="unassigned"?"Team Unpredictable means your winning-move points are still tied. Keep playing to join Team Rock, Team Paper, or Team Scissors.":"Your team changes automatically when a different move leads your winning-move stats."}</span></div>
       <div class="results-list">
         <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
         <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
@@ -627,15 +627,65 @@ const db = getDatabase(firebaseApp);
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
   }
 
+  function powerForTeam(team) {
+    if(team==="rock") return {key:"rock",name:"🪨 Rock Solid",desc:"Block one wrong-prediction penalty."};
+    if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive points another player earns this round, up to +2."};
+    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive points earned this round in half."};
+    return null;
+  }
+
+  async function loadActiveTeamPower() {
+    if(!room || !currentUser) return null;
+    const profileSnap=await get(ref(db,`profiles/${currentUser.uid}`));
+    const profile=profileSnap.exists()?profileSnap.val():blankProfile();
+    let team=profile.team||"unassigned";
+    if(team==="unassigned"){
+      const powerRef=ref(db,`rooms/${room}/unpredictablePowers/${currentUser.uid}`);
+      const powerSnap=await get(powerRef);
+      if(powerSnap.exists()) team=powerSnap.val();
+      else {
+        const choices=["rock","paper","scissors"];
+        team=choices[Math.floor(Math.random()*choices.length)];
+        await set(powerRef,team);
+      }
+    }
+    return powerForTeam(team);
+  }
+
+  async function refreshTeamPowerUI() {
+    const btn=$("teamPowerBtn");
+    if(!btn) return;
+    activeTeamPower=await loadActiveTeamPower();
+    if(!activeTeamPower) return;
+    $("teamPowerName").textContent=activeTeamPower.name;
+    $("teamPowerDesc").textContent=activeTeamPower.desc+" One use per game.";
+    const targetSelect=$("scissorsTarget");
+    if(activeTeamPower.key==="scissors"){
+      targetSelect.style.display="";
+      targetSelect.innerHTML='<option value="">Choose a player to cut…</option>'+
+        players.filter(p=>p.uid!==currentUser.uid).map(p=>`<option value="${p.uid}">${p.name}</option>`).join("");
+      if(scissorsTargetUid) targetSelect.value=scissorsTargetUid;
+      targetSelect.onchange=()=>{ scissorsTargetUid=targetSelect.value||null; };
+    } else {
+      targetSelect.style.display="none";
+      scissorsTargetUid=null;
+    }
+    const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
+    const used=usedSnap.exists() && usedSnap.val()===true;
+    btn.disabled=used || round===4;
+    btn.style.opacity=btn.disabled?".5":"1";
+    btn.textContent=used?"✓ Team Power Used":round===4?"Unavailable in Round 4":teamPowerArmed?"⚡ Team Power Armed":"⚡ Use Team Power";
+  }
+
   function beginRound(writeState=true) {
     clearInterval(timerInt);
-    selectedMove=null; targetId=null; predictedMove=null;
+    selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null;
     show("game");
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
@@ -668,6 +718,14 @@ const db = getDatabase(firebaseApp);
       <div class="prediction-grid">${others.map(p => `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`).join("")}</div>
       <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong id="teamPowerName">⚡ Team Power</strong>
+        <span id="teamPowerDesc">One use per game.</span>
+        <select id="scissorsTarget" style="display:none;width:100%;margin-top:9px;padding:10px;border-radius:10px">
+          <option value="">Choose a player to cut…</option>
+        </select>
+        <button class="btn secondary wide" id="teamPowerBtn" style="margin-top:9px">⚡ Use Team Power</button>
+      </div>
       <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
       <p class="note" id="waitingNote">Waiting for your choice.</p>`;
 
@@ -678,6 +736,16 @@ const db = getDatabase(firebaseApp);
       if (targetId) wrap.innerHTML=`<div class="divider"></div><h3 style="margin-bottom:8px">What will they play?</h3><div class="choices">${moves.map(m=>`<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
       wrap.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{predictedMove=b.dataset.guess;renderMovePicker();});
     }
+    $("teamPowerBtn").onclick=async()=>{
+      if(round===4) return toast("Team powers are unavailable in Round 4.");
+      const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
+      if(usedSnap.exists() && usedSnap.val()===true) return toast("You already used your team power this game.");
+      if(activeTeamPower?.key==="scissors" && !scissorsTargetUid) return toast("Choose a player for Cut in Half first.");
+      teamPowerArmed=!teamPowerArmed;
+      await refreshTeamPowerUI();
+    };
+    refreshTeamPowerUI();
+
     const ready = !!selectedMove;
     $("lockBtn").disabled=!ready;
     $("lockBtn").style.opacity=ready?"1":".5";
@@ -692,9 +760,15 @@ const db = getDatabase(firebaseApp);
     await set(ref(db, `${roundPath()}/submissions/${uid}`), {
       move:selectedMove,
       prediction:(!noPrediction && targetId && predictedMove)?{targetUid:targetId,move:predictedMove}:null,
+      teamPower:(!noPrediction && teamPowerArmed && activeTeamPower)?activeTeamPower.key:null,
+      teamPowerTarget:(!noPrediction && teamPowerArmed && activeTeamPower?.key==="scissors")?scissorsTargetUid:null,
       locked:true,
       submittedAt:Date.now()
     });
+    if(!noPrediction && teamPowerArmed && activeTeamPower){
+      await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+      teamPowerArmed=false;
+    }
     $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🔒</div><h2>Locked in!</h2><p class="muted">Waiting for everyone else…</p></div>`;
     $("phaseLabel").textContent="Waiting for players";
     watchSubmissions();
@@ -746,6 +820,7 @@ const db = getDatabase(firebaseApp);
     const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
     const scores=scoresSnap.val() || {};
     players.forEach(p=>{ if(scores[p.uid]==null) scores[p.uid]=0; });
+    const scoresBefore={...scores};
     const moveLedgerSnap=await get(ref(db, `rooms/${room}/moveWinPoints`));
     const moveLedger=moveLedgerSnap.val() || {};
     players.forEach(p=>{ if(!moveLedger[p.uid]) moveLedger[p.uid]={rock:0,paper:0,scissors:0}; });
@@ -821,12 +896,52 @@ const db = getDatabase(firebaseApp);
           details.push(`${p.name} predicted correctly: +${2*multiplier}.`);
         } else {
           const penalty=Math.floor(Math.random()*4);
-          const appliedPenalty=penalty*multiplier;
+          let appliedPenalty=penalty*multiplier;
+          const power=submissions[p.uid]?.teamPower;
+          if(power==="rock" && appliedPenalty>0){
+            details.push(`${p.name} uses Rock Solid and blocks a -${appliedPenalty} penalty.`);
+            appliedPenalty=0;
+          } else {
+            details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
+          }
           scores[p.uid]-=appliedPenalty;
-          details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
         }
       });
     }
+
+    // Team Scissors: cut one chosen opponent's positive round gain in half, rounded down.
+    players.forEach(p=>{
+      if(submissions[p.uid]?.teamPower!=="scissors") return;
+      const targetUid=submissions[p.uid]?.teamPowerTarget;
+      const target=players.find(o=>o.uid===targetUid && o.uid!==p.uid);
+      if(!target){
+        details.push(`${p.name} uses Cut in Half, but there is no valid target.`);
+        return;
+      }
+      const gain=Math.max(0,Number(scores[target.uid]||0)-Number(scoresBefore[target.uid]||0));
+      if(gain>0){
+        const reduced=Math.floor(gain/2);
+        const cut=gain-reduced;
+        scores[target.uid]-=cut;
+        details.push(`${p.name} uses Cut in Half on ${target.name}: +${gain} becomes +${reduced}.`);
+      } else {
+        details.push(`${p.name} uses Cut in Half on ${target.name}, but ${target.name} earned no positive points this round.`);
+      }
+    });
+
+    // Team Paper: copy the highest positive net points another player earned this round.
+    players.forEach(p=>{
+      if(submissions[p.uid]?.teamPower!=="paper") return;
+      const gains=players.filter(o=>o.uid!==p.uid).map(o=>Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0)));
+      const highestGain=gains.length?Math.max(...gains):0;
+      const copied=Math.min(2,highestGain);
+      if(copied>0){
+        scores[p.uid]+=copied;
+        details.push(`${p.name} uses Copycat and copies +${copied} points${highestGain>2?" (maximum +2)":""}.`);
+      } else {
+        details.push(`${p.name} uses Copycat, but nobody else earned positive points to copy.`);
+      }
+    });
 
     const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner};
     await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
@@ -1022,7 +1137,7 @@ const db = getDatabase(firebaseApp);
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
