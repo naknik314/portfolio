@@ -169,6 +169,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
             <div class="rule-card"><strong>🏆 Majority + minority counter bonus</strong><span>With 3+ players, move totals count. You only get the +1 counter bonus when your move is in the minority AND it beats another move chosen that round. Example: 1 Rock vs 2 Scissors → the Rock player gets the minority counter bonus.</span></div>
             <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Round 2 doubles base points, round 4 reverses RPS, and round 6 rewards ties.</span></div>
+            <div class="rule-card" style="margin-top:12px">
+<strong>⚡ Team Powers — one use per game</strong>
+<span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+<span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
+<span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
+<span>🎲 <b>Team Unpredictable:</b> Randomly gets one of the three powers for that game.</span>
+<span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
+</div>
             <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
         </div>
@@ -188,6 +196,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       <div class="panel">
         <div class="screen-title"><div><div class="eyebrow">Device profile</div><h2>My stats</h2><div class="sub">Saved to this browser's anonymous player identity.</div></div><button class="btn ghost" id="statsHome">← Home</button></div>
         <div id="statsContent"></div>
+        <div class="rule-card" style="margin-top:12px">
+<strong>⚡ Team Powers — one use per game</strong>
+<span>🪨 <b>Rock Solid:</b> Blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+<span>📄 <b>Copycat:</b> Copies the highest positive points another player earns that round.</span>
+<span>✂️ <b>Cut in Half:</b> Choose another player and cut their positive points earned that round in half, rounded down.</span>
+<span>🎲 <b>Team Unpredictable:</b> Randomly gets one of the three powers for that game.</span>
+<span>Powers cannot be used in Round 4. If Rock Solid blocks Cut in Half, the Scissors player keeps the power for later.</span>
+</div>
       </div>
     </section>
 
@@ -634,8 +650,8 @@ const db = getDatabase(firebaseApp);
   }
 
   function powerForTeam(team) {
-    if(team==="rock") return {key:"rock",name:"🪨 Rock Solid",desc:"Block one wrong-prediction penalty."};
-    if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive points another player earns this round, up to +2."};
+    if(team==="rock") return {key:"rock",name:"🪨 Rock Solid",desc:"Block your negative points and protect your positive points from Cut in Half this round."};
+    if(team==="paper") return {key:"paper",name:"📄 Copycat",desc:"Copy the highest positive points another player earns this round."};
     if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive points earned this round in half."};
     return null;
   }
@@ -827,6 +843,7 @@ const db = getDatabase(firebaseApp);
     const addMoveWin=(uid,move,points)=>{ moveLedger[uid][move]=Number(moveLedger[uid][move]||0)+Number(points||0); };
     const details=[];
     let revealWinner="Draw!";
+    const rockSolidActive=players.some(p=>submissions[p.uid]?.teamPower==="rock");
     const played={};
     players.forEach(p=>played[p.uid]=submissions[p.uid]?.move || "rock");
 
@@ -899,7 +916,7 @@ const db = getDatabase(firebaseApp);
           let appliedPenalty=penalty*multiplier;
           const power=submissions[p.uid]?.teamPower;
           if(power==="rock" && appliedPenalty>0){
-            details.push(`${p.name} uses Rock Solid and blocks a -${appliedPenalty} penalty.`);
+            details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid. SUCCESS: a -${appliedPenalty} prediction penalty was blocked.`);
             appliedPenalty=0;
           } else {
             details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
@@ -909,23 +926,39 @@ const db = getDatabase(firebaseApp);
       });
     }
 
-    // Team Scissors: cut one chosen opponent's positive round gain in half, rounded down.
+    // Team Scissors: Cut in Half. Rock Solid can block it.
+    const restoreScissorsPower=[];
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="scissors") return;
-      const targetUid=submissions[p.uid]?.teamPowerTarget;
-      const target=players.find(o=>o.uid===targetUid && o.uid!==p.uid);
+      const target=players.find(o=>o.uid===submissions[p.uid]?.teamPowerTarget && o.uid!==p.uid);
       if(!target){
-        details.push(`${p.name} uses Cut in Half, but there is no valid target.`);
+        details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half. NOT USED: there was no valid target, so the power is still available.`);
+        restoreScissorsPower.push(p.uid);
+        return;
+      }
+      if(submissions[target.uid]?.teamPower==="rock"){
+        details.push(`⚡ POWER CLASH — ${target.name} used 🪨 Rock Solid. SUCCESS: it blocked ${p.name}'s ✂️ Cut in Half. ${p.name}'s Scissors power was NOT spent and can be used later.`);
+        restoreScissorsPower.push(p.uid);
         return;
       }
       const gain=Math.max(0,Number(scores[target.uid]||0)-Number(scoresBefore[target.uid]||0));
       if(gain>0){
         const reduced=Math.floor(gain/2);
-        const cut=gain-reduced;
-        scores[target.uid]-=cut;
-        details.push(`${p.name} uses Cut in Half on ${target.name}: +${gain} becomes +${reduced}.`);
+        scores[target.uid]-=(gain-reduced);
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. SUCCESS: +${gain} became +${reduced}.`);
       } else {
-        details.push(`${p.name} uses Cut in Half on ${target.name}, but ${target.name} earned no positive points this round.`);
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} earned no positive points this round.`);
+      }
+    });
+    for(const uid of restoreScissorsPower){
+      await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),false);
+    }
+
+    players.forEach(p=>{
+      if(submissions[p.uid]?.teamPower!=="rock") return;
+      const alreadyReported=details.some(line=>line.includes(p.name) && line.includes("Rock Solid"));
+      if(!alreadyReported){
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Rock Solid. NO EFFECT: there was no prediction penalty or Cut in Half attack to block.`);
       }
     });
 
@@ -934,16 +967,16 @@ const db = getDatabase(firebaseApp);
       if(submissions[p.uid]?.teamPower!=="paper") return;
       const gains=players.filter(o=>o.uid!==p.uid).map(o=>Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0)));
       const highestGain=gains.length?Math.max(...gains):0;
-      const copied=Math.min(2,highestGain);
+      const copied=highestGain;
       if(copied>0){
         scores[p.uid]+=copied;
-        details.push(`${p.name} uses Copycat and copies +${copied} points${highestGain>2?" (maximum +2)":""}.`);
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat. SUCCESS: copied +${copied} points.`);
       } else {
-        details.push(`${p.name} uses Copycat, but nobody else earned positive points to copy.`);
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Copycat. NO EFFECT: nobody else earned positive points to copy.`);
       }
     });
 
-    const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner};
+    const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner,rockSolidActive};
     await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
     await update(ref(db, `rooms/${room}`), {scores,moveWinPoints:moveLedger,updatedAt:Date.now()});
   }
@@ -956,6 +989,10 @@ const db = getDatabase(firebaseApp);
     const title=round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
     $("playArea").innerHTML=`
       <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
+      <div class="rule-card" style="margin-bottom:14px">
+        <strong>⚡ Team Powers</strong>
+        <span>🪨 Rock Solid protects. 📄 Copycat copies positive round points. ✂️ Cut in Half cuts a chosen player's positive round points in half. The highlights below show who used a power and whether it worked.</span>
+      </div>
       <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${p.score} pts</b></div></div>`).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
