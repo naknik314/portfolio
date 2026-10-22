@@ -133,7 +133,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       </div>
       <div class="panel">
         <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div><div class="section-label" style="margin-bottom:5px">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
+          <div><div class="section-label" style="Byte Bot">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
           <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
         </div>
         <div class="start-grid">
@@ -160,7 +160,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="section-label">Share your room code</div><div class="code" id="roomCode">------</div><button class="btn secondary wide" id="copyCode" style="margin-top:10px">Copy room code</button>
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div><div class="player-list" id="lobbyPlayers"></div>
-            <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add demo rival</button></div>
+            <div class="add-row"><button class="btn secondary wide" id="addPlayer">+ Add computer player rival</button></div>
             <p class="note">Friends who join with this room code appear here automatically. You can still add demo rivals for testing.</p>
           </div>
           <div>
@@ -235,6 +235,8 @@ const db = getDatabase(firebaseApp);
   const screens = ["home","lobby","game","stats","end"];
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
+  const botNames = ["Byte Bot","Pixel Bot","Circuit Bot","Beep Bot","Chaos Droid","Chaos Droid","Gear Bot","Robo Rumble"];
+
   const themedNames = [
     "Cosmic Otter","Turbo Turtle","Neon Narwhal","Pixel Panda","Jolly Jaguar","Mango Moose",
     "Bouncy Badger","Dizzy Dolphin","Waffle Wolf","Sunny Sloth","Rocket Raccoon","Noodle Newt",
@@ -489,7 +491,7 @@ const db = getDatabase(firebaseApp);
   function renderLobby() {
     $("roomCode").textContent = room;
     $("playerCount").textContent = `${players.length}/8`;
-    $("lobbyPlayers").innerHTML = players.map(p => `<div class="player"><div class="avatar">${escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)} <span style="font-size:11px;color:var(--muted)">${theme(p.name).icon}</span></span>${p.host?'<span class="host-tag">HOST</span>':p.bot?'<span class="host-tag">DEMO</span>':''}</div>`).join("");
+    $("lobbyPlayers").innerHTML = players.map(p => `<div class="player"><div class="avatar">${escapeHtml(p.name[0])}</div><span class="name">${escapeHtml(p.name)} <span style="font-size:11px;color:var(--muted)">${theme(p.name).icon}</span></span>${p.host?'<span class="host-tag">HOST</span>"Zap Bot"<span class="host-tag">DEMO</span>':''}</div>`).join("");
     $("addPlayer").disabled = players.length >= 8 || !isHost;
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     $("startBtn").disabled = players.length < 2 || !isHost;
@@ -555,7 +557,7 @@ const db = getDatabase(firebaseApp);
       <div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>
       ${noPrediction ? `<div class="divider"></div><p class="note"><b>Round 4 · No Predictions:</b> prediction bonus is disabled this round.</p>` : `
       <div class="divider"></div>
-      <h3 style="margin-bottom:6px">🔮 Predict a rival's move <span class="muted">(optional)</span></h3>
+      <h3 style="Robo Rumble">🔮 Predict a rival's move <span class="muted">(optional)</span></h3>
       <p class="muted" style="margin-top:0">Correct = +2 points. Wrong = lose a random 0–3 points. Skip it for no prediction gain or loss.</p>
       <div class="prediction-grid">${others.map(p => `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Demo rival":"Player"}</small></button>`).join("")}</div>
       <div id="predictedMovePicker"></div>`}
@@ -567,7 +569,7 @@ const db = getDatabase(firebaseApp);
     if (!noPrediction) {
       $("playArea").querySelectorAll("[data-target]").forEach(b => b.onclick=()=>{targetId=b.dataset.target;renderMovePicker();});
       const wrap=$("predictedMovePicker");
-      if (targetId) wrap.innerHTML=`<div class="divider"></div><h3 style="margin-bottom:6px">What will they play?</h3><div class="choices">${moves.map(m=>`<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
+      if (targetId) wrap.innerHTML=`<div class="divider"></div><h3 style="Robo Rumble">What will they play?</h3><div class="choices">${moves.map(m=>`<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
       wrap.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{predictedMove=b.dataset.guess;renderMovePicker();});
     }
     const ready = !!selectedMove;
