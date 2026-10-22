@@ -167,7 +167,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="section-label">How it works</div>
             <div class="rule-card"><strong>🔮 Predict a rival</strong><span>Choose one opponent and guess what they will play. Correct predictions earn +2.</span></div>
             <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
-            <div class="rule-card"><strong>🏆 Majority + counter bonus</strong><span>With 3+ players, move totals count. Players whose move beats at least one other move get +1 bonus; RPS advantage breaks a power tie.</span></div>
+            <div class="rule-card"><strong>🏆 Majority + minority counter bonus</strong><span>With 3+ players, move totals count. You only get the +1 counter bonus when your move is in the minority AND it beats another move chosen that round. Example: 1 Rock vs 2 Scissors → the Rock player gets the minority counter bonus.</span></div>
             <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Round 2 doubles base points, round 4 reverses RPS, and round 6 rewards ties.</span></div>
             <button class="btn wide" id="startBtn">Start 7-round game →</button><p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
@@ -195,6 +195,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       <div class="panel">
         <div class="result-hero" style="text-align:center;padding:18px 0"><div style="font-size:58px">🏆</div><div class="eyebrow">The chaos champion</div><h2 id="winnerTitle">Victory!</h2><p id="winnerSub" class="muted">The bluff was strong with this one.</p></div>
         <div class="section-label">Final leaderboard</div><div id="finalScores" class="results-list"></div>
+        <div id="teamEndMessage" class="rule-card" style="margin-top:14px;text-align:center;display:none"></div>
         <div class="actions"><button class="btn" id="rematch">Run it back ↻</button><button class="btn secondary" id="homeBtn">Back to home</button></div>
       </div>
     </section>
@@ -272,7 +273,7 @@ const db = getDatabase(firebaseApp);
     rock:{label:"Team Rock",icon:"🪨"},
     paper:{label:"Team Paper",icon:"📄"},
     scissors:{label:"Team Scissors",icon:"✂️"},
-    unassigned:{label:"Unassigned",icon:"🎲"}
+    unassigned:{label:"Team Unpredictable",icon:"🎲"}
   };
 
   function blankProfile() {
@@ -311,7 +312,7 @@ const db = getDatabase(firebaseApp);
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
     const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
     $("statsContent").innerHTML=`
-      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span>Your team changes automatically when a different move leads your winning-move stats.</span></div>
+      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span>Your team changes automatically when a different move leads your winning-move stats. Team Unpredictable means you need more games to unlock a move team.</span></div>
       <div class="results-list">
         <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
         <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
@@ -360,7 +361,11 @@ const db = getDatabase(firebaseApp);
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
         totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
-        moveWinPoints,team,recentGames:trimmedObj,updatedAt:Date.now()
+        moveWinPoints,
+        previousTeam:old.team||"unassigned",
+        team,
+        recentGames:trimmedObj,
+        updatedAt:Date.now()
       });
     }));
     await loadCommunityTeams();
@@ -723,6 +728,41 @@ const db = getDatabase(firebaseApp);
     }
   }
 
+  async function showEndTeamMessage() {
+    const box=$("teamEndMessage");
+    if(!box) return;
+    box.style.display="none";
+    try {
+      const user=await ensureSignedIn();
+      const snap=await get(ref(db,`profiles/${user.uid}`));
+      if(!snap.exists()) return;
+      const p=snap.val();
+      const current=p.team||"unassigned";
+      const previous=p.previousTeam||"unassigned";
+      const currentMeta=teamMeta[current]||teamMeta.unassigned;
+      const previousMeta=teamMeta[previous]||teamMeta.unassigned;
+
+      let headline, detail;
+      if(current==="unassigned"){
+        headline="🎲 You’re Team Unpredictable!";
+        detail="Play more games to unlock Team Rock, Team Paper, or Team Scissors.";
+      } else if(previous==="unassigned"){
+        headline=`${currentMeta.icon} You joined ${currentMeta.label}!`;
+        detail=`Your winning-move stats earned you a spot on ${currentMeta.label}.`;
+      } else if(previous!==current){
+        headline=`${currentMeta.icon} You switched to ${currentMeta.label}!`;
+        detail=`You moved from ${previousMeta.label} to ${currentMeta.label} because your winning-move stats changed.`;
+      } else {
+        headline=`${currentMeta.icon} You’re on ${currentMeta.label}`;
+        detail=`You’re still representing ${currentMeta.label}.`;
+      }
+      box.innerHTML=`<strong style="font-size:18px">${headline}</strong><span>${detail}</span>`;
+      box.style.display="block";
+    } catch(e) {
+      console.warn("Team end message unavailable",e);
+    }
+  }
+
   function finishGame(showScreen=true) {
     clearInterval(timerInt);
     if(showScreen!==false) show("end"); else show("end");
@@ -731,6 +771,7 @@ const db = getDatabase(firebaseApp);
     $("winnerTitle").textContent=sorted.length>1&&sorted[0].score===sorted[1].score?"It's a tie!":`${sorted[0].name} wins!`;
     $("winnerSub").textContent=`${sorted[0].score} points · ${sorted.length} players · 7 rounds of chaos`;
     $("finalScores").innerHTML=sorted.map((p,i)=>`<div class="result-row"><div><b>${i===0?"👑 ":""}${escapeHtml(p.name)}</b><div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div></div><b class="score">${p.score} pts</b></div>`).join("");
+    showEndTeamMessage();
   }
 
   async function joinRoom() {
