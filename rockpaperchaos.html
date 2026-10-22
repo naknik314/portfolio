@@ -700,9 +700,22 @@ const db = getDatabase(firebaseApp);
     }
     const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
     const used=usedSnap.exists() && usedSnap.val()===true;
-    btn.disabled=used || round===4;
+    const targetSelect=$("scissorsTarget");
+
+    if(used){
+      teamPowerArmed=false;
+      btn.disabled=true;
+      btn.style.opacity=".5";
+      btn.textContent="🔒 Team Power Used Up";
+      $("teamPowerDesc").textContent="This once-per-game power has already been used. It will be available again next game.";
+      if(targetSelect) targetSelect.disabled=true;
+      return;
+    }
+
+    if(targetSelect) targetSelect.disabled=round===4;
+    btn.disabled=round===4;
     btn.style.opacity=btn.disabled?".5":"1";
-    btn.textContent=used?"✓ Team Power Used":round===4?"Unavailable in Round 4":teamPowerArmed?"⚡ Team Power Armed":"⚡ Use Team Power";
+    btn.textContent=round===4?"Unavailable in Round 4":teamPowerArmed?"⚡ Team Power Armed":"⚡ Use Team Power";
   }
 
   function beginRound(writeState=true) {
@@ -761,7 +774,11 @@ const db = getDatabase(firebaseApp);
     $("teamPowerBtn").onclick=async()=>{
       if(round===4) return toast("Team powers are unavailable in Round 4.");
       const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
-      if(usedSnap.exists() && usedSnap.val()===true) return toast("You already used your team power this game.");
+      if(usedSnap.exists() && usedSnap.val()===true){
+        teamPowerArmed=false;
+        await refreshTeamPowerUI();
+        return toast("Your team power is already used up for this game.");
+      }
       if(activeTeamPower?.key==="scissors" && !scissorsTargetUid) return toast("Choose a player for Cut in Half first.");
       teamPowerArmed=!teamPowerArmed;
       await refreshTeamPowerUI();
@@ -779,15 +796,21 @@ const db = getDatabase(firebaseApp);
     if (!selectedMove) return;
     const uid=currentUser.uid;
     // Each player writes only under their own UID. The UI never displays submissions before reveal.
+    const powerUsedCheck=await get(ref(db,`rooms/${room}/teamPowerUsed/${uid}`));
+    const canUseTeamPower=!noPrediction && teamPowerArmed && activeTeamPower && !(powerUsedCheck.exists() && powerUsedCheck.val()===true);
+    if(teamPowerArmed && !canUseTeamPower){
+      teamPowerArmed=false;
+      toast("Your team power is already used up, so it was not submitted again.");
+    }
     await set(ref(db, `${roundPath()}/submissions/${uid}`), {
       move:selectedMove,
       prediction:(!noPrediction && targetId && predictedMove)?{targetUid:targetId,move:predictedMove}:null,
-      teamPower:(!noPrediction && teamPowerArmed && activeTeamPower)?activeTeamPower.key:null,
-      teamPowerTarget:(!noPrediction && teamPowerArmed && activeTeamPower?.key==="scissors")?scissorsTargetUid:null,
+      teamPower:canUseTeamPower?activeTeamPower.key:null,
+      teamPowerTarget:(canUseTeamPower && activeTeamPower?.key==="scissors")?scissorsTargetUid:null,
       locked:true,
       submittedAt:Date.now()
     });
-    if(!noPrediction && teamPowerArmed && activeTeamPower){
+    if(canUseTeamPower){
       await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
       teamPowerArmed=false;
     }
