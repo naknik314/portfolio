@@ -421,7 +421,12 @@ const db = getDatabase(firebaseApp);
     const noPrediction = round === 4;
     const others = opponents();
     $("timer").textContent = "WAITING";
+    const currentPlayer = me();
     $("playArea").innerHTML = `
+      <div style="background:var(--panel2);border-radius:14px;padding:10px 12px;margin-bottom:14px;text-align:center">
+        <span class="muted" style="font-size:12px">PLAYING AS</span><br>
+        <b style="font-size:18px">${escapeHtml(currentPlayer?.name || selectedUsername)}</b>
+      </div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
       <div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>
@@ -616,11 +621,15 @@ const db = getDatabase(firebaseApp);
       if (data.status && data.status !== "lobby") return toast("That game has already started.");
       const count = data.players ? Object.keys(data.players).length : 0;
       if (!data.players?.[user.uid] && count >= 8) return toast("That room is full.");
-      const assignedName = uniqueRoomName(selectedUsername, data);
+      const requestedName = selectedUsername;
+      const assignedName = uniqueRoomName(requestedName, data);
       selectedUsername = assignedName;
       await set(ref(db, `rooms/${code}/players/${user.uid}`), {
         name:assignedName, host:data.hostUid === user.uid, bot:false, score:0, joinedAt:Date.now()
       });
+      if (assignedName !== requestedName) {
+        setTimeout(() => toast(`${requestedName} was already taken. You're playing as ${assignedName}.`), 250);
+      }
       room = code;
       isHost = data.hostUid === user.uid;
       onlineRoom = true;
