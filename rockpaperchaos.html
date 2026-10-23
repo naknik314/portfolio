@@ -457,8 +457,8 @@ const db = getDatabase(firebaseApp);
   ];
   const modifiers = {
     2:{name:"⚡ Double Trouble",desc:"Base points for winning the round are doubled."},
-    4:{name:"🔄 Reverse Gear",desc:"The winning cycle reverses for this round."},
-    6:{name:"🪞 Mirror Madness",desc:"A tied head-to-head matchup awards both players +1."}
+    4: {name:"🚫 No Predictions", desc:"Predictions are disabled this round. Choose your move and read the room without a prediction."},
+    6: {name:"🔄 Reverse Rules", desc:"The usual matchups are reversed: Scissors beats Rock, Rock beats Paper, and Paper beats Scissors."}
   };
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
@@ -1053,10 +1053,10 @@ const db = getDatabase(firebaseApp);
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
       activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
 
-    desc.innerHTML=`<b>${teamHeading}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
+    desc.innerHTML=`<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
 
     if(btn.dataset.powerUsed==="true"){
-      btn.textContent="⚡ Power already used this game";
+      btn.textContent="Team Power Already Used";
     }else if(teamPowerArmed){
       btn.textContent=`⚡ ${powerName} Active`;
     }else if(!btn.disabled){
@@ -1065,13 +1065,6 @@ const db = getDatabase(firebaseApp);
   }
 
 async function refreshTeamPowerUI() {
-    const resetPowerBtn=$("teamPowerBtn");
-    if(resetPowerBtn){
-      resetPowerBtn.dataset.powerUsed="false";
-      resetPowerBtn.removeAttribute("aria-disabled");
-      resetPowerBtn.style.cursor="";
-    }
-
     // Always derive the power fresh from Firebase. This prevents a cached
     // normal power (for example Reprint) from surviving after Power Swap
     // has been activated.
@@ -1085,7 +1078,6 @@ async function refreshTeamPowerUI() {
     const shownPowerName=activeTeamPower.displayName||activeTeamPower.name;
     // Regular teams get a clear "Your team power" label.
     // Team Unpredictable keeps the Jack of All Trades wording so its random-power identity is clear.
-    $("teamPowerName").textContent=shownPowerName;
     $("teamPowerDesc").textContent=displayedPowerDesc+" One use per game.";
     const targetSelect=$("scissorsTarget");
     if(activeTeamPower.key==="scissors"){
@@ -1108,12 +1100,11 @@ async function refreshTeamPowerUI() {
       btn.setAttribute("aria-disabled","true");
       btn.style.opacity=".5";
       btn.style.cursor="not-allowed";
-      btn.textContent="🔒 Team Power Already Used";
+      btn.textContent="Team Power Already Used";
       if(targetSelect){
         targetSelect.disabled=true;
         targetSelect.style.display="none";
       }
-      // Keep the normal team/power description visible; only the action is locked.
       return;
     }
 
@@ -1144,7 +1135,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
-      $("teamPowerDesc").innerHTML = `<b>${teamHeading}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
+      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
     }
 
   
@@ -1209,7 +1200,6 @@ async function refreshTeamPowerUI() {
       <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
-        <strong id="teamPowerName">⚡ Team Power</strong>
         <span id="teamPowerDesc">One use per game.</span>
         <select id="scissorsTarget" style="display:none;width:100%;margin-top:9px;padding:10px;border-radius:10px">
           <option value="">Choose a player to cut…</option>
@@ -1236,6 +1226,21 @@ async function refreshTeamPowerUI() {
       wrap.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{predictedMove=b.dataset.guess;renderMovePicker();});
     }
     $("teamPowerBtn").onclick=async()=>{
+    const liveUsedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
+    if(liveUsedSnap.exists() && liveUsedSnap.val()===true){
+      const usedBtn=$("teamPowerBtn");
+      teamPowerArmed=false;
+      if(usedBtn){
+        usedBtn.dataset.powerUsed="true";
+        usedBtn.disabled=true;
+        usedBtn.setAttribute("aria-disabled","true");
+        usedBtn.style.opacity=".5";
+        usedBtn.style.cursor="not-allowed";
+        usedBtn.textContent="Team Power Already Used";
+      }
+      toast("Team Power already used.");
+      return;
+    }
     const usedPowerBtn=$("teamPowerBtn");
     if(usedPowerBtn?.disabled || usedPowerBtn?.dataset.powerUsed==="true"){
       toast("This Team Power has already been used this game.");
