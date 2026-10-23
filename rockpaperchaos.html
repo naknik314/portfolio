@@ -168,6 +168,39 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         opacity:.05;
       }
     }
+
+  /* Subtle Rock / Paper / Scissors pattern on the light-purple home background */
+  #home{
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+  }
+  #home::before{
+    content:"🪨   📄   ✂️   🪨   ✂️   📄   🪨   📄   ✂️   📄   🪨   ✂️";
+    position:absolute;
+    inset:-28px;
+    z-index:-1;
+    pointer-events:none;
+    overflow:hidden;
+    white-space:pre-wrap;
+    word-spacing:34px;
+    line-height:5.4;
+    font-size:22px;
+    opacity:.055;
+    transform:rotate(-5deg) scale(1.06);
+    filter:grayscale(.25);
+  }
+  @media (max-width:600px){
+    #home::before{
+      inset:-18px;
+      font-size:18px;
+      word-spacing:24px;
+      line-height:5.8;
+      opacity:.045;
+      transform:rotate(-5deg) scale(1.08);
+    }
+  }
+
 </style>
 </head>
 <body>
