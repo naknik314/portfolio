@@ -274,6 +274,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         
 
             <div class="rule-card">
+              <strong>🎲 Roll the Dice Mode</strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about Roll the Dice Mode</summary>
+                <span style="display:block;margin-top:10px">Let the dice choose your move for the entire 7-round game. Each round, roll a six-sided die: <b>1–2 = 🪨 Rock</b>, <b>3–4 = 📄 Paper</b>, and <b>5–6 = ✂️ Scissors</b>. Predictions and Team Powers still work normally.</span>
+              </details>
+              <button class="btn secondary wide" id="rollDiceBtn" style="margin-top:10px">🎲 Enable Roll the Dice Mode — 15 CP</button>
+              <span id="rollDiceStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <div class="rule-card">
               <strong>🤖 Chaos Bot Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about the challenge</summary>
@@ -516,7 +526,7 @@ const db = getDatabase(firebaseApp);
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
     const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
     $("statsContent").innerHTML=`
-      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span>${p.team==="unassigned"?"Team Unpredictable means your winning-move points are still tied. Keep playing to join Team Rock, Team Paper, or Team Scissors.":"Your team changes automatically when a different move leads your winning-move stats."}</span></div>
+      <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span><b>Your team is based on your winning-move point totals.</b></span><span>${p.team==="unassigned"?"Team Unpredictable means your winning-move points are still tied. Keep playing to join Team Rock, Team Paper, or Team Scissors.":"Your team changes automatically when a different move leads your winning-move stats."}</span></div>
       <div class="results-list">
         <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
         <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
@@ -779,6 +789,56 @@ const db = getDatabase(firebaseApp);
     return null;
   }
 
+  const ROLL_DICE_COST=15;
+  let rollDiceModeActive=false;
+  let diceRollThisRound=null;
+
+  async function refreshRollDiceLobby(){
+    const btn=$("rollDiceBtn"), status=$("rollDiceStatus");
+    if(!btn || !status || !room || !currentUser) return;
+    const [ps,ms]=await Promise.all([
+      get(ref(db,`profiles/${currentUser.uid}`)),
+      get(ref(db,`rooms/${room}/rollDiceMode/${currentUser.uid}`))
+    ]);
+    const raw=ps.exists()?ps.val():blankProfile();
+    const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+    const active=ms.exists() && ms.val()===true;
+    rollDiceModeActive=active;
+
+    btn.disabled=active;
+    btn.style.opacity=active?".55":"1";
+    btn.textContent=active ? "🎲 Roll the Dice Mode Active" : `🎲 Enable Roll the Dice Mode — ${ROLL_DICE_COST} CP`;
+    status.textContent=active
+      ? `Your moves will be decided by the dice for this game. ${balance} Chaos Points remaining.`
+      : balance<ROLL_DICE_COST
+        ? `You have ${balance} CP. Click to check the cost.`
+        : `Costs ${ROLL_DICE_COST} CP upfront and lasts for the full 7-round game.`;
+  }
+
+  async function activateRollDiceMode(){
+    if(!room || !currentUser) return;
+    const modeRef=ref(db,`rooms/${room}/rollDiceMode/${currentUser.uid}`);
+    if((await get(modeRef)).val()===true) return refreshRollDiceLobby();
+
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const snap=await get(profileRef);
+    const raw=snap.exists()?snap.val():blankProfile();
+    const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+    if(balance<ROLL_DICE_COST) return toast("Not enough Chaos Points.");
+
+    await update(profileRef,{chaosPoints:balance-ROLL_DICE_COST,updatedAt:Date.now()});
+    await set(modeRef,true);
+    rollDiceModeActive=true;
+    toast("🎲 Roll the Dice Mode enabled!");
+    await refreshRollDiceLobby();
+  }
+
+  async function refreshRollDiceGameState(){
+    if(!room || !currentUser){ rollDiceModeActive=false; return; }
+    const snap=await get(ref(db,`rooms/${room}/rollDiceMode/${currentUser.uid}`));
+    rollDiceModeActive=snap.exists() && snap.val()===true;
+  }
+
   const CHAOS_BOT_COST=25;
   const CHAOS_BOT_WIN_BONUS=40;
 
@@ -1038,7 +1098,7 @@ async function refreshTeamPowerUI() {
 
   function beginRound(writeState=true) {
     clearInterval(timerInt);
-    selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null;
+    selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
     show("game");
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
@@ -1053,7 +1113,7 @@ async function refreshTeamPowerUI() {
         ? `<b>Coming up: ${upcoming.name}</b><span>${upcoming.desc}</span>`
         : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
     }
-    renderMovePicker();
+    refreshRollDiceGameState().then(()=>renderMovePicker());
     if (isHost && writeState) {
       update(ref(db, `rooms/${room}`), {round, updatedAt:Date.now()});
     }
@@ -1071,7 +1131,13 @@ async function refreshTeamPowerUI() {
       </div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
-      <div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>
+      ${rollDiceModeActive ? `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🎲 Roll the Dice Mode</strong>
+        <span>1–2 = 🪨 Rock · 3–4 = 📄 Paper · 5–6 = ✂️ Scissors</span>
+        ${diceRollThisRound ? `<div style="font-size:24px;font-weight:900;margin-top:10px">You rolled a ${diceRollThisRound}! ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}</div>` : ""}
+        <button class="btn wide" id="rollMoveBtn" style="margin-top:10px" ${diceRollThisRound?"disabled":""}>${diceRollThisRound?"🎲 Move chosen":"🎲 ROLL THE DICE"}</button>
+      </div>` : `<div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`}
       ${noPrediction ? `<div class="divider"></div><p class="note"><b>Round 4 · No Predictions:</b> prediction bonus is disabled this round.</p>` : `
       <div class="divider"></div>
       <h3 style="margin-bottom:8px">🔮 Predict a rival's move <span class="muted">(optional)</span></h3>
@@ -1090,7 +1156,16 @@ async function refreshTeamPowerUI() {
       <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
       <p class="note" id="waitingNote">Waiting for your choice.</p>`;
 
-    $("playArea").querySelectorAll("[data-move]").forEach(b => b.onclick=()=>{selectedMove=b.dataset.move;renderMovePicker();});
+    if(rollDiceModeActive){
+      const rollBtn=$("rollMoveBtn");
+      if(rollBtn && !diceRollThisRound) rollBtn.onclick=()=>{
+        diceRollThisRound=1+Math.floor(Math.random()*6);
+        selectedMove=diceRollThisRound<=2?"rock":diceRollThisRound<=4?"paper":"scissors";
+        renderMovePicker();
+      };
+    }else{
+      $("playArea").querySelectorAll("[data-move]").forEach(b => b.onclick=()=>{selectedMove=b.dataset.move;renderMovePicker();});
+    }
     if (!noPrediction) {
       $("playArea").querySelectorAll("[data-target]").forEach(b => b.onclick=()=>{targetId=b.dataset.target;renderMovePicker();});
       const wrap=$("predictedMovePicker");
@@ -1776,7 +1851,7 @@ async function refreshTeamPowerUI() {
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
@@ -1788,6 +1863,7 @@ async function refreshTeamPowerUI() {
 $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
 $("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
 $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
+$("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
   selectedUsername = "Obsidian Owl";
   updateUsername();
   signInAnonymously(auth).then(credential => {
@@ -1827,6 +1903,7 @@ $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await r
     await refreshChaosPointsPageBalance();
     await refreshChaosBotLobby();
     await refreshPowerReversalLobby();
+    await refreshRollDiceLobby();
   }
 
   function returnToLobbyFromChaosPoints(){
