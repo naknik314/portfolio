@@ -1049,8 +1049,11 @@ const db = getDatabase(firebaseApp);
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
     const prefix=isSwap ? "Your swapped team power" : "Your team power";
     const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
+    const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
+      activeTeamPower.team==="paper" ? "📄 Team Paper" :
+      activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
 
-    desc.innerHTML=`<b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game. Powers cannot be used in Round 4.</span>`;
+    desc.innerHTML=`<b>${teamHeading}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
 
     if(btn.dataset.powerUsed==="true"){
       btn.textContent="⚡ Power already used this game";
@@ -1141,7 +1144,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
-      $("teamPowerDesc").innerHTML = `<b>${teamHeading}</b><br><br><b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game. Powers cannot be used in Round 4.</span>`;
+      $("teamPowerDesc").innerHTML = `<b>${teamHeading}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
     }
 
   
