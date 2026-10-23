@@ -235,7 +235,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <details class="rule-card" style="margin-top:12px">
               <summary style="cursor:pointer;font-weight:850">⚡ Learn more about Team Powers</summary>
               <span style="margin-top:10px">Each player gets one normal team power per game. Powers cannot be used in Round 4.</span>
-              <span>🪨 <b>Barricade</b> — blocks negative prediction points and protects your positive points from Cut in Half that round.</span>
+              <span>🪨 <b>Barricade</b> — protects you from negative points and point-loss effects that round.</span>
               <span>📄 <b>Reprint</b> — copies the highest positive points another player earns that round.</span>
               <span>✂️ <b>Cut in Half</b> — cuts another player's positive round points in half, rounded down.</span>
               <span>🎲 <b>Jack of All Trades</b> — Team Unpredictable randomly gets one of the three powers each game.</span>
@@ -773,7 +773,7 @@ const db = getDatabase(firebaseApp);
   }
 
   function powerForTeam(team) {
-    if(team==="rock") return {key:"rock",name:"🪨 Barricade",desc:"Protect yourself this round: blocks negative prediction points and stops Cut in Half from reducing your positive points. It does not block Reprint."};
+    if(team==="rock") return {key:"rock",name:"🪨 Barricade",desc:"Protect yourself this round from negative points and point-loss effects. Reprint still works normally because it does not take your points away."};
     if(team==="paper") return {key:"paper",name:"📄 Reprint",desc:"Copy the highest positive net points another player earns this round. You do not take their points away."};
     if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive net points earned this round in half, rounded down. Barricade can block it."};
     return null;
@@ -1350,7 +1350,7 @@ async function refreshTeamPowerUI() {
           let appliedPenalty=penalty*multiplier;
           const power=submissions[p.uid]?.teamPower;
           if(power==="rock" && appliedPenalty>0){
-            details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative prediction points and Cut in Half. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 🪨 Barricade USED UP — unavailable for the rest of this game.`);
+            details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative points. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 🪨 Barricade USED UP — unavailable for the rest of this game.`);
             appliedPenalty=0;
           } else {
             details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
@@ -1437,7 +1437,7 @@ async function refreshTeamPowerUI() {
       if(submissions[p.uid]?.teamPower!=="rock") return;
       const alreadyReported=details.some(line=>line.includes(p.name) && line.includes("Barricade"));
       if(!alreadyReported){
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative prediction points and Cut in Half. NO EFFECT: there was no prediction penalty or Cut in Half attack to block. 🔒 🪨 Barricade USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative points. NO EFFECT: there were no negative points or point-loss effects to block. 🔒 🪨 Barricade USED UP — unavailable for the rest of this game.`);
       }
     });
 
@@ -1462,8 +1462,22 @@ async function refreshTeamPowerUI() {
         .map(o=>Math.min(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0)));
       const worst=losses.length?Math.min(...losses):0;
       if(worst<0){
-        players.filter(o=>o.uid!==p.uid).forEach(o=>{ scores[o.uid]+=worst; });
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. SUCCESS: copied ${worst} points to everyone else. 🔒 📄 Misprint USED UP — unavailable for the rest of this game.`);
+        const targets=players.filter(o=>o.uid!==p.uid);
+        const protectedTargets=[];
+        targets.forEach(o=>{
+          if(submissions[o.uid]?.teamPower==="rock"){
+            protectedTargets.push(o);
+          }else{
+            scores[o.uid]+=worst;
+          }
+        });
+        if(protectedTargets.length){
+          protectedTargets.forEach(o=>{
+            details.push(`⚡ POWER CLASH — ${o.name}'s 🪨 Barricade protected against ${p.name}'s 📄 Misprint. BLOCKED: ${worst} negative points were prevented.`);
+          });
+        }
+        const affected=targets.length-protectedTargets.length;
+        details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. SUCCESS: copied ${worst} points to ${affected===targets.length?"everyone else":affected+" unprotected player"+(affected===1?"":"s")}. 🔒 📄 Misprint USED UP — unavailable for the rest of this game.`);
       } else {
         details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. NO EFFECT: nobody else had negative round points to copy. 🔒 📄 Misprint USED UP — unavailable for the rest of this game.`);
       }
@@ -1522,7 +1536,16 @@ async function refreshTeamPowerUI() {
   }
 
   function formatPowerNotice(line){
-    let safe=escapeHtml(String(line||""));
+    line=String(line||"");
+    // Power outcomes are public. USED UP is personal to reduce clutter,
+    // but NOT USED UP stays public so everyone knows the power can appear again later.
+    const meName=players.find(p=>p.uid===currentUser?.uid)?.name||"";
+    const isMyPowerNotice=meName && line.includes(meName);
+    if(!isMyPowerNotice){
+      line=line
+        .replace(/\s*🔒\s*(?:🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses) USED UP[^.]*\.?/g,"");
+    }
+    let safe=escapeHtml(line);
     safe=safe
       .replace(/^(⚡ POWER USED|⚡ POWER ATTEMPT|⚡ POWER CLASH)/,"<strong>$1</strong>")
       .replace(/ (SUCCESS:|NO EFFECT:)/g,"<br><strong>$1</strong>")
@@ -1556,7 +1579,7 @@ async function refreshTeamPowerUI() {
     $("playArea").innerHTML=`
       <div style="text-align:center;margin:8px 0 18px"><div style="font-size:40px">${icon}</div><h2 style="margin:5px 0">${title}</h2><div style="font-size:22px;font-weight:900;margin-top:7px">${escapeHtml(revealWinner)}</div></div>
       ${powerNotices.length?`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
-        ${powerNotices.map(line=>`<span style="display:block;line-height:1.7;margin-bottom:8px">${formatPowerNotice(line)}</span>`).join("")}
+        ${powerNotices.map(line=>`<span style="display:block;line-height:1.7;margin:9px 0;padding:11px 13px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.035)">${formatPowerNotice(line)}</span>`).join("")}
       </div>`:`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
         <span>⚡ No team power was used this round.</span>
       </div>`}
