@@ -268,6 +268,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <strong>💠 Your Chaos Points</strong>
           <div id="chaosPointsPageBalance" style="font-size:30px;font-weight:900;margin-top:8px">Loading balance…</div>
           <span style="margin-top:6px">You gain Chaos Points by completing games.</span>
+          <span id="chaosPointsLobbyNotice" class="muted" style="display:none;margin-top:8px"><b>Create or join a game first to activate Chaos Points options.</b></span>
         </div>
 
         
@@ -550,6 +551,7 @@ const db = getDatabase(firebaseApp);
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
       chaosPointsReturnScreen="stats";
       show("chaosPoints");
+      updateChaosPointsLobbyAvailability();
       await refreshChaosPointsPageBalance();
       await refreshChaosBotLobby();
       await refreshPowerReversalLobby();
@@ -795,11 +797,37 @@ const db = getDatabase(firebaseApp);
     return null;
   }
 
+  function hasActiveGameLobby(){
+    return Boolean(room);
+  }
+
+  function updateChaosPointsLobbyAvailability(){
+    const hasLobby=hasActiveGameLobby();
+    const notice=$("chaosPointsLobbyNotice");
+    if(notice) notice.style.display=hasLobby?"none":"block";
+    ["rollDiceBtn","chaosBotBtn","powerReversalBtn"].forEach(id=>{
+      const btn=$(id);
+      if(!btn) return;
+      if(!hasLobby){
+        btn.disabled=true;
+        btn.setAttribute("aria-disabled","true");
+        btn.style.opacity=".5";
+        btn.style.cursor="not-allowed";
+        btn.title="Create or join a game first to activate this option.";
+      }else{
+        btn.removeAttribute("aria-disabled");
+        btn.style.cursor="";
+        btn.title="";
+      }
+    });
+  }
+
   const ROLL_DICE_COST=15;
   let rollDiceModeActive=false;
   let diceRollThisRound=null;
 
   async function refreshRollDiceLobby(){
+    updateChaosPointsLobbyAvailability();
     const btn=$("rollDiceBtn"), status=$("rollDiceStatus");
     if(!btn || !status || !room || !currentUser) return;
     const [ps,ms]=await Promise.all([
@@ -822,6 +850,7 @@ const db = getDatabase(firebaseApp);
   }
 
   async function activateRollDiceMode(){
+    if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
     if(!room || !currentUser) return;
     const modeRef=ref(db,`rooms/${room}/rollDiceMode/${currentUser.uid}`);
     if((await get(modeRef)).val()===true) return refreshRollDiceLobby();
@@ -855,6 +884,7 @@ const db = getDatabase(firebaseApp);
   }
 
   async function refreshChaosBotLobby(){
+    updateChaosPointsLobbyAvailability();
     const btn=$("chaosBotBtn"), status=$("chaosBotStatus");
     if(!btn || !status || !room || !currentUser) return;
     const [ps,ms]=await Promise.all([
@@ -884,6 +914,7 @@ const db = getDatabase(firebaseApp);
   }
 
   async function activateChaosBotChallenge(){
+    if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
     if(!players.some(p=>p && p.bot)){
       toast("A computer player must be added to the game to enable Chaos Bot Mode.");
       await refreshChaosBotLobby();
@@ -914,6 +945,7 @@ const db = getDatabase(firebaseApp);
   }
 
   async function refreshPowerReversalLobby(){
+    updateChaosPointsLobbyAvailability();
     const btn=$("powerReversalBtn"), status=$("powerReversalStatus");
     if(!btn || !status || !room || !currentUser) return;
     const [profileSnap,activeSnap]=await Promise.all([
@@ -942,6 +974,7 @@ const db = getDatabase(firebaseApp);
   }
 
   async function activatePowerReversal(){
+    if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
     if(!room || !currentUser) return;
     const activeRef=ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`);
     const activeSnap=await get(activeRef);
@@ -1931,6 +1964,7 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
   async function openChaosPointsScreen(){
     chaosPointsReturnScreen="lobby";
     show("chaosPoints");
+    updateChaosPointsLobbyAvailability();
     await refreshChaosPointsPageBalance();
     await refreshChaosBotLobby();
     await refreshPowerReversalLobby();
