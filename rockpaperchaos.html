@@ -1318,7 +1318,7 @@ async function refreshTeamPowerUI() {
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
-          details.push(`${p.name} gets +${1*multiplier} minority counter bonus for beating the majority.`);
+          details.push(`${p.name} earned +${1*multiplier} minority counter bonus for countering the majority.`);
         }
       });
 
@@ -1329,7 +1329,8 @@ async function refreshTeamPowerUI() {
       const tied=moves.filter(m=>totals[m]===top);
       if(tied.length===1) {
         revealWinner=`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins!`;
-        details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the move-total comparison.`);
+        const totalSummary=moves.filter(m=>totals[m]>0).map(m=>`${m[0].toUpperCase()+m.slice(1)} ${totals[m]}`).join(" · ");
+        details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison (${totalSummary}).`);
       } else if(tied.length===3) {
         revealWinner="Draw!";
         details.unshift("All three move totals tie: round draw.");
