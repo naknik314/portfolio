@@ -261,7 +261,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <h2>💠 Spend Your Chaos Points</h2>
             <div class="sub">Use your Chaos Points before the match begins.</div>
           </div>
-          <button class="btn ghost" id="backFromChaosPoints">← Back to Lobby</button>
+          <button class="btn ghost" id="backFromChaosPoints">← Back</button>
         </div>
 
         <div class="rule-card" style="margin-bottom:14px;text-align:center">
@@ -548,6 +548,7 @@ const db = getDatabase(firebaseApp);
       <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${Number(g.players||0)} players</div></div><b class="score">${Number(g.points||0)} pts</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
     const statsStoreBtn=$("statsChaosStoreBtn");
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
+      chaosPointsReturnScreen="stats";
       show("chaosPoints");
       await refreshChaosPointsPageBalance();
       await refreshChaosBotLobby();
@@ -995,6 +996,7 @@ const db = getDatabase(firebaseApp);
       power.displayName=power.name;
       power.desc=`Power Swap is active for this game. ${power.desc}`;
     }
+    if(power) power.team=team;
     return power;
   }
 
@@ -1094,7 +1096,10 @@ async function refreshTeamPowerUI() {
       let exactName = activeTeamPower.displayName || activeTeamPower.name || "Team Power";
       const isSwap = String(activeTeamPower.key||"").startsWith("reverse");
       exactName=String(exactName).replace(/^🔄\s*Your swapped team power:\s*/i,"").replace(/^Your team power:\s*/i,"");
-      $("teamPowerDesc").innerHTML = `<b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
+      const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
+        activeTeamPower.team==="paper" ? "📄 Team Paper" :
+        activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
+      $("teamPowerDesc").innerHTML = `<b>${teamHeading}</b><br><br><b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game. Powers cannot be used in Round 4.</span>`;
     }
 
   
@@ -1912,7 +1917,10 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
   }
 
 
+  let chaosPointsReturnScreen="lobby";
+
   async function openChaosPointsScreen(){
+    chaosPointsReturnScreen="lobby";
     show("chaosPoints");
     await refreshChaosPointsPageBalance();
     await refreshChaosBotLobby();
@@ -1920,11 +1928,21 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
     await refreshRollDiceLobby();
   }
 
-  function returnToLobbyFromChaosPoints(){
-    show("lobby");
+  function returnFromChaosPoints(){
+    if(chaosPointsReturnScreen==="stats"){
+      show("stats");
+      return;
+    }
+    // The lobby route is only valid when the player is actually in a room.
+    if(room){
+      show("lobby");
+      renderLobby();
+    }else{
+      show("home");
+    }
   }
   $("openChaosPoints").onclick=openChaosPointsScreen;
-  $("backFromChaosPoints").onclick=returnToLobbyFromChaosPoints;
+  $("backFromChaosPoints").onclick=returnFromChaosPoints;
 
 })();
 </script>
