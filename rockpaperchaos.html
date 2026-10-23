@@ -1160,12 +1160,12 @@ async function refreshTeamPowerUI() {
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
     const modifier = modifiers[round];
     if(modifier){
-      $("modifier").innerHTML = `<b>${modifier.name}</b><span>${modifier.desc}</span>`;
+      $("modifier").innerHTML = `<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
       const upcomingRound=[2,4,6].find(r=>r>round);
       const upcoming=upcomingRound ? modifiers[upcomingRound] : null;
       $("modifier").innerHTML = upcoming
-        ? `<b>Coming up: ${upcoming.name}</b><span>${upcoming.desc}</span>`
+        ? `<b>Round ${upcomingRound}: ${upcoming.name}</b><span>${upcoming.desc}</span>`
         : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
     }
     // Never block the Choose Your Move screen on the optional store-mode read.
