@@ -1067,14 +1067,23 @@ async function refreshTeamPowerUI() {
 
     if(used){
       teamPowerArmed=false;
+      btn.dataset.powerUsed="true";
       btn.disabled=true;
+      btn.setAttribute("aria-disabled","true");
       btn.style.opacity=".5";
-      btn.textContent="🔒 Team Power Used Up";
-      $("teamPowerDesc").textContent="This once-per-game power has already been used. It will be available again next game.";
-      if(targetSelect) targetSelect.disabled=true;
+      btn.style.cursor="not-allowed";
+      btn.textContent="🔒 Team Power Already Used";
+      if(targetSelect){
+        targetSelect.disabled=true;
+        targetSelect.style.display="none";
+      }
+      // Keep the normal team/power description visible; only the action is locked.
       return;
     }
 
+    btn.dataset.powerUsed="false";
+    btn.removeAttribute("aria-disabled");
+    btn.style.cursor="";
     if(targetSelect) targetSelect.disabled=round===4;
     btn.disabled=round===4;
     btn.style.opacity=btn.disabled?".5":"1";
@@ -1192,8 +1201,8 @@ async function refreshTeamPowerUI() {
     }
     $("teamPowerBtn").onclick=async()=>{
     const usedPowerBtn=$("teamPowerBtn");
-    if(usedPowerBtn?.dataset.powerUsed==="true"){
-      toast("This power has already been used.");
+    if(usedPowerBtn?.disabled || usedPowerBtn?.dataset.powerUsed==="true"){
+      toast("This Team Power has already been used this game.");
       return;
     }
 
