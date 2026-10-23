@@ -1267,9 +1267,17 @@ async function refreshTeamPowerUI() {
     renderExactMovePower();
   }
 
+  let preparedRound = null;
+
   function beginRound(writeState=true) {
     clearInterval(timerInt);
-    selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+    // Firebase room updates can fire several times during the same round
+    // (for example when another player locks in). Only clear this player's
+    // unfinished choices when we are actually entering a NEW round.
+    if (preparedRound !== round) {
+      selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+      preparedRound = round;
+    }
     show("game");
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
