@@ -265,17 +265,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <button class="btn ghost" id="backFromChaosPoints">← Back to Lobby</button>
         </div>
 
-        <div class="rule-card" style="margin-bottom:14px">
+        <div class="rule-card" style="margin-bottom:14px;text-align:center">
           <strong>💠 Your Chaos Points</strong>
-          <span id="chaosPointsPageBalance">Loading balance…</span>
-          <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Mode costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP bonus.</b></span>
+          <div id="chaosPointsPageBalance" style="font-size:30px;font-weight:900;margin-top:8px">Loading balance…</div>
+          <span style="margin-top:6px">You gain Chaos Points by completing games.</span>
         </div>
 
-        <div class="section-label">💠 Spend Your Chaos Points</div>
-            <div class="rule-card">
-              <strong>Special game options</strong>
-              <span><b>Use Chaos Points for special game options: ⚡ Power Swap costs 50 CP when you actually use the swapped power, and 🤖 Chaos Bot Mode costs 25 CP to enter. Beat the Chaos bots to earn a +40 CP Chaos Bot Mode bonus.</b></span>
-            </div>
+        
 
             <div class="rule-card">
               <strong>🤖 Chaos Bot Mode</strong>
@@ -803,26 +799,27 @@ const db = getDatabase(firebaseApp);
     const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
     const active=ms.exists() && ms.val()===true;
     const hasBot=players.some(p=>p && p.bot);
-    btn.disabled=active || balance<CHAOS_BOT_COST || !hasBot;
-    if(!active && !hasBot){
-      btn.textContent="🤖 Add a computer rival to enable Chaos Bot Mode";
-      status.textContent="Chaos Bot Mode only works when at least one computer rival is in the game.";
-    }else if(!active){
-      btn.textContent="🤖 Enable Chaos Bot Mode — 25 CP";
-    }
 
-    btn.style.opacity=btn.disabled?".55":"1";
-    btn.textContent=active?"🤖 Chaos Bot Mode Active":`🤖 Enable Chaos Bot Mode — ${CHAOS_BOT_COST}`;
-    status.textContent=active
-      ? `Harder bots enabled. ${balance} Chaos Points remaining.`
-      : balance<CHAOS_BOT_COST
-        ? `You have ${balance} Chaos Points. You need ${CHAOS_BOT_COST}.`
-        : `Costs ${CHAOS_BOT_COST}. Win for a +${CHAOS_BOT_WIN_BONUS} Chaos Point bonus.`;
+    btn.disabled=active;
+    btn.style.opacity=active?".55":"1";
+    btn.textContent=active
+      ? "🤖 Chaos Bot Mode Active"
+      : `🤖 Enable Chaos Bot Mode — ${CHAOS_BOT_COST} CP`;
+
+    if(active){
+      status.textContent=`Harder bots enabled. ${balance} Chaos Points remaining.`;
+    }else if(!hasBot){
+      status.textContent="A computer player must be added to the game to enable Chaos Bot Mode.";
+    }else if(balance<CHAOS_BOT_COST){
+      status.textContent=`You have ${balance} CP. Click to check the cost.`;
+    }else{
+      status.textContent=`Costs ${CHAOS_BOT_COST} CP. Win for a +${CHAOS_BOT_WIN_BONUS} CP bonus.`;
+    }
   }
 
   async function activateChaosBotChallenge(){
     if(!players.some(p=>p && p.bot)){
-      toast("Add a computer rival before enabling Chaos Bot Mode.");
+      toast("A computer player must be added to the game to enable Chaos Bot Mode.");
       await refreshChaosBotLobby();
       return;
     }
@@ -834,7 +831,7 @@ const db = getDatabase(firebaseApp);
     const snap=await get(profileRef);
     const raw=snap.exists()?snap.val():blankProfile();
     const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
-    if(balance<CHAOS_BOT_COST) return toast(`You need ${CHAOS_BOT_COST} Chaos Points.`);
+    if(balance<CHAOS_BOT_COST) return toast("Not enough Chaos Points.");
     await update(profileRef,{chaosPoints:balance-CHAOS_BOT_COST,updatedAt:Date.now()});
     await set(modeRef,true);
     toast("🤖 Chaos Bot Mode enabled!");
@@ -864,16 +861,18 @@ const db = getDatabase(firebaseApp);
       const legacySnap=await get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`));
       active=legacySnap.exists() && legacySnap.val()===true;
     }
-    if(active){
-      btn.disabled=true; btn.style.opacity=".55"; btn.textContent="🔄 Power Swap Active";
-      status.textContent=`Ready for this game. You still have ${balance} Chaos Points; ${REVERSAL_COST} will be spent only if you use the swapped power.`;
-    }else{
-      btn.disabled=balance<REVERSAL_COST; btn.style.opacity=btn.disabled?".55":"1";
-      btn.textContent=`🔄 Activate Power Swap — ${REVERSAL_COST}`;
-      status.textContent=balance<REVERSAL_COST
-        ? `You have ${balance} Chaos Points. You need ${REVERSAL_COST}.`
-        : `You have ${balance} Chaos Points. Activation lasts for this game only.`;
-    }
+
+    btn.disabled=active;
+    btn.style.opacity=active?".55":"1";
+    btn.textContent=active
+      ? "⚡ Power Swap Active"
+      : `⚡ Activate Power Swap — ${REVERSAL_COST} CP when used`;
+
+    status.textContent=active
+      ? `Ready for this game. You still have ${balance} CP; ${REVERSAL_COST} CP will be spent only if you use the swapped power.`
+      : balance<REVERSAL_COST
+        ? `You have ${balance} CP. Click to check the cost.`
+        : `You have ${balance} CP. Activation is free; ${REVERSAL_COST} CP is spent only if you use the swapped power.`;
   }
 
   async function activatePowerReversal(){
@@ -887,7 +886,7 @@ const db = getDatabase(firebaseApp);
     const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
     if(balance<REVERSAL_COST){
       await refreshPowerReversalLobby();
-      return toast(`You need ${REVERSAL_COST} Chaos Points to activate Power Swap.`);
+      return toast("Not enough Chaos Points.");
     }
     // Activation is free, but the player must currently have the full cost.
     // Chaos Points are charged only when the swapped power is actually used.
