@@ -1113,7 +1113,15 @@ async function refreshTeamPowerUI() {
         ? `<b>Coming up: ${upcoming.name}</b><span>${upcoming.desc}</span>`
         : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
     }
-    refreshRollDiceGameState().then(()=>renderMovePicker());
+    // Never block the Choose Your Move screen on the optional store-mode read.
+    // Render immediately, then update the dice-mode state from Firebase.
+    renderMovePicker();
+    const diceModeBeforeRefresh=rollDiceModeActive;
+    refreshRollDiceGameState()
+      .then(()=>{
+        if(diceModeBeforeRefresh!==rollDiceModeActive) renderMovePicker();
+      })
+      .catch(err=>console.warn("Could not refresh Roll the Dice Mode:",err));
     if (isHost && writeState) {
       update(ref(db, `rooms/${room}`), {round, updatedAt:Date.now()});
     }
@@ -1182,12 +1190,13 @@ async function refreshTeamPowerUI() {
       if(round===4) return toast("Team powers are unavailable in Round 4.");
       const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
       if(usedSnap.exists() && usedSnap.val()===true){
-      if(btn){
-        btn.dataset.powerUsed="true";
-        btn.setAttribute("aria-disabled","true");
-        btn.style.opacity=".5";
-        btn.style.cursor="not-allowed";
-      }
+        if(usedPowerBtn){
+          usedPowerBtn.dataset.powerUsed="true";
+          usedPowerBtn.setAttribute("aria-disabled","true");
+          usedPowerBtn.style.opacity=".5";
+          usedPowerBtn.style.cursor="not-allowed";
+          usedPowerBtn.textContent="⚡ Power already used this game";
+        }
 
         teamPowerArmed=false;
         await refreshTeamPowerUI();
