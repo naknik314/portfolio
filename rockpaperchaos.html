@@ -229,7 +229,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="section-label">How it works</div>
             <div class="rule-card"><strong>🔮 Predict a rival</strong><span>Choose one opponent and guess what they will play. Correct predictions earn +2.</span></div>
             <div class="rule-card"><strong>✊ Make your move</strong><span>Lock in rock, paper, or scissors. Moves reveal together.</span></div>
-            <div class="rule-card"><strong>🏆 Majority + minority counter bonus</strong><span>With 3+ players, move totals count. You only get the +1 counter bonus when your move is in the minority AND it beats another move chosen that round. Example: 1 Rock vs 2 Scissors → the Rock player gets the minority counter bonus.</span></div>
+            <div class="rule-card"><strong>🏆 Majority + minority counter bonus</strong><span>With 3+ players, move totals count. You only get the +1 counter bonus when your move is in the minority AND it beats the majority move that round. Example: 1 Rock vs 2 Scissors → the Rock player gets the minority counter bonus.</span></div>
             <div class="rule-card"><strong>🎲 Chaos rounds</strong><span>Special rounds can double points, disable predictions, or reverse which moves beat which.</span></div>
 
             <details class="rule-card" style="margin-top:12px">
@@ -287,7 +287,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⚡ Power Swap</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about swapped powers</summary>
-                <span style="display:block;margin-top:10px">Activate before the game. Activation itself costs 0 CP; 50 CP is spent only if you actually use the swapped power.</span>
+                <span style="display:block;margin-top:10px">You can swap your Team Power for an alternate Team Power for 1 game.</span>
                 <span>🪨 Barricade → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.</span>
                 <span>📄 Reprint → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
                 <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
@@ -1289,33 +1289,25 @@ async function refreshTeamPowerUI() {
         details.push("Majority is tied: no majority points.");
       }
 
-      // Counter bonus: only a minority move can earn it.
-      // Example: 1 Rock vs 2 Scissors -> the Rock player gets the counter bonus.
-      // A majority move never gets a counter bonus, even if it beats another move present.
+      // Counter bonus: only a minority move that beats the single majority move can earn it.
+      // Example: 1 Rock vs 2 Scissors -> Rock gets the bonus; 1 Paper would not get a bonus merely for beating Rock.
+      // If there is no single majority move, there is no minority counter bonus.
       const counterMoves={rock:0,paper:0,scissors:0};
       players.forEach(p=>{
         const myMove=played[p.uid];
-        const isMinority=players.some(o=>count[played[o.uid]] > count[myMove]);
-        // Counter bonus follows the active RPS relationship:
+        const maxMoveCount=Math.max(count.rock||0,count.paper||0,count.scissors||0);
+        const majorityMoves=["rock","paper","scissors"].filter(m=>(count[m]||0)===maxMoveCount);
+        const majorityMove=majorityMoves.length===1 ? majorityMoves[0] : null;
+        const isMinority=majorityMove!==null && (count[myMove]||0)<maxMoveCount;
+        // Counter bonus only applies when a minority move beats the single majority move.
         // Normal: Paper > Rock, Rock > Scissors, Scissors > Paper.
         // Round 6 reverse: Rock > Paper, Paper > Scissors, Scissors > Rock.
-        const countersPresent=players.some(o=>{
-          if(o.uid===p.uid) return false;
-          const otherMove=played[o.uid];
-          if(!reverse){
-            return (myMove==="paper" && otherMove==="rock") ||
-                   (myMove==="rock" && otherMove==="scissors") ||
-                   (myMove==="scissors" && otherMove==="paper");
-          }
-          return (myMove==="rock" && otherMove==="paper") ||
-                 (myMove==="paper" && otherMove==="scissors") ||
-                 (myMove==="scissors" && otherMove==="rock");
-        });
-        if(isMinority && countersPresent){
+        const countersMajority=isMinority && beats(myMove,majorityMove,reverse)>0;
+        if(countersMajority){
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
-          details.push(`${p.name} gets +${1*multiplier} minority counter bonus.`);
+          details.push(`${p.name} gets +${1*multiplier} minority counter bonus for beating the majority.`);
         }
       });
 
