@@ -1044,7 +1044,15 @@ async function refreshTeamPowerUI() {
     $("phaseLabel").textContent = "Choose & predict";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
     const modifier = modifiers[round];
-    $("modifier").innerHTML = modifier ? `<b>${modifier.name}</b><span>${modifier.desc}</span>` : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
+    if(modifier){
+      $("modifier").innerHTML = `<b>${modifier.name}</b><span>${modifier.desc}</span>`;
+    }else{
+      const upcomingRound=[2,4,6].find(r=>r>round);
+      const upcoming=upcomingRound ? modifiers[upcomingRound] : null;
+      $("modifier").innerHTML = upcoming
+        ? `<b>Coming up: ${upcoming.name}</b><span>${upcoming.desc}</span>`
+        : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
+    }
     renderMovePicker();
     if (isHost && writeState) {
       update(ref(db, `rooms/${room}`), {round, updatedAt:Date.now()});
