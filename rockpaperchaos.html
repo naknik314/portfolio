@@ -536,9 +536,7 @@ const db = getDatabase(firebaseApp);
       </div>
       <div class="rule-card" style="margin-top:12px">
         <strong>💠 Spend Your Chaos Points</strong>
-        <span>⚡ <b>Power Swap:</b> Have at least 50 CP to activate it; 50 CP is spent only if you actually use the swapped power.</span>
-        <span>🤖 <b>Chaos Bot Mode:</b> Costs 25 CP to enter. Win in Chaos Bot Mode for a +40 CP bonus.</span>
-        <span>Full explanations and activation buttons are available in the game setup room.</span>
+        <button class="btn secondary wide" id="statsChaosStoreBtn" style="margin-top:10px">💠 Go to Chaos Points Store →</button>
       </div>
 <div class="section-label">Winning-move points</div>
       <div class="results-list">
@@ -548,6 +546,14 @@ const db = getDatabase(firebaseApp);
       </div>
       <div class="section-label">Recent games</div>
       <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${Number(g.players||0)} players</div></div><b class="score">${Number(g.points||0)} pts</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
+    const statsStoreBtn=$("statsChaosStoreBtn");
+    if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
+      show("chaosPoints");
+      await refreshChaosPointsPageBalance();
+      await refreshChaosBotLobby();
+      await refreshPowerReversalLobby();
+      await refreshRollDiceLobby();
+    };
     show("stats");
   }
 
