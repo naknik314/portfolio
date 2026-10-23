@@ -1450,11 +1450,16 @@ async function refreshTeamPowerUI() {
   }
 
   function watchSubmissions() {
+    // Hidden-turn privacy:
+    // Only the host needs to read the full submissions collection in order
+    // to resolve the round. Non-host players wait for the room's public
+    // phase/results update instead of subscribing to everyone else's moves.
+    if (!isHost) return;
     onValue(ref(db, `${roundPath()}/submissions`), async snap => {
       const submissions=snap.val() || {};
       const humans=players.filter(p=>!p.bot);
       const humanReady=humans.every(p=>submissions[p.uid]?.locked);
-      if (isHost && humanReady) {
+      if (humanReady) {
         const completed={...submissions};
         const chaosBotMode=await isChaosBotChallengeActive();
         for (const p of players.filter(p=>p.bot)) {
