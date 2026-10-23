@@ -169,35 +169,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       }
     }
 
-  /* Subtle Rock / Paper / Scissors pattern on the light-purple home background */
+  /* Homepage emoji background pattern */
   #home{
     position:relative;
     isolation:isolate;
     overflow:hidden;
   }
-  #home::before{
-    content:"🪨  📄  ✂️\A ✂️  🪨  📄\A 📄  ✂️  🪨\A 🪨  📄  ✂️\A ✂️  🪨  📄\A 📄  ✂️  🪨\A 🪨  📄  ✂️\A ✂️  🪨  📄";
+  #home .rps-bg-pattern{
     position:absolute;
-    inset:-28px;
+    inset:0;
     z-index:-1;
     pointer-events:none;
     overflow:hidden;
-    white-space:pre;
-    word-spacing:42px;
-    line-height:4.8;
-    font-size:22px;
-    opacity:.055;
-    transform:rotate(-5deg) scale(1.06);
-    filter:grayscale(.25);
+  }
+  #home .rps-bg-pattern span{
+    position:absolute;
+    font-size:24px;
+    opacity:.16;
+    user-select:none;
   }
   @media (max-width:600px){
-    #home::before{
-      inset:-18px;
-      font-size:18px;
-      word-spacing:30px;
-      line-height:5.0;
-      opacity:.085;
-      transform:rotate(-5deg) scale(1.08);
+    #home .rps-bg-pattern span{
+      font-size:20px;
+      opacity:.14;
     }
   }
 
@@ -213,6 +207,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     </header>
 
     <section id="home">
+<div class="rps-bg-pattern" aria-hidden="true"><span style="left:5%;top:5%;transform:rotate(-12deg)">🪨</span><span style="left:25%;top:8%;transform:rotate(10deg)">📄</span><span style="left:48%;top:4%;transform:rotate(-8deg)">✂️</span><span style="left:72%;top:9%;transform:rotate(13deg)">🪨</span><span style="left:91%;top:5%;transform:rotate(-10deg)">📄</span><span style="left:12%;top:20%;transform:rotate(12deg)">✂️</span><span style="left:37%;top:24%;transform:rotate(-8deg)">🪨</span><span style="left:63%;top:19%;transform:rotate(8deg)">📄</span><span style="left:87%;top:25%;transform:rotate(-12deg)">✂️</span><span style="left:4%;top:38%;transform:rotate(-9deg)">📄</span><span style="left:28%;top:34%;transform:rotate(12deg)">✂️</span><span style="left:53%;top:40%;transform:rotate(-11deg)">🪨</span><span style="left:77%;top:35%;transform:rotate(9deg)">📄</span><span style="left:94%;top:42%;transform:rotate(-8deg)">🪨</span><span style="left:15%;top:54%;transform:rotate(10deg)">🪨</span><span style="left:42%;top:58%;transform:rotate(-12deg)">📄</span><span style="left:68%;top:52%;transform:rotate(11deg)">✂️</span><span style="left:89%;top:59%;transform:rotate(-7deg)">📄</span><span style="left:5%;top:72%;transform:rotate(-10deg)">✂️</span><span style="left:31%;top:68%;transform:rotate(9deg)">🪨</span><span style="left:57%;top:75%;transform:rotate(-9deg)">📄</span><span style="left:82%;top:70%;transform:rotate(12deg)">✂️</span><span style="left:14%;top:88%;transform:rotate(8deg)">📄</span><span style="left:40%;top:84%;transform:rotate(-11deg)">✂️</span><span style="left:65%;top:91%;transform:rotate(10deg)">🪨</span><span style="left:91%;top:86%;transform:rotate(-8deg)">📄</span></div>
       <div class="hero">
         <div class="eyebrow">Read the room. Predict the move. Own the chaos.</div>
         <h1>Rock. Paper.<br><span>Chaos.</span></h1>
