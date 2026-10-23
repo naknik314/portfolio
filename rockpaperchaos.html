@@ -294,6 +294,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
 
             <div class="rule-card">
+              <strong>🕵️ Double Agent Mode — 40 CP</strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about Double Agent Mode</summary>
+                <span style="display:block;margin-top:10px">Choose a different team's regular Team Power for one game. Your actual team, stats, and community team do not change.</span>
+              </details>
+              <select id="doubleAgentPowerSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
+                <option value="">Choose a regular Team Power…</option>
+                <option value="rock">🪨 Barricade</option>
+                <option value="paper">📄 Reprint</option>
+                <option value="scissors">✂️ Cut in Half</option>
+              </select>
+              <button class="btn secondary wide" id="doubleAgentBtn" style="margin-top:10px">🕵️ Enable Double Agent Mode — 40 CP</button>
+              <span id="doubleAgentStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <div class="rule-card">
               <strong>⚡ Power Swap</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about swapped powers</summary>
@@ -554,6 +570,7 @@ const db = getDatabase(firebaseApp);
       updateChaosPointsLobbyAvailability();
       await refreshChaosPointsPageBalance();
       await refreshChaosBotLobby();
+      await refreshDoubleAgentLobby();
       await refreshPowerReversalLobby();
       await refreshRollDiceLobby();
     };
@@ -805,7 +822,7 @@ const db = getDatabase(firebaseApp);
     const hasLobby=hasActiveGameLobby();
     const notice=$("chaosPointsLobbyNotice");
     if(notice) notice.style.display=hasLobby?"none":"block";
-    ["rollDiceBtn","chaosBotBtn","powerReversalBtn"].forEach(id=>{
+    ["rollDiceBtn","chaosBotBtn","doubleAgentBtn","powerReversalBtn"].forEach(id=>{
       const btn=$(id);
       if(!btn) return;
       if(!hasLobby){
@@ -820,6 +837,59 @@ const db = getDatabase(firebaseApp);
         btn.title="";
       }
     });
+  }
+
+  const DOUBLE_AGENT_COST=40;
+  let doubleAgentModeActive=false;
+  let doubleAgentPower=null;
+
+  function doubleAgentPowerLabel(key){
+    return key==="rock"?"🪨 Barricade":key==="paper"?"📄 Reprint":key==="scissors"?"✂️ Cut in Half":"";
+  }
+
+  async function refreshDoubleAgentLobby(){
+    updateChaosPointsLobbyAvailability();
+    const btn=$("doubleAgentBtn"), status=$("doubleAgentStatus"), select=$("doubleAgentPowerSelect");
+    if(!btn || !status || !select) return;
+    if(!room){
+      btn.disabled=true;
+      status.textContent="Create or join a game first to activate this option.";
+      return;
+    }
+    const snap=await get(ref(db,`rooms/${room}/doubleAgent/${currentUser.uid}`));
+    const val=snap.exists()?snap.val():null;
+    doubleAgentModeActive=Boolean(val?.power);
+    doubleAgentPower=doubleAgentModeActive?val.power:null;
+    if(doubleAgentModeActive){
+      select.value=doubleAgentPower;
+      select.disabled=true;
+      btn.disabled=true;
+      btn.style.opacity=".5";
+      btn.textContent="🕵️ Double Agent Mode Active";
+      status.textContent=`Using ${doubleAgentPowerLabel(doubleAgentPower)} for this game. Your actual team does not change.`;
+    }else{
+      select.disabled=false;
+      btn.disabled=false;
+      btn.style.opacity="1";
+      btn.textContent="🕵️ Enable Double Agent Mode — 40 CP";
+      status.textContent="";
+    }
+  }
+
+  async function activateDoubleAgentMode(){
+    if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
+    const chosen=$("doubleAgentPowerSelect")?.value||"";
+    if(!["rock","paper","scissors"].includes(chosen)) return toast("Choose Barricade, Reprint, or Cut in Half first.");
+    const ps=await get(ref(db,`profiles/${currentUser.uid}`));
+    const profile=ps.exists()?ps.val():{};
+    const balance=Number(profile.chaosPoints ?? profile.totalPoints ?? 0);
+    if(balance<DOUBLE_AGENT_COST) return toast("Not enough Chaos Points.");
+    await update(ref(db,`profiles/${currentUser.uid}`),{chaosPoints:balance-DOUBLE_AGENT_COST});
+    await set(ref(db,`rooms/${room}/doubleAgent/${currentUser.uid}`),{power:chosen,activatedAt:Date.now()});
+    doubleAgentModeActive=true; doubleAgentPower=chosen;
+    toast(`Double Agent Mode active: ${doubleAgentPowerLabel(chosen)}.`);
+    await refreshChaosPointsPageBalance();
+    await refreshDoubleAgentLobby();
   }
 
   const ROLL_DICE_COST=15;
@@ -1021,7 +1091,17 @@ const db = getDatabase(firebaseApp);
         await set(powerRef,team);
       }
     }
-    const power=reversalActive?reversedPowerForTeam(team):powerForTeam(team);
+    let doubleAgentChoice=null;
+    if(room && !reversalActive){
+      const daSnap=await get(ref(db,`rooms/${room}/doubleAgent/${currentUser.uid}`));
+      const daVal=daSnap.exists()?daSnap.val():null;
+      if(daVal && ["rock","paper","scissors"].includes(daVal.power)) doubleAgentChoice=daVal.power;
+    }
+    const power=reversalActive?reversedPowerForTeam(team):powerForTeam(doubleAgentChoice || team);
+    if(power && doubleAgentChoice){
+      power.doubleAgent=true;
+      power.displayName=power.name;
+    }
     if(isUnpredictable && power){
       power.displayName=`🎲 Jack of All Trades → ${power.name.replace(/^[^ ]+ /,"")}`;
       power.desc=`Jack of All Trades randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
@@ -1047,7 +1127,7 @@ const db = getDatabase(firebaseApp);
 
     const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
-    const prefix=isSwap ? "Your swapped team power" : "Your team power";
+    const prefix=activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power");
     const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
     const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
@@ -1135,7 +1215,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
-      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${isSwap ? "Your swapped team power" : "Your team power"}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
+      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
     }
 
   
@@ -1920,7 +2000,7 @@ async function refreshTeamPowerUI() {
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
@@ -1975,6 +2055,7 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
     updateChaosPointsLobbyAvailability();
     await refreshChaosPointsPageBalance();
     await refreshChaosBotLobby();
+    await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
     await refreshRollDiceLobby();
   }
@@ -1992,6 +2073,7 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
       show("home");
     }
   }
+  $("doubleAgentBtn").onclick=activateDoubleAgentMode;
   $("openChaosPoints").onclick=openChaosPointsScreen;
   $("backFromChaosPoints").onclick=returnFromChaosPoints;
 
