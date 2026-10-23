@@ -193,7 +193,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <button class="btn secondary wide" id="statsBtn" style="margin-top:10px">My stats 🎲</button>
         <div class="start-grid">
           <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
-          <div class="option"><div class="emoji">🚪</div><h2>Join an open room</h2><p>Pick a waiting room below — no code to type.</p><div id="openRooms" class="results-list" style="margin-top:10px"><div class="rule-card"><span>Looking for open rooms…</span></div></div><button class="btn secondary wide" id="refreshRooms" style="margin-top:10px">↻ Refresh rooms</button></div>
+          <div class="option"><div class="emoji">🚪</div><h2>Join an open room</h2><p>Browse rooms with active players waiting to start.</p><button class="btn secondary wide" id="viewOpenRooms">View open rooms →</button></div>
         </div>
         <p class="note">Kid-friendly by design — random game names + tap-to-join rooms mean no real names or personal info need to be typed in.</p>
         <div class="divider"></div>
@@ -204,6 +204,19 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div class="rule-card" style="text-align:center"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span></div>
         </div>
         
+      </div>
+    </section>
+
+    <section id="openRoomsScreen" class="hidden">
+      <div class="panel">
+        <div class="screen-title">
+          <div><div class="eyebrow">Find a game</div><h2>🚪 Open Rooms</h2><div class="sub">Only rooms with active players waiting to start are shown.</div></div>
+          <button class="btn ghost" id="backFromOpenRooms">← Back</button>
+        </div>
+        <div id="openRooms" class="results-list" style="margin-top:12px">
+          <div class="rule-card"><span>Looking for open rooms…</span></div>
+        </div>
+        <button class="btn secondary wide" id="refreshRooms" style="margin-top:12px">↻ Refresh rooms</button>
       </div>
     </section>
 
@@ -384,7 +397,7 @@ const db = getDatabase(firebaseApp);
 
 (() => {
   const $ = id => document.getElementById(id);
-  const screens = ["home","lobby","chaosPoints","game","stats","end"];
+  const screens = ["home","openRoomsScreen","lobby","chaosPoints","game","stats","end"];
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
   const botNames = ["Byte Bot","Pixel Bot","Circuit Bot","Beep Bot","Chaos Droid","Gear Bot","Zap Bot","Robo Rumble"];
@@ -1907,12 +1920,12 @@ async function refreshTeamPowerUI() {
           const realPlayers=Object.values(r.players||{}).filter(p=>!p.bot);
           return {code,count:realPlayers.length,createdAt:Number(r.createdAt||0)};
         })
-        .filter(r=>r.count<8)
+        .filter(r=>r.count>0 && r.count<8)
         .sort((a,b)=>b.createdAt-a.createdAt)
         .slice(0,12);
 
       if(!rooms.length){
-        wrap.innerHTML='<div class="rule-card"><strong>No open rooms right now</strong><span>Create one and it will appear here for other players.</span></div>';
+        wrap.innerHTML='<div class="rule-card"><strong>No active open rooms right now</strong><span>Create a room or check again in a moment.</span></div>';
         return;
       }
 
@@ -1988,7 +2001,6 @@ async function refreshTeamPowerUI() {
     onlineRoom = false; isHost = false; room = ""; players = [];
     show("home");
     loadCommunityTeams();
-    loadOpenRooms();
   }
 
   $("createBtn").onclick = createRoom;
@@ -1996,6 +2008,11 @@ async function refreshTeamPowerUI() {
   $("addPlayer").onclick = addDemoPlayer;
   $("startBtn").onclick = startGame;
   $("leaveLobby").onclick = leaveOnlineRoom;
+  $("viewOpenRooms").onclick = async()=>{
+    show("openRoomsScreen");
+    await loadOpenRooms();
+  };
+  $("backFromOpenRooms").onclick = ()=>show("home");
   $("refreshRooms").onclick = loadOpenRooms;
 
   $("rematch").onclick = async () => {
@@ -2013,7 +2030,7 @@ async function refreshTeamPowerUI() {
     }
   };
   $("homeBtn").onclick = leaveOnlineRoom;
-$("statsHome").onclick = () => { show("home"); loadCommunityTeams(); loadOpenRooms(); };
+$("statsHome").onclick = () => { show("home"); loadCommunityTeams(); };
 $("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
 $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
@@ -2022,7 +2039,6 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
   signInAnonymously(auth).then(credential => {
     currentUser = credential.user;
     loadCommunityTeams();
-    loadOpenRooms();
   }).catch(error => {
     console.error(error);
     toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
