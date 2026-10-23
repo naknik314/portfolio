@@ -294,10 +294,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
 
             <div class="rule-card">
-              <strong>🕵️ Double Agent Mode — 40 CP</strong>
+              <strong>🕵️ Double Agent Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Double Agent Mode</summary>
-                <span style="display:block;margin-top:10px">Choose a different team's regular Team Power for one game. Your actual team, stats, and community team do not change.</span>
+                <span style="display:block;margin-top:10px">Choose a different team's regular Team Power for one game. Your actual team, stats, and community team do not change. If Power Swap is also active, your chosen Double Agent power becomes its swapped version.</span>
               </details>
               <select id="doubleAgentPowerSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
                 <option value="">Choose a regular Team Power…</option>
@@ -1092,12 +1092,16 @@ const db = getDatabase(firebaseApp);
       }
     }
     let doubleAgentChoice=null;
-    if(room && !reversalActive){
+    if(room){
       const daSnap=await get(ref(db,`rooms/${room}/doubleAgent/${currentUser.uid}`));
       const daVal=daSnap.exists()?daSnap.val():null;
       if(daVal && ["rock","paper","scissors"].includes(daVal.power)) doubleAgentChoice=daVal.power;
     }
-    const power=reversalActive?reversedPowerForTeam(team):powerForTeam(doubleAgentChoice || team);
+    // Double Agent chooses the power family. If Power Swap is also active,
+    // swap THAT chosen family: Barricade→Stonewall, Reprint→Misprint,
+    // Cut in Half→Cut Your Losses.
+    const effectivePowerTeam=doubleAgentChoice || team;
+    const power=reversalActive?reversedPowerForTeam(effectivePowerTeam):powerForTeam(effectivePowerTeam);
     if(power && doubleAgentChoice){
       power.doubleAgent=true;
       power.displayName=power.name;
@@ -1127,7 +1131,7 @@ const db = getDatabase(firebaseApp);
 
     const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
-    const prefix=activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power");
+    const prefix=(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power");
     const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
     const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
@@ -1215,7 +1219,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
-      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
+      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
     }
 
   
