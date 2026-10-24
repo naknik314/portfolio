@@ -641,7 +641,8 @@ const db = getDatabase(firebaseApp);
   const modifiers = {
     2:{name:"⚡ Double Trouble",desc:"Base points for winning the round are doubled."},
     4: {name:"🚫 No Predictions", desc:"Predictions are disabled this round. Choose your move and read the room without a prediction."},
-    6: {name:"🔄 Reverse Rules", desc:"The usual matchups are reversed: Scissors beats Rock, Rock beats Paper, and Paper beats Scissors."}
+    6: {name:"🔄 Reverse Rules", desc:"The usual matchups are reversed: Scissors beats Rock, Rock beats Paper, and Paper beats Scissors."},
+    7: {name:"🏆 Winner Takes the Round", desc:"Everyone earns Round 7 points normally, but the winning move takes the round's positive-point pot. If multiple players played the winning move, they split the pot. Negative points stay with the player who earned them. A draw keeps normal Round 7 scoring."}
   };
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
@@ -1441,11 +1442,7 @@ async function refreshTeamPowerUI() {
     }else if(modifier){
       $("modifier").innerHTML = `<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
-      const upcomingRound=[2,4,6].find(r=>r>round);
-      const upcoming=upcomingRound ? modifiers[upcomingRound] : null;
-      $("modifier").innerHTML = upcoming
-        ? `<b>Round ${upcomingRound}: ${upcoming.name}</b><span>${upcoming.desc}</span>`
-        : "<b>🔮 Read the room</b><span>Pick your move and predict a rival's move.</span>";
+      $("modifier").innerHTML = `<b>Round ${round}: 🔮 Read the Room</b><span>Standard round — pick your move and predict a rival's move.</span>`;
     }
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
@@ -2016,6 +2013,35 @@ async function refreshTeamPowerUI() {
         details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
       }
     });
+
+    // Round 7 — Winner Takes the Round. Normal scoring and powers resolve first.
+    if(round===7){
+      const winningMoveMatch=String(revealWinner||"").match(/^(Rock|Paper|Scissors) wins!/i);
+      const winningMove=winningMoveMatch?winningMoveMatch[1].toLowerCase():null;
+      if(winningMove){
+        const winners=players.filter(p=>played[p.uid]===winningMove);
+        const positiveGains=players.map(p=>Math.max(0,Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0)));
+        const pot=positiveGains.reduce((sum,n)=>sum+n,0);
+        if(winners.length && pot>0){
+          players.forEach((p,index)=>{
+            const gain=positiveGains[index];
+            if(gain>0) scores[p.uid]-=gain;
+          });
+          const share=Math.floor(pot/winners.length);
+          let remainder=pot%winners.length;
+          winners.forEach(p=>{
+            scores[p.uid]+=share+(remainder>0?1:0);
+            if(remainder>0) remainder--;
+          });
+          const winnerNames=winners.map(p=>p.name).join(", ");
+          details.unshift(`🏆 WINNER TAKES THE ROUND — ${winningMove[0].toUpperCase()+winningMove.slice(1)} won Round 7, so the +${pot} positive-point pot went to ${winnerNames}${winners.length>1?` (split among ${winners.length} winners)`:``}.`);
+        }else{
+          details.unshift(`🏆 WINNER TAKES THE ROUND — ${winningMove[0].toUpperCase()+winningMove.slice(1)} won Round 7, but there were no positive points in the pot.`);
+        }
+      }else{
+        details.unshift("🏆 WINNER TAKES THE ROUND — Round 7 was a draw, so everyone keeps their normal Round 7 points.");
+      }
+    }
 
     const roundPoints={};
     players.forEach(p=>{
