@@ -510,7 +510,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about swapped powers</summary>
                 <span style="display:block;margin-top:10px">You can swap your Team Power for an alternate Team Power for 1 game.</span>
-                <span>🪨 Barricade → <b>Stonewall</b> — blocks everyone else's positive round points when it successfully resolves.</span>
+                <span>🪨 Barricade → <b>Stonewall</b> — blocks everyone else's positive round points before they are awarded. Barricade cannot block Stonewall because this prevents a gain rather than causing a point loss.</span>
                 <span>📄 Reprint → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
                 <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
                 <span>🎲 Team Unpredictable gets the swapped version of its random power.</span>
@@ -1247,7 +1247,7 @@ const db = getDatabase(firebaseApp);
   const REVERSAL_COST=50;
 
   function reversedPowerForTeam(team){
-    if(team==="rock") return {key:"reverseRock",name:"🪨 Stonewall",desc:"Blocks everyone else's positive round points when it successfully resolves."};
+    if(team==="rock") return {key:"reverseRock",name:"🪨 Stonewall",desc:"Blocks everyone else's positive round points before they are awarded. Barricade cannot block Stonewall because it prevents a gain rather than causing a point loss."};
     if(team==="paper") return {key:"reversePaper",name:"📄 Misprint",desc:"Copies the highest negative points another player earns that round to everyone except you. If nobody earns negative points, it has NO EFFECT."};
     if(team==="scissors") return {key:"reverseScissors",name:"✂️ Cut Your Losses",desc:"Cancels all of your negative points for that round, reducing your round loss to 0."};
     return null;
@@ -1313,6 +1313,7 @@ const db = getDatabase(firebaseApp);
     const profileSnap=await get(ref(db,`profiles/${currentUser.uid}`));
     const profile=profileSnap.exists()?profileSnap.val():blankProfile();
     let team=profile.team||"unassigned";
+    const playerTeam=team;
     const isUnpredictable=team==="unassigned";
     const [swapSnap,legacySnap]=await Promise.all([
       get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`)),
@@ -1364,9 +1365,8 @@ const db = getDatabase(firebaseApp);
       power.desc=`Jack of All Trades randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
     } else if(reversalActive && power){
       power.displayName=power.name;
-      power.desc=`Power Swap is active for this game. ${power.desc}`;
     }
-    if(power) power.team=team;
+    if(power) power.team=playerTeam;
     return power;
   }
 
@@ -1487,7 +1487,8 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
-      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}<br><span class="muted">One use per game.</span>`;
+      const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
+      $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
     }
 
   
@@ -2090,7 +2091,7 @@ async function refreshTeamPowerUI() {
         if(gain>0){ scores[o.uid]-=gain; blocked++; }
       });
       if(blocked>0){
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
+        details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
       } else {
         details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
       }
