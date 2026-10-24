@@ -498,7 +498,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>🎯 Solo Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Solo Mode</summary>
-                <span style="display:block;margin-top:10px">Solo Mode is available only when you are the only player in the Game Lobby. All 7 rounds are Quick Draw rounds. <b>How you win depends on your current team.</b></span>
+                <span style="display:block;margin-top:10px">Solo Mode is available only when you are the only player in the Game Lobby. It has 7 minigame rounds in a mixed order: <b>Quick Draw, Match the Cards, Cup Shuffle, Quick Draw, Cup Shuffle, Match the Cards, then a final Chaos Spinner.</b> <b>How you win depends on your current team.</b></span>
                 <span>🪨 <b>Team Rock:</b> land on Rock at least 4 out of 7 times.</span>
                 <span>📄 <b>Team Paper:</b> land on Paper at least 4 out of 7 times.</span>
                 <span>✂️ <b>Team Scissors:</b> land on Scissors at least 4 out of 7 times.</span>
@@ -1264,7 +1264,7 @@ const db = getDatabase(firebaseApp);
     const onlyOne=players.length===1 && players[0]?.uid===currentUser.uid;
     if(soloModeActive){
       btn.disabled=true; btn.style.opacity=".5"; btn.textContent="🎯 Solo Mode Active";
-      status.textContent=onlyOne?"Ready: all 7 rounds will be Quick Draw rounds.":"Solo Mode is active, but the game can only start when you are the only player.";
+      status.textContent=onlyOne?"Ready: 7 Solo minigame rounds are waiting for you.":"Solo Mode is active, but the game can only start when you are the only player.";
     }else{
       btn.disabled=!onlyOne; btn.style.opacity=onlyOne?"1":".5"; btn.textContent=`🎯 Enable Solo Mode — ${SOLO_MODE_COST} CP`;
       status.textContent=onlyOne?"Only one player is in the lobby — Solo Mode is available.":"Solo Mode requires exactly one player in the Game Lobby.";
@@ -1296,7 +1296,7 @@ const db = getDatabase(firebaseApp);
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
     soloModeActive=true;
-    toast("🎯 Solo Mode active — all 7 rounds will be Quick Draw.");
+    toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
     await refreshChaosPointsPageBalance();
     await refreshSoloModeLobby();
     await refreshRollDiceLobby();
@@ -1368,6 +1368,11 @@ const db = getDatabase(firebaseApp);
   const ROLL_DICE_COST=15;
   let rollDiceModeActive=false;
   let diceRollThisRound=null;
+  let soloCardDeck=[];
+  let soloCardFlips=[];
+  let soloCupMoves=[];
+  let soloCupRevealed=false;
+  let soloSpinnerRunning=false;
 
   async function refreshRollDiceLobby(){
     updateChaosPointsLobbyAvailability();
@@ -1749,6 +1754,7 @@ async function refreshTeamPowerUI() {
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+      soloCardDeck=[]; soloCardFlips=[]; soloCupMoves=[]; soloCupRevealed=false; soloSpinnerRunning=false;
       preparedRound = round;
       showRoundIntro(round);
     }
@@ -1756,12 +1762,19 @@ async function refreshTeamPowerUI() {
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
-    const isQuickDraw = soloModeActive || round === quickDrawRound;
+    const isQuickDraw = !soloModeActive && round === quickDrawRound;
     const modifier = modifiers[round];
-    if(isQuickDraw){
-      $("modifier").innerHTML = soloModeActive
-        ? `<b>Round ${round}: 🎯 Solo Quick Draw</b><span>All 7 rounds are Quick Draw. Time your lock-in to land the move your team needs!</span>`
-        : `<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
+    if(soloModeActive){
+      const soloRoundInfo = (round===1 || round===4)
+        ? ["🎯 Quick Draw","Time your stop to land on Rock, Paper, or Scissors."]
+        : (round===2 || round===6)
+          ? ["🃏 Match the Cards","Flip cards until you find your first matching pair. That pair becomes your move."]
+          : (round===3 || round===5)
+            ? ["🥤 Cup Shuffle","Track the hidden moves, then choose a cup. The move underneath becomes your move."]
+            : ["🎡 Chaos Spinner","Spin the final wheel. Wherever it lands becomes your Round 7 move."];
+      $("modifier").innerHTML=`<b>Round ${round}: ${soloRoundInfo[0]}</b><span>${soloRoundInfo[1]}</span>`;
+    }else if(isQuickDraw){
+      $("modifier").innerHTML = `<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
     }else if(modifier){
       $("modifier").innerHTML = `<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
@@ -1793,14 +1806,34 @@ async function refreshTeamPowerUI() {
       </div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
-      ${soloModeActive ? `
+      ${soloModeActive ? ((round===1 || round===4) ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🎯 Solo Quick Draw</strong>
-        <span>Watch the move cycle, then hit the button when the move you want appears. Manual move selection is disabled for all 7 Solo rounds.</span>
+        <span>Watch the move cycle, then hit the button when the move you want appears.</span>
         <div id="quickDrawDisplay" aria-live="off" style="font-size:72px;line-height:1.15;margin:14px 0 6px">${selectedMove ? hands[selectedMove] : hands[moves[quickDrawIndex%3]]}</div>
         <div id="quickDrawName" style="font-size:20px;font-weight:900;margin-bottom:10px">${selectedMove ? selectedMove[0].toUpperCase()+selectedMove.slice(1) : moves[quickDrawIndex%3][0].toUpperCase()+moves[quickDrawIndex%3].slice(1)}</div>
-        <button class="btn wide" id="quickDrawBtn">${selectedMove ? "🎯 Locked on "+selectedMove[0].toUpperCase()+selectedMove.slice(1) : "🎯 LOCK IT!"}</button>
-      </div>` : rollDiceModeActive ? `
+        <button class="btn wide" id="quickDrawBtn">${selectedMove ? "🎯 Landed on "+selectedMove[0].toUpperCase()+selectedMove.slice(1) : "🎯 LOCK IT!"}</button>
+      </div>` : (round===2 || round===6) ? `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🃏 Match the Cards</strong>
+        <span>There are 2 Rock, 2 Paper, and 2 Scissors cards. Flip two at a time. Your first matching pair becomes your move.</span>
+        <div id="soloCardGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px"></div>
+        <span id="soloCardStatus" class="muted" style="margin-top:9px">${selectedMove?`Matched ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}!`:"Find your first pair."}</span>
+      </div>` : (round===3 || round===5) ? `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🥤 Cup Shuffle</strong>
+        <span>Memorize which move starts under each cup. After they hide, choose one cup. The move underneath becomes your move.</span>
+        <div id="soloCupPreview" style="display:flex;justify-content:center;gap:18px;margin:14px 0 8px;font-size:38px"></div>
+        <div id="soloCupGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"></div>
+        <span id="soloCupStatus" class="muted" style="margin-top:9px">${selectedMove?`You found ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}!`:"Watch closely…"}</span>
+      </div>` : `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🎡 Chaos Spinner</strong>
+        <span>Final round! Spin the wheel and let it choose your last Rock, Paper, or Scissors move.</span>
+        <div id="soloSpinnerDisplay" style="font-size:72px;line-height:1.15;margin:14px 0 6px">🎡</div>
+        <div id="soloSpinnerName" style="font-size:20px;font-weight:900;margin-bottom:10px">${selectedMove?`${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}`:"Ready to spin"}</div>
+        <button class="btn wide" id="soloSpinnerBtn" ${selectedMove?"disabled":""}>${selectedMove?"🎡 Spin complete":"🎡 SPIN!"}</button>
+      </div>`) : rollDiceModeActive ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🎲 Roll the Dice Mode</strong>
         <span>1–2 = 🪨 Rock · 3–4 = 📄 Paper · 5–6 = ✂️ Scissors</span>
@@ -1814,7 +1847,7 @@ async function refreshTeamPowerUI() {
         <div id="quickDrawName" style="font-size:20px;font-weight:900;margin-bottom:10px">${selectedMove ? selectedMove[0].toUpperCase()+selectedMove.slice(1) : moves[quickDrawIndex%3][0].toUpperCase()+moves[quickDrawIndex%3].slice(1)}</div>
         <button class="btn wide" id="quickDrawBtn">${selectedMove ? "🎯 Locked on "+selectedMove[0].toUpperCase()+selectedMove.slice(1) : "🎯 LOCK IT!"}</button>
       </div>` : `<div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`)}
-      ${noPrediction ? `<div class="divider"></div><p class="note"><b>Round 4 · No Predictions:</b> prediction bonus is disabled this round.</p>` : `
+      ${noPrediction ? `<div class="divider"></div><p class="note">${soloModeActive?"<b>Solo Mode:</b> predictions are disabled.":"<b>Round 4 · No Predictions:</b> prediction bonus is disabled this round."}</p>` : `
       <div class="divider"></div>
       <h3 style="margin-bottom:8px">🔮 Predict a rival's move ${predictionMode==="optional"?`<span class="muted">(optional)</span>`:""}</h3>
       <p class="muted" style="margin-top:0">${predictionMode==="optional"?"Casual mode: Correct = +2 points. Wrong = lose a random 0–3 points, but your total score never goes below zero. Skip for no prediction gain or loss.":"Competitive mode: Prediction required. Correct = +2 points. Wrong = lose a random 0–3 points, and your total score can go below zero."}</p>
@@ -1853,7 +1886,7 @@ async function refreshTeamPowerUI() {
       }
     }
 
-    if(soloModeActive || (round===quickDrawRound && !rollDiceModeActive)){
+    if((soloModeActive && (round===1 || round===4)) || (!soloModeActive && round===quickDrawRound && !rollDiceModeActive)){
       if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
       const display=$("quickDrawDisplay");
       const name=$("quickDrawName");
@@ -1893,6 +1926,94 @@ async function refreshTeamPowerUI() {
       }
     }
 
+    if(soloModeActive && (round===2 || round===6)){
+      const grid=$("soloCardGrid"), status=$("soloCardStatus");
+      if(!soloCardDeck.length){
+        soloCardDeck=["rock","rock","paper","paper","scissors","scissors"];
+        for(let i=soloCardDeck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [soloCardDeck[i],soloCardDeck[j]]=[soloCardDeck[j],soloCardDeck[i]]; }
+      }
+      const paintCards=()=>{
+        if(!grid) return;
+        grid.innerHTML=soloCardDeck.map((m,i)=>{
+          const face=soloCardFlips.includes(i)||selectedMove;
+          return `<button class="btn secondary" data-solo-card="${i}" style="min-height:78px;font-size:${face?"34px":"28px"}" ${selectedMove?"disabled":""}>${face?hands[m]:"?"}</button>`;
+        }).join("");
+        grid.querySelectorAll("[data-solo-card]").forEach(btn=>btn.onclick=()=>{
+          const idx=Number(btn.dataset.soloCard);
+          if(selectedMove || soloCardFlips.includes(idx) || soloCardFlips.length>=2) return;
+          soloCardFlips.push(idx); paintCards();
+          if(soloCardFlips.length===2){
+            const [a,b]=soloCardFlips;
+            if(soloCardDeck[a]===soloCardDeck[b]){
+              selectedMove=soloCardDeck[a];
+              if(status) status.textContent=`Match! ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)} becomes your move.`;
+              paintCards();
+              const lock=$("lockBtn"); if(lock){ lock.disabled=false; lock.style.opacity="1"; lock.onclick=submitTurn; }
+              const waiting=$("waitingNote"); if(waiting) waiting.textContent="Matching pair found. Lock your move to continue.";
+            }else{
+              if(status) status.textContent="Not a match — try again!";
+              setTimeout(()=>{ soloCardFlips=[]; paintCards(); if(status) status.textContent="Find your first pair."; },650);
+            }
+          }
+        });
+      };
+      paintCards();
+    }
+
+    if(soloModeActive && (round===3 || round===5)){
+      const preview=$("soloCupPreview"), grid=$("soloCupGrid"), status=$("soloCupStatus");
+      if(!soloCupMoves.length){
+        soloCupMoves=["rock","paper","scissors"];
+        for(let i=soloCupMoves.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [soloCupMoves[i],soloCupMoves[j]]=[soloCupMoves[j],soloCupMoves[i]]; }
+      }
+      if(preview) preview.innerHTML=soloCupMoves.map(m=>`<span>${hands[m]}</span>`).join("");
+      if(grid) grid.innerHTML=[0,1,2].map(i=>`<button class="btn secondary" data-solo-cup="${i}" style="min-height:86px;font-size:42px" ${selectedMove?"disabled":""}>🥤</button>`).join("");
+      if(!selectedMove){
+        setTimeout(()=>{
+          if(preview) preview.innerHTML="<span>↔️</span><span>🔀</span><span>↔️</span>";
+          if(status) status.textContent="Shuffled! Pick a cup.";
+        },900);
+      }
+      grid?.querySelectorAll("[data-solo-cup]").forEach(btn=>btn.onclick=()=>{
+        if(selectedMove) return;
+        const idx=Number(btn.dataset.soloCup);
+        selectedMove=soloCupMoves[idx];
+        soloCupRevealed=true;
+        grid.querySelectorAll("[data-solo-cup]").forEach((b,j)=>{
+          b.disabled=true;
+          b.textContent=j===idx?`${hands[soloCupMoves[j]]}`:"🥤";
+        });
+        if(status) status.textContent=`Under your cup: ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}!`;
+        const lock=$("lockBtn"); if(lock){ lock.disabled=false; lock.style.opacity="1"; lock.onclick=submitTurn; }
+        const waiting=$("waitingNote"); if(waiting) waiting.textContent="Cup revealed. Lock your move to continue.";
+      });
+    }
+
+    if(soloModeActive && round===7){
+      const btn=$("soloSpinnerBtn"), display=$("soloSpinnerDisplay"), name=$("soloSpinnerName");
+      if(btn && !selectedMove) btn.onclick=()=>{
+        if(soloSpinnerRunning) return;
+        soloSpinnerRunning=true; btn.disabled=true; btn.textContent="🎡 Spinning…";
+        let ticks=0;
+        const spin=setInterval(()=>{
+          const m=moves[ticks%3];
+          if(display) display.textContent=hands[m];
+          if(name) name.textContent=m[0].toUpperCase()+m.slice(1);
+          ticks++;
+          if(ticks>=15){
+            clearInterval(spin);
+            selectedMove=moves[Math.floor(Math.random()*3)];
+            soloSpinnerRunning=false;
+            if(display) display.textContent=hands[selectedMove];
+            if(name) name.textContent=`${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}`;
+            btn.textContent="🎡 Spin complete";
+            const lock=$("lockBtn"); if(lock){ lock.disabled=false; lock.style.opacity="1"; lock.onclick=submitTurn; }
+            const waiting=$("waitingNote"); if(waiting) waiting.textContent=`Spinner landed on ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}. Lock your move to continue.`;
+          }
+        },90);
+      };
+    }
+
     if(rollDiceModeActive && !soloModeActive){
       const rollBtn=$("rollMoveBtn");
       if(rollBtn && !diceRollThisRound) rollBtn.onclick=()=>{
@@ -1909,7 +2030,7 @@ async function refreshTeamPowerUI() {
       if (targetId) wrap.innerHTML=`<div class="divider"></div><h3 style="margin-bottom:8px">What will they play?</h3><div class="choices">${moves.map(m=>`<button class="choice ${predictedMove===m?"selected":""}" data-guess="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`;
       wrap.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{predictedMove=b.dataset.guess;renderMovePicker();});
     }
-    $("teamPowerBtn").onclick=async()=>{
+    if($("teamPowerBtn")) $("teamPowerBtn").onclick=async()=>{
     const liveUsedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
     if(liveUsedSnap.exists() && liveUsedSnap.val()===true){
       const usedBtn=$("teamPowerBtn");
@@ -2009,7 +2130,7 @@ async function refreshTeamPowerUI() {
       }
     }
     if(soloModeActive){
-      $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🎯</div><h2>Quick Draw locked!</h2><p class="muted">Revealing your Solo round…</p></div>`;
+      $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🎯</div><h2>Solo move locked!</h2><p class="muted">Revealing your Solo round…</p></div>`;
       $("phaseLabel").textContent="Revealing Solo round";
 
       // Solo has nobody else to wait for. Resolve immediately from this
@@ -2556,8 +2677,8 @@ async function refreshTeamPowerUI() {
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
     $("progressFill").style.width=`${round/7*100}%`;
-    const icon=round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
-    const title=round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
+    const icon=soloModeActive?"🎯":round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
+    const title=soloModeActive?"Solo move revealed!":round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
     const powerNotices=(details||[]).filter(line=>line.includes("POWER USED")||line.includes("POWER CLASH")||line.includes("POWER ATTEMPT"));
     // Big animations are reserved for team-power moments so they stay special.
     // A clash can animate both powers in sequence.
