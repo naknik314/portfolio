@@ -2811,9 +2811,21 @@ async function refreshTeamPowerUI() {
         const targetText=team==="unassigned"
           ?"No move reached a clear majority of 4 out of 7."
           : `${team[0].toUpperCase()+team.slice(1)} landed ${Number(counts[team]||0)} out of 7 times.`;
-        if(success && !roomData.soloRewardPaid){
-          const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
-          await update(profileRef,{chaosPoints:balance+SOLO_MODE_REWARD,updatedAt:Date.now()});
+        // A completed 7-round Solo game counts as one game played and one
+        // game in the player's CURRENT Team Rank stretch. Solo still does
+        // not change wins, ties, team assignment, team swaps, total points,
+        // or winning-move stats.
+        if(!roomData.statsSaved){
+          const profileUpdates={
+            gamesPlayed:Number(profile.gamesPlayed||0)+1,
+            teamGames:Number(profile.teamGames||0)+1,
+            updatedAt:Date.now()
+          };
+          if(success && !roomData.soloRewardPaid){
+            const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+            profileUpdates.chaosPoints=balance+SOLO_MODE_REWARD;
+          }
+          await update(profileRef,profileUpdates);
         }
         await update(ref(db, `rooms/${room}`), {
           soloResult:{success,team,counts,targetText,reward:success?SOLO_MODE_REWARD:0},
