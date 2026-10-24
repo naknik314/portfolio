@@ -216,9 +216,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
       <div class="panel">
         <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div><div class="section-label" style="color:var(--muted)">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
-          <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
+            <button type="button" class="btn secondary" id="statsBtn">My stats 🎲</button>
+          </div>
         </div>
-        <button class="btn secondary wide" id="statsBtn" style="margin-top:10px">My stats 🎲</button>
         <div class="start-grid">
           <div class="option"><div class="emoji">🎮</div><h2>Create a room</h2><p>Start a game, invite your crew, and get a random room code.</p><button class="btn wide" id="createBtn">Create room ↗</button></div>
           <div class="option"><div class="emoji">🚪</div><h2>Join an open room</h2><p>Browse rooms with active players waiting to start.</p><button class="btn secondary wide" id="viewOpenRooms">View open rooms →</button></div>
@@ -461,56 +463,56 @@ const db = getDatabase(firebaseApp);
     "Doodling Dylan",
     "Karaoke Katie",
     "Skating Stella",
-    "Puzzle Pro",
-    "Sketch Star",
-    "Soccer Spark",
-    "Dance Dynamo",
-    "Bookworm Buddy",
-    "Craft Captain",
-    "Music Maker",
-    "Trivia Titan",
-    "Game Guru",
-    "Karaoke King",
-    "Karaoke Queen",
-    "Drawing Dynamo",
-    "Science Star",
-    "Story Spinner",
-    "Chess Champ",
-    "Coding Comet",
-    "Baking Boss",
-    "Garden Guru",
-    "Movie Maven",
-    "Photo Phantom",
-    "Drum Dreamer",
-    "Guitar Glitter",
-    "Piano Popstar",
-    "Singing Superstar",
-    "Puzzle Pal",
-    "Board Game Boss",
-    "Comic Creator",
-    "LEGO Legend",
-    "Quiz Whiz",
-    "Reading Rocket",
-    "Cosmic Otter",
-    "Turbo Turtle",
-    "Neon Narwhal",
-    "Pixel Panda",
-    "Jolly Jaguar",
-    "Mango Moose",
-    "Waffle Wolf",
-    "Sunny Sloth",
-    "Disco Duck",
-    "Comet Cat",
-    "Bubble Bear",
-    "Zippy Zebra",
-    "Lucky Llama",
-    "Cocoa Koala",
-    "Mystery Mouse",
-    "Rainbow Rabbit",
-    "Frosty Fox",
-    "Twinkle Toucan",
-    "Quirky Quokka",
-    "Magic Marmot"
+    "Designer Danny",
+    "Creative Claire",
+    "Artistic Ava",
+    "Brilliant Brandon",
+    "Charming Charlotte",
+    "Cool Connor",
+    "Daring David",
+    "Energetic Emma",
+    "Fantastic Frank",
+    "Friendly Fiona",
+    "Funny Freddie",
+    "Gentle George",
+    "Happy Hannah",
+    "Helpful Henry",
+    "Jazzy Jasmine",
+    "Jolly James",
+    "Kind Katie",
+    "Lucky Liam",
+    "Mighty Michael",
+    "Musical Molly",
+    "Nifty Natalie",
+    "Playful Patrick",
+    "Quick Quinn",
+    "Radiant Rachel",
+    "Silly Sarah",
+    "Smiling Sophia",
+    "Speedy Steven",
+    "Sunny Samuel",
+    "Terrific Taylor",
+    "Wacky William",
+    "Awesome Amelia",
+    "Bouncy Brooke",
+    "Cheerful Christopher",
+    "Clever Cameron",
+    "Crafty Caroline",
+    "Dancing Daniel",
+    "Daring Derek",
+    "Friendly Faith",
+    "Funny Finn",
+    "Gentle Grace",
+    "Giggly Gina",
+    "Happy Hailey",
+    "Jazzy Jacob",
+    "Jolly Julia",
+    "Kind Kevin",
+    "Lively Lauren",
+    "Lucky Lucas",
+    "Mighty Matthew",
+    "Peppy Paige",
+    "Sunny Sebastian"
   ];
   const modifiers = {
     2:{name:"⚡ Double Trouble",desc:"Base points for winning the round are doubled."},
@@ -2135,7 +2137,7 @@ $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); };
 $("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
 $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
-  selectedUsername = "Obsidian Owl";
+  selectedUsername = randomName();
   updateUsername();
   signInAnonymously(auth).then(credential => {
     currentUser = credential.user;
