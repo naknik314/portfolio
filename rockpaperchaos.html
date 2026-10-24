@@ -425,6 +425,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="rule-card" id="lobbyTeamCard">
               <strong id="lobbyTeamHeading">Loading…</strong>
               <span id="lobbyTeamInfo" style="margin-top:7px"></span>
+<div id="soloLobbyGoal" class="hidden" style="margin-top:8px"></div>
             </div>
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div>
@@ -1024,16 +1025,29 @@ const db = getDatabase(firebaseApp);
         (results[3]?.exists() && results[3].val()===true)
       );
 
-      let html=basePowerName
-        ? `Team power: <b>${basePowerName}</b><br><span class="muted">${basePowerDesc}</span>`
-        : `<span class="muted">${basePowerDesc}</span>`;
+      const soloSnap=room?await get(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`)):null;
+      const lobbySoloActive=Boolean(soloSnap?.exists() && soloSnap.val()===true);
+      let html;
+      if(lobbySoloActive){
+        const soloGoals={
+          rock:`🎯 <b>Solo Mode goal:</b> Choose 🪨 Rock in at least <b>4 out of 7 rounds</b> to win.`,
+          paper:`🎯 <b>Solo Mode goal:</b> Choose 📄 Paper in at least <b>4 out of 7 rounds</b> to win.`,
+          scissors:`🎯 <b>Solo Mode goal:</b> Choose ✂️ Scissors in at least <b>4 out of 7 rounds</b> to win.`,
+          unassigned:`🎯 <b>Solo Mode goal:</b> Don't choose Rock, Paper, or Scissors <b>4 out of 7 times or more</b>.`
+        };
+        html=soloGoals[team]||soloGoals.unassigned;
+      }else{
+        html=basePowerName
+          ? `Team power: <b>${basePowerName}</b><br><span class="muted">${basePowerDesc}</span>`
+          : `<span class="muted">${basePowerDesc}</span>`;
+      }
 
       const normal={rock:"🪨 Barricade",paper:"📄 Reprint",scissors:"✂️ Cut in Half"};
       const swapped={rock:"🪨 Stonewall",paper:"📄 Misprint",scissors:"✂️ Cut Your Losses"};
-      if(daPower){
+      if(!lobbySoloActive && daPower){
         html+=`<div class="divider" style="margin:10px 0"></div><b>🕵️ Double Agent active:</b> ${normal[daPower]}`;
         if(swapActive) html+=`<br><b>⚡ Power Swap active:</b> ${normal[daPower]} → <b>${swapped[daPower]}</b>`;
-      }else if(swapActive){
+      }else if(!lobbySoloActive && swapActive){
         if(team==="unassigned"){
           html+=`<div class="divider" style="margin:10px 0"></div><b>⚡ Power Swap active</b><br><span class="muted">Your random Team Power will become its swapped version once the game begins.</span>`;
         }else{
@@ -1559,6 +1573,7 @@ const db = getDatabase(firebaseApp);
   }
 
 async function refreshTeamPowerUI() {
+    if(soloModeActive) return;
     // Always derive the power fresh from Firebase. This prevents a cached
     // normal power (for example Reprint) from surviving after Power Swap
     // has been activated.
@@ -1678,7 +1693,7 @@ async function refreshTeamPowerUI() {
     const diceModeBeforeRefresh=rollDiceModeActive;
     refreshRollDiceGameState()
       .then(()=>{
-        if(diceModeBeforeRefresh!==rollDiceModeActive) renderMovePicker();
+        if(!soloModeActive && diceModeBeforeRefresh!==rollDiceModeActive) renderMovePicker();
       })
       .catch(err=>console.warn("Could not refresh Roll the Dice Mode:",err));
     if (isHost && writeState) {
@@ -1698,7 +1713,14 @@ async function refreshTeamPowerUI() {
       </div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
-      ${rollDiceModeActive ? `
+      ${soloModeActive ? `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🎯 Solo Quick Draw</strong>
+        <span>Watch the move cycle, then hit the button when the move you want appears. Manual move selection is disabled for all 7 Solo rounds.</span>
+        <div id="quickDrawDisplay" aria-live="off" style="font-size:72px;line-height:1.15;margin:14px 0 6px">${selectedMove ? hands[selectedMove] : hands[moves[quickDrawIndex%3]]}</div>
+        <div id="quickDrawName" style="font-size:20px;font-weight:900;margin-bottom:10px">${selectedMove ? selectedMove[0].toUpperCase()+selectedMove.slice(1) : moves[quickDrawIndex%3][0].toUpperCase()+moves[quickDrawIndex%3].slice(1)}</div>
+        <button class="btn wide" id="quickDrawBtn">${selectedMove ? "🎯 Locked on "+selectedMove[0].toUpperCase()+selectedMove.slice(1) : "🎯 LOCK IT!"}</button>
+      </div>` : rollDiceModeActive ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🎲 Roll the Dice Mode</strong>
         <span>1–2 = 🪨 Rock · 3–4 = 📄 Paper · 5–6 = ✂️ Scissors</span>
@@ -1719,17 +1741,39 @@ async function refreshTeamPowerUI() {
       <div class="prediction-grid">${others.map(p => `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`).join("")}</div>
       <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
+      ${soloModeActive ? `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🎯 Solo Mode</strong>
+        <span class="muted" style="margin-top:6px">Team Powers are not available in Solo Mode.</span>
+        <span id="soloMoveGoalText" style="margin-top:8px;font-weight:800">How you win depends on your current team.</span>
+      </div>` : `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <span id="teamPowerDesc">One use per game.</span>
         <select id="scissorsTarget" style="display:none;width:100%;margin-top:9px;padding:10px;border-radius:10px">
           <option value="">Choose a player to cut…</option>
         </select>
         <button class="btn secondary wide" id="teamPowerBtn" style="margin-top:9px">⚡ Use Team Power</button>
-      </div>
+      </div>`}
       <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
       <p class="note" id="waitingNote">Waiting for your choice.</p>`;
 
-    if((soloModeActive || round===quickDrawRound) && !rollDiceModeActive){
+    if(soloModeActive){
+      const goalEl=$("soloMoveGoalText");
+      if(goalEl && currentUser){
+        get(ref(db,`profiles/${currentUser.uid}`)).then(snap=>{
+          const team=(snap.exists()?snap.val()?.team:null)||"unassigned";
+          const goals={
+            rock:"To win, choose 🪨 Rock in at least 4 out of 7 rounds.",
+            paper:"To win, choose 📄 Paper in at least 4 out of 7 rounds.",
+            scissors:"To win, choose ✂️ Scissors in at least 4 out of 7 rounds.",
+            unassigned:"To win, don't choose Rock, Paper, or Scissors 4 out of 7 times or more."
+          };
+          if(goalEl) goalEl.textContent=goals[team]||goals.unassigned;
+        }).catch(()=>{ if(goalEl) goalEl.textContent="How you win depends on your current team."; });
+      }
+    }
+
+    if(soloModeActive || (round===quickDrawRound && !rollDiceModeActive)){
       if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
       const display=$("quickDrawDisplay");
       const name=$("quickDrawName");
@@ -1762,19 +1806,21 @@ async function refreshTeamPowerUI() {
             lockBtn.onclick=()=>{ if(ready) submitTurn(); };
           }
           const waiting=$("waitingNote");
-          if(waiting) waiting.textContent=`Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. ${predictionMode==="optional"?"Add an optional prediction, or lock your choices.":"Add your required prediction, then lock your choices."}`;
+          if(waiting) waiting.textContent=soloModeActive
+            ? `Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. Lock your choice to continue.`
+            : `Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. ${predictionMode==="optional"?"Add an optional prediction, or lock your choices.":"Add your required prediction, then lock your choices."}`;
         };
       }
     }
 
-    if(rollDiceModeActive){
+    if(rollDiceModeActive && !soloModeActive){
       const rollBtn=$("rollMoveBtn");
       if(rollBtn && !diceRollThisRound) rollBtn.onclick=()=>{
         diceRollThisRound=1+Math.floor(Math.random()*6);
         selectedMove=diceRollThisRound<=2?"rock":diceRollThisRound<=4?"paper":"scissors";
         renderMovePicker();
       };
-    }else{
+    }else if(!soloModeActive){
       $("playArea").querySelectorAll("[data-move]").forEach(b => b.onclick=()=>{selectedMove=b.dataset.move;renderMovePicker();});
     }
     if (!noPrediction) {
@@ -1997,9 +2043,24 @@ async function refreshTeamPowerUI() {
 
     if(soloModeActive && players.length===1){
       const p=players[0], landed=played[p.uid];
-      const soloSnap=await get(ref(db,`rooms/${room}/soloMoves`));
-      const soloMoves={rock:0,paper:0,scissors:0,...(soloSnap.val()||{})};
-      soloMoves[landed]=Number(soloMoves[landed]||0)+1;
+
+      // Count Solo Mode from completed round results instead of incrementing a
+      // shared counter. The submissions listener can fire more than once for
+      // the same round, so incrementing here could produce impossible totals
+      // such as 12 out of 7.
+      const roomSnap=await get(ref(db,`rooms/${room}`));
+      const roomData=roomSnap.val()||{};
+      const soloMoves={rock:0,paper:0,scissors:0};
+      Object.entries(roomData.rounds||{}).forEach(([roundNumber,roundData])=>{
+        if(Number(roundNumber)===Number(round)) return;
+        if(roundData?.phase!=="reveal" || !roundData?.results) return;
+        const previousMove=roundData.results.moves?.[p.uid];
+        if(moves.includes(previousMove)) soloMoves[previousMove]++;
+      });
+      if(moves.includes(landed)) soloMoves[landed]++;
+
+      // This value is only a display/cache. The final result is also rebuilt
+      // from the seven stored round results below.
       await set(ref(db,`rooms/${room}/soloMoves`),soloMoves);
       revealWinner=`${landed[0].toUpperCase()+landed.slice(1)}!`;
       details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}.`);
@@ -2416,7 +2477,14 @@ async function refreshTeamPowerUI() {
       const finalScores=roomData.scores||{};
       const soloActive=roomData.soloMode?.[currentUser?.uid]===true;
       if(soloActive){
-        const counts={rock:0,paper:0,scissors:0,...(roomData.soloMoves||{})};
+        const counts={rock:0,paper:0,scissors:0};
+        for(let r=1;r<=7;r++){
+          const landed=roomData.rounds?.[r]?.results?.moves?.[currentUser.uid];
+          if(moves.includes(landed)) counts[landed]++;
+        }
+        // Keep the cache corrected too, so reconnects/debug displays can never
+        // show more than the seven actual Solo rounds.
+        await set(ref(db,`rooms/${room}/soloMoves`),counts);
         const profileRef=ref(db,`profiles/${currentUser.uid}`);
         const profileSnap=await get(profileRef);
         const profile=profileSnap.exists()?profileSnap.val():blankProfile();
