@@ -522,6 +522,10 @@ const db = getDatabase(firebaseApp);
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
   let quickDrawRound = null, quickDrawTimer = null, quickDrawIndex = 0;
+  const LAST_ROOM_KEY="rockPaperChaosLastRoom";
+  function rememberRoom(code){ try{ if(code) localStorage.setItem(LAST_ROOM_KEY,String(code)); }catch(e){} }
+  function forgetRoom(){ try{ localStorage.removeItem(LAST_ROOM_KEY); }catch(e){} }
+  function rememberedRoom(){ try{ return String(localStorage.getItem(LAST_ROOM_KEY)||"").trim().toUpperCase(); }catch(e){ return ""; } }
   // Player membership is removed only by the Leave action, not by temporary network disconnects.
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
@@ -687,6 +691,7 @@ const db = getDatabase(firebaseApp);
     if (roomUnsubscribe) roomUnsubscribe();
     roomUnsubscribe = onValue(ref(db, `rooms/${code}`), snapshot => {
       if (!snapshot.exists()) {
+        forgetRoom();
         if (onlineRoom) { onlineRoom=false; toast("This room was closed."); show("home"); }
         return;
       }
@@ -694,6 +699,7 @@ const db = getDatabase(firebaseApp);
       players = Object.entries(data.players || {}).map(([uid,p]) => playerFromFirebase(uid,p));
       players.sort((a,b) => Number(b.host)-Number(a.host));
       room = code;
+      rememberRoom(code);
       isHost = data.hostUid === currentUser?.uid ||
         players.some(p => p.uid === currentUser?.uid && p.host === true);
       onlineRoom = true;
@@ -770,6 +776,7 @@ const db = getDatabase(firebaseApp);
       });
       isHost = true;
       onlineRoom = true;
+      rememberRoom(room);
       listenToRoom(room);
       show("lobby");
     } catch (error) {
@@ -1937,7 +1944,7 @@ async function refreshTeamPowerUI() {
         const roundTotal=Number(roundPoints[p.uid]||0);
         const isYou=p.uid===currentUser?.uid;
         return `<div class="choice" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
-          ${p.bot?'<div style="font-size:25px;line-height:1;margin-bottom:5px" aria-label="Computer player">🤖</div>':""}
+          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px" aria-label="${p.bot?"Computer player":"Player avatar"}">${p.bot?"🤖":escapeHtml((p.name||"?").trim().charAt(0).toUpperCase()||"?")}</div>
           <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}${isYou?' <span class="badge">YOU</span>':""}</b>
           <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
@@ -2101,6 +2108,7 @@ async function refreshTeamPowerUI() {
       room = code;
       isHost = claimHost;
       onlineRoom = true;
+      rememberRoom(code);
       listenToRoom(code);
       show("lobby");
     } catch (error) {
@@ -2118,9 +2126,42 @@ async function refreshTeamPowerUI() {
       } catch (error) { console.error(error); }
     }
     if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+    forgetRoom();
     onlineRoom = false; isHost = false; room = ""; players = [];
     show("home");
     loadCommunityTeams();
+  }
+
+  async function recoverAfterRefresh(){
+    const code=rememberedRoom();
+    if(!code || !currentUser) return false;
+    try{
+      const snap=await get(ref(db,`rooms/${code}`));
+      if(!snap.exists()){ forgetRoom(); return false; }
+      const data=snap.val()||{};
+      const membership=data.players?.[currentUser.uid];
+      if(!membership){ forgetRoom(); return false; }
+
+      room=code;
+      selectedUsername=membership.name || selectedUsername;
+      updateUsername();
+      isHost=data.hostUid===currentUser.uid || membership.host===true;
+      onlineRoom=true;
+      quickDrawRound=Number(data.quickDrawRound||0)||null;
+
+      // A refresh creates fresh local UI state. Firebase decides whether the
+      // player is waiting, revealing, in the lobby, or finished.
+      preparedRound=null;
+      selectedMove=null; targetId=null; predictedMove=null;
+      teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+
+      listenToRoom(code);
+      toast("Reconnected to your game.");
+      return true;
+    }catch(error){
+      console.warn("Could not restore game after refresh",error);
+      return false;
+    }
   }
 
   $("createBtn").onclick = createRoom;
@@ -2156,8 +2197,9 @@ $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await r
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
   selectedUsername = randomName();
   updateUsername();
-  signInAnonymously(auth).then(credential => {
+  signInAnonymously(auth).then(async credential => {
     currentUser = credential.user;
+    await recoverAfterRefresh();
     loadCommunityTeams();
   }).catch(error => {
     console.error(error);
