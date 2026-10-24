@@ -1949,10 +1949,10 @@ async function refreshTeamPowerUI() {
           <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
           <div class="divider" style="width:100%;margin:14px 0 11px"></div>
-          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Total points</div>
-          <b class="score" style="font-size:21px;margin-top:2px">${total} pts</b>
-          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">This round</div>
-          <b style="font-size:16px">${roundTotal>0?"+":""}${roundTotal} pts</b>
+          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">This round</div>
+          <b style="font-size:21px;margin-top:2px">${roundTotal>0?"+":""}${roundTotal} pts</b>
+          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">Total points</div>
+          <b class="score" style="font-size:16px">${total} pts</b>
         </div>`;
       }).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT")).slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
