@@ -828,7 +828,7 @@ const db = getDatabase(firebaseApp);
             <span class="muted">${teamSwaps===1?"1 time":"Times you have switched from one established team to another."}</span>
           </div>
           <div class="rule-card">
-            <strong>${team.icon} Team Status</strong>
+            <strong>${team.icon} Team Rank</strong>
             <span style="font-size:19px;font-weight:900;margin-top:6px">${escapeHtml(teamStatus)}</span>
             <span class="muted">${teamGames} ${teamGames===1?"game":"games"} in your current stretch with ${team.label}.</span>
           </div>
@@ -894,7 +894,7 @@ const db = getDatabase(firebaseApp);
       // Rock/Paper/Scissors team. The first move out of Team Unpredictable is
       // treated as joining a team, matching the end-screen wording.
       const teamSwaps=Number(old.teamSwaps||0)+(teamChanged && oldTeam!=="unassigned"?1:0);
-      // Team Status measures the current uninterrupted stretch on this team.
+      // Team Rank measures the current uninterrupted stretch on this team.
       const teamGames=teamChanged?1:Number(old.teamGames||0)+1;
       const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
       const challengeSnap=await get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`));
