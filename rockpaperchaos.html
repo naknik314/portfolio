@@ -925,7 +925,7 @@ const db = getDatabase(firebaseApp);
         const r = data.rounds?.[sharedRound];
         if (r?.phase === "reveal" && r.results) {
           applyScores(r.results.scores || {});
-          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, false, r.results.moves || {}, r.results.revealWinner || "Draw!", r.results.roundPoints || {}, r.results.scores || {});
+          renderReveal(r.results.details || [], !!r.results.reverse, r.results.basePoints || 1, isHost, r.results.moves || {}, r.results.revealWinner || "Draw!", r.results.roundPoints || {}, r.results.scores || {});
         }
       }
     });
@@ -1947,6 +1947,28 @@ async function refreshTeamPowerUI() {
           }
         };
         await resolveSharedRound(soloSubmission);
+
+        // The room's round number has not changed, so the normal room listener
+        // may not call beginRound/renderReveal again. Read the just-written
+        // result and reveal it immediately on this device.
+        const resultSnap=await get(ref(db,`${roundPath()}/results`));
+        if(resultSnap.exists()){
+          const r=resultSnap.val()||{};
+          applyScores(r.scores||{});
+          renderReveal(
+            r.details||[],
+            !!r.reverse,
+            r.basePoints||1,
+            true,
+            r.moves||{},
+            r.revealWinner||"Draw!",
+            r.roundPoints||{},
+            r.scores||{}
+          );
+        }else{
+          // Backup listener for an unusually slow write/network response.
+          watchSubmissions();
+        }
       }else{
         watchSubmissions();
       }
