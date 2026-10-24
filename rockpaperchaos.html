@@ -399,7 +399,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <div id="toast" class="toast hidden" role="status"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app-check.js";
 import { getDatabase, ref, set, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
@@ -1944,8 +1944,8 @@ async function refreshTeamPowerUI() {
         const roundTotal=Number(roundPoints[p.uid]||0);
         const isYou=p.uid===currentUser?.uid;
         return `<div class="choice" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
-          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px" aria-label="${p.bot?"Computer player":"Player avatar"}">${p.bot?"🤖":escapeHtml((p.name||"?").trim().charAt(0).toUpperCase()||"?")}</div>
-          <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}${isYou?' <span class="badge">YOU</span>':""}</b>
+          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${p.bot?"Computer player":isYou?"You":"Other player"}">${p.bot?"🤖":`<span class="badge" style="font-size:11px">${isYou?"YOU":"THEM"}</span>`}</div>
+          <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
           <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
           <div class="divider" style="width:100%;margin:14px 0 11px"></div>
@@ -2197,14 +2197,30 @@ $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await r
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
   selectedUsername = randomName();
   updateUsername();
-  signInAnonymously(auth).then(async credential => {
-    currentUser = credential.user;
-    await recoverAfterRefresh();
-    loadCommunityTeams();
-  }).catch(error => {
-    console.error(error);
-    toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
-  });
+  // Restore the SAME anonymous Firebase user before trying to reconnect.
+  // Calling signInAnonymously immediately on page load can race Firebase's
+  // persisted-auth restoration in some browsers.
+  let startupAuthHandled=false;
+  setPersistence(auth, browserLocalPersistence)
+    .catch(error=>console.warn("Could not force local Firebase Auth persistence:",error))
+    .finally(()=>{
+      onAuthStateChanged(auth, async user => {
+        if(startupAuthHandled) return;
+        startupAuthHandled=true;
+        try{
+          if(!user){
+            const credential=await signInAnonymously(auth);
+            user=credential.user;
+          }
+          currentUser=user;
+          await recoverAfterRefresh();
+          loadCommunityTeams();
+        }catch(error){
+          console.error(error);
+          toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
+        }
+      });
+    });
   $("statsBtn").onclick = async () => {
     try {
       await renderMyStats();
