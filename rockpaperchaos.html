@@ -2983,14 +2983,35 @@ async function refreshTeamPowerUI() {
 
   async function advanceRound() {
     if(!isHost) return;
-    if(round===7){
+
+    // Solo Mode can finish before Round 7 once the challenge result is locked:
+    // • Rock/Paper/Scissors: reaching 4 is an immediate win.
+    // • Team Unpredictable: any move reaching 4 is an immediate loss.
+    let earlySoloLocked=false;
+    if(soloModeActive && round<7 && currentUser){
+      const earlyRoomSnap=await get(ref(db, `rooms/${room}`));
+      const earlyRoomData=earlyRoomSnap.val()||{};
+      const earlyProfileSnap=await get(ref(db,`profiles/${currentUser.uid}`));
+      const earlyTeam=(earlyProfileSnap.exists()?earlyProfileSnap.val()?.team:null)||"unassigned";
+      const earlyCounts={rock:0,paper:0,scissors:0};
+      for(let r=1;r<=round;r++){
+        const landed=earlyRoomData.rounds?.[r]?.results?.moves?.[currentUser.uid];
+        if(moves.includes(landed)) earlyCounts[landed]++;
+      }
+      earlySoloLocked=earlyTeam==="unassigned"
+        ? Math.max(earlyCounts.rock,earlyCounts.paper,earlyCounts.scissors)>=4
+        : Number(earlyCounts[earlyTeam]||0)>=4;
+    }
+
+    if(round===7 || earlySoloLocked){
       const roomSnap=await get(ref(db, `rooms/${room}`));
       const roomData=roomSnap.val()||{};
       const finalScores=roomData.scores||{};
       const soloActive=roomData.soloMode?.[currentUser?.uid]===true;
       if(soloActive){
         const counts={rock:0,paper:0,scissors:0};
-        for(let r=1;r<=7;r++){
+        const soloRoundsPlayed=Math.min(round,7);
+        for(let r=1;r<=soloRoundsPlayed;r++){
           const landed=roomData.rounds?.[r]?.results?.moves?.[currentUser.uid];
           if(moves.includes(landed)) counts[landed]++;
         }
@@ -3048,7 +3069,7 @@ async function refreshTeamPowerUI() {
           await update(profileRef,profileUpdates);
         }
         await update(ref(db, `rooms/${room}`), {
-          soloResult:{success,team,counts,targetText,reward:success?SOLO_MODE_REWARD:0},
+          soloResult:{success,team,counts,targetText,reward:success?SOLO_MODE_REWARD:0,roundsPlayed:soloRoundsPlayed,endedEarly:soloRoundsPlayed<7},
           soloRewardPaid:success?true:Boolean(roomData.soloRewardPaid),
           statsSaved:true,status:"finished",scores:finalScores,updatedAt:Date.now()
         });
@@ -3111,7 +3132,7 @@ async function refreshTeamPowerUI() {
           const result=snap.val(), c=result.counts||{};
           $("winnerTitle").textContent=result.success?"🎯 SOLO CHALLENGE COMPLETE!":"🎯 SOLO CHALLENGE FAILED";
           $("winnerSub").textContent=result.success?`${result.targetText} +${Number(result.reward||0)} Chaos Points!`:result.targetText;
-          $("finalScores").innerHTML=`<div class="rule-card" style="text-align:center"><strong>7-Round Solo Results</strong><span style="font-size:18px;margin-top:8px">🪨 Rock ${Number(c.rock||0)} · 📄 Paper ${Number(c.paper||0)} · ✂️ Scissors ${Number(c.scissors||0)}</span><span class="muted" style="margin-top:8px">${result.team==="unassigned"?"Team Unpredictable wins when no move reaches a clear majority. A clear majority is 4 out of 7 times.":`Your challenge was to land on ${result.team[0].toUpperCase()+result.team.slice(1)} at least 4 out of 7 times.`}</span></div>`;
+          $("finalScores").innerHTML=`<div class="rule-card" style="text-align:center"><strong>${result.endedEarly?`Solo Results — Finished in ${Number(result.roundsPlayed||round)} rounds`:"7-Round Solo Results"}</strong><span style="font-size:18px;margin-top:8px">🪨 Rock ${Number(c.rock||0)} · 📄 Paper ${Number(c.paper||0)} · ✂️ Scissors ${Number(c.scissors||0)}</span><span class="muted" style="margin-top:8px">${result.team==="unassigned"?"Team Unpredictable wins when no move reaches a clear majority. A clear majority is 4 out of 7 times.":`Your challenge was to land on ${result.team[0].toUpperCase()+result.team.slice(1)} at least 4 out of 7 times.`}</span></div>`;
           const box=$("teamEndMessage"); if(box) box.style.display="none";
           return;
         }
