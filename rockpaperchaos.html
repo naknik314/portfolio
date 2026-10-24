@@ -233,14 +233,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .round-winning-card{
   position:relative;
   overflow:hidden;
-  box-shadow:0 0 0 2px rgba(250,204,21,.38),0 8px 24px rgba(250,204,21,.12);
+  box-shadow:0 0 0 2px rgba(250,204,21,.72),0 8px 28px rgba(250,204,21,.24);
 }
 .round-winning-card::after{
   content:"";
   position:absolute;
   inset:-35% -70%;
   pointer-events:none;
-  background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.08) 44%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.08) 56%,transparent 62%);
+  background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.12) 42%,rgba(255,255,255,.88) 50%,rgba(255,255,255,.12) 58%,transparent 65%);
   transform:translateX(-45%);
   animation:roundWinnerSheen 2.4s ease-in-out infinite;
 }
@@ -250,6 +250,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 }
 @media (prefers-reduced-motion:reduce){
   .round-winning-card::after{animation:none;opacity:.3}
+}
+
+.round-winner-label{
+  margin-top:6px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:900;
+  letter-spacing:.07em;
+  background:rgba(250,204,21,.18);
+  border:1px solid rgba(250,204,21,.58);
 }
 </style>
 </head>
@@ -2008,11 +2020,12 @@ async function refreshTeamPowerUI() {
         const total=Number(resultScores[p.uid] ?? p.score ?? 0);
         const roundTotal=Number(roundPoints[p.uid]||0);
         const isYou=p.uid===currentUser?.uid;
-        const winningMoves = revealWinner==="Draw!" ? [] : String(revealWinner).split(" + ").map(x=>x.trim().toLowerCase());
-        const isRoundWinner = winningMoves.includes(move);
+        const bestRoundPoints=Math.max(...players.map(x=>Number(roundPoints[x.uid]||0)));
+        const isRoundWinner=bestRoundPoints>0 && roundTotal===bestRoundPoints;
         return `<div class="choice ${isRoundWinner?"round-winning-card":""}" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
           <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${p.bot?"Computer player":isYou?"You":"Other player"}">${p.bot?"🤖":`<span class="badge" style="font-size:11px">${isYou?"YOU":"THEM"}</span>`}</div>
           <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
+          ${isRoundWinner?'<div class="round-winner-label">WINNER ✨</div>':""}
           <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
           <div class="divider" style="width:100%;margin:14px 0 11px"></div>
