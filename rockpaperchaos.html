@@ -382,7 +382,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div class="tutorial-step"><strong>🏆 Majority points</strong><span>With 3+ players, the single most-played move earns +1 for each player who chose it. If the majority is tied, there are no majority points.</span></div>
           <div class="tutorial-step"><strong>⚡ Minority counter bonus</strong><span>A minority move earns +1 when it beats the single majority move. Example: 1 Rock vs 2 Scissors gives Rock the counter bonus.</span></div>
           <div class="tutorial-step"><strong>🎲 Chaos rounds</strong><span>Special rounds can double points, turn predictions off, reverse the matchups, and finish with Winner Takes the Round.</span></div>
-          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>🎲 Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul></div>
+          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>🎲 Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul></div>
         </div>
         <div class="rule-card" style="margin-bottom:14px">
           <strong>💡 Already know how to play?</strong>
@@ -408,14 +408,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     <section id="lobby" class="hidden">
       <div class="panel">
         <div class="screen-title">
-          <div><div class="eyebrow">The pre-game huddle</div><h2>Room lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div>
+          <div><div class="eyebrow">The pre-game huddle</div><h2>Game lobby</h2><div class="sub">Gather your rivals before the first reveal.</div></div>
           <button class="btn ghost" id="leaveLobby">← Home</button>
         </div>
         <div class="lobby-layout">
           <div>
-            <div class="section-label">Your room</div>
+            <div class="section-label">Your game</div>
             <div class="code" id="roomCode">------</div>
-            <div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open room to pick.</div>
+            <div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open game to pick.</div>
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div>
             <div class="player-list" id="lobbyPlayers"></div>
@@ -426,6 +426,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div>
             <div class="section-label">Game settings</div>
             <div class="divider"></div>
+            <div class="rule-card" id="lobbyTeamCard">
+              <strong>⚡ Your Team</strong>
+              <span id="lobbyTeamInfo" style="margin-top:7px">Loading your team…</span>
+            </div>
             <div class="rule-card" id="predictionModeCard">
               <strong>🔮 Prediction Mode</strong>
               <span style="margin-top:6px">The host chooses one mode for the entire 7-round game.</span>
@@ -952,7 +956,30 @@ const db = getDatabase(firebaseApp);
       toast("Couldn't create the room. Check Firebase Auth and Database rules.");
     }
   }
+  async function refreshLobbyTeamCard(){
+    const info=$("lobbyTeamInfo");
+    if(!info || !currentUser) return;
+    try{
+      const snap=await get(ref(db,`profiles/${currentUser.uid}`));
+      const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+      const team=profile.team||"unassigned";
+      if(team==="rock"){
+        info.innerHTML=`<b>🪨 Team Rock</b><br>Team power: <b>🪨 Barricade</b><br><span class="muted">Protects you from negative points and point-loss effects for the round.</span>`;
+      }else if(team==="paper"){
+        info.innerHTML=`<b>📄 Team Paper</b><br>Team power: <b>📄 Reprint</b><br><span class="muted">Copies the highest positive points another player earns that round.</span>`;
+      }else if(team==="scissors"){
+        info.innerHTML=`<b>✂️ Team Scissors</b><br>Team power: <b>✂️ Cut in Half</b><br><span class="muted">Cuts another player’s positive round points in half.</span>`;
+      }else{
+        info.innerHTML=`<b>🎲 Team Unpredictable</b><br><span class="muted">Get a random Rock, Paper, or Scissors team power once the game begins.</span>`;
+      }
+    }catch(error){
+      console.warn("Could not load lobby team",error);
+      info.textContent="Your team is unavailable right now.";
+    }
+  }
+
   function renderLobby() {
+    refreshLobbyTeamCard();
     $("roomCode").textContent = room;
     $("playerCount").textContent = `${players.length}/8`;
     $("lobbyPlayers").innerHTML = players.map(p => {
