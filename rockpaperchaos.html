@@ -1797,7 +1797,7 @@ async function refreshTeamPowerUI() {
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
-          details.push(`COUNTER BONUS — ${p.name} earned +${1*multiplier}: ${myMove[0].toUpperCase()+myMove.slice(1)} ${count[myMove]||0} + ${1*multiplier} counter bonus = ${(count[myMove]||0)+(1*multiplier)} | ${majorityMove[0].toUpperCase()+majorityMove.slice(1)} ${count[majorityMove]||0}.`);
+          details.push(`${p.name} earned +${1*multiplier} for the counter bonus by playing ${myMove[0].toUpperCase()+myMove.slice(1)}.`);
         }
       });
 
