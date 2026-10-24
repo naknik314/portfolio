@@ -829,7 +829,7 @@ const db = getDatabase(firebaseApp);
           <div class="rule-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
               <strong>🔄 Team Swaps</strong>
-              <span style="font-size:24px;font-weight:900">${teamSwaps}</span>
+              <b class="score">${teamSwaps}</b>
             </div>
             <span class="muted">Longest stretch: ${longestTeamMeta.label} — ${longestTeamGames} ${longestTeamGames===1?"game":"games"}.</span>
           </div>
@@ -860,7 +860,7 @@ const db = getDatabase(firebaseApp);
         <div class="result-row"><b>✂️ Scissors</b><b class="score">${Number(p.moveWinPoints?.scissors||0)}</b></div>
       </div>
       <div class="section-label">Recent games</div>
-      <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${Number(g.players||0)} players</div></div><b class="score">${Number(g.points||0)} pts</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
+      <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${g.solo?"Solo":`${Number(g.players||0)} players`}</div></div><b class="score">${Number(g.points||0)} pts</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
     const statsStoreBtn=$("statsChaosStoreBtn");
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
       chaosPointsReturnScreen="stats";
@@ -2831,21 +2831,33 @@ async function refreshTeamPowerUI() {
                 : "A move reached a clear majority of 4 out of 7.")
           : `${team[0].toUpperCase()+team.slice(1)} landed ${Number(counts[team]||0)} out of 7 times.`;
         // A completed 7-round Solo game counts as one game played and one
-        // game in the player's CURRENT Team Rank stretch. Solo still does
-        // not change wins, ties, team assignment, team swaps, total points,
-        // or winning-move stats.
+        // game in the player's CURRENT Team Rank stretch. A successful challenge
+        // also counts as a win for Win Rate. Solo does not change ties, team
+        // assignment, team swaps, total points, or winning-move stats.
         if(!roomData.statsSaved){
           const nextTeamGames=Number(profile.teamGames||0)+1;
           const previousLongest=Math.max(Number(profile.longestTeamGames||0),Number(profile.teamGames||0));
           const previousLongestTeam=Number(profile.longestTeamGames||0)>=Number(profile.teamGames||0)
             ? (profile.longestTeam||profile.team||"unassigned")
             : (profile.team||"unassigned");
+          const recentGames={...(profile.recentGames||{})};
+          recentGames[room || `solo_${Date.now()}`]={
+            result:success?"Completed":"Failed",
+            points:Number(finalScores[currentUser.uid]||0),
+            players:1,
+            solo:true,
+            endedAt:Date.now()
+          };
+          const trimmedRecent=Object.entries(recentGames)
+            .sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0))
+            .slice(0,10);
           const profileUpdates={
             gamesPlayed:Number(profile.gamesPlayed||0)+1,
             wins:Number(profile.wins||0)+(success?1:0),
             teamGames:nextTeamGames,
             longestTeamGames:nextTeamGames>previousLongest?nextTeamGames:previousLongest,
             longestTeam:nextTeamGames>previousLongest?(profile.team||"unassigned"):previousLongestTeam,
+            recentGames:Object.fromEntries(trimmedRecent),
             updatedAt:Date.now()
           };
           if(success && !roomData.soloRewardPaid){
