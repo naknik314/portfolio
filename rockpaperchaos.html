@@ -311,6 +311,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
   .round-intro-text{animation:roundIntroFade 1.1s ease both}
   @keyframes roundIntroFade{0%,100%{opacity:0} 15%,80%{opacity:1}}
 }
+
+  .stats-team-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+  .stats-team-grid .results-list{margin:0}
+  .stats-team-side{display:flex;flex-direction:column;gap:12px}
+  .stats-team-side .rule-card{margin:0;flex:1}
+  @media (max-width:640px){
+    .stats-team-grid{grid-template-columns:1fr}
+  }
+
 </style>
 </head>
 <body>
@@ -756,7 +765,7 @@ const db = getDatabase(firebaseApp);
     return {
       gamesPlayed:0,wins:0,ties:0,totalPoints:0,chaosPoints:0,
       moveWinPoints:{rock:0,paper:0,scissors:0},
-      team:"unassigned",recentGames:{}
+      team:"unassigned",teamGames:0,teamSwaps:0,recentGames:{}
     };
   }
 
@@ -767,6 +776,18 @@ const db = getDatabase(firebaseApp);
     const leaders=Object.keys(vals).filter(k=>vals[k]===max);
     if(leaders.length===1) return leaders[0];
     return leaders.includes(oldTeam) ? oldTeam : "unassigned";
+  }
+
+  function teamStatusFor(team="unassigned", teamGames=0) {
+    const games=Math.max(0,Number(teamGames||0));
+    const level=games>=10?2:games>=5?1:0;
+    const names={
+      rock:["Growing Grain","Progressing Pebble","Rock Solid"],
+      paper:["Newcomer Note","Page Pupil","Paper Prodigy"],
+      scissors:["Cutting Cadet","Sharpening Shears","Scissor Whiz"],
+      unassigned:["Random Rookie","Erratic Enthusiast","Jack of All Trades"]
+    };
+    return (names[team]||names.unassigned)[level];
   }
 
   async function loadCommunityTeams() {
@@ -787,13 +808,32 @@ const db = getDatabase(firebaseApp);
     if(snap.exists() && snap.val().chaosPoints==null) p.chaosPoints=Number(p.totalPoints||0);
     const team=teamMeta[p.team]||teamMeta.unassigned;
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
+    const teamGames=Math.max(0,Number(p.teamGames||0));
+    const teamSwaps=Math.max(0,Number(p.teamSwaps||0));
+    const teamStatus=teamStatusFor(p.team||"unassigned",teamGames);
     const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
     $("statsContent").innerHTML=`
       <div class="rule-card" style="text-align:center"><div style="font-size:44px">${team.icon}</div><strong style="font-size:20px">${team.label}</strong><span><b>Your team is based on your winning-move point totals.</b></span><span>${p.team==="unassigned"?"Team Unpredictable means your winning-move points are still tied. Keep playing to join Team Rock, Team Paper, or Team Scissors.":"Your team changes automatically when a different move leads your winning-move stats."}</span></div>
-      <div class="results-list">
-        <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
-        <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
-        <div class="result-row"><b>Ties</b><b class="score">${Number(p.ties||0)}</b></div>
+      <div class="stats-team-grid" style="margin-top:12px">
+        <div class="results-list">
+          <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
+          <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
+          <div class="result-row"><b>Ties</b><b class="score">${Number(p.ties||0)}</b></div>
+        </div>
+        <div class="stats-team-side">
+          <div class="rule-card">
+            <strong>🔄 Team Swaps</strong>
+            <span style="font-size:24px;font-weight:900;margin-top:6px">${teamSwaps}</span>
+            <span class="muted">${teamSwaps===1?"1 time":"Times you have switched from one established team to another."}</span>
+          </div>
+          <div class="rule-card">
+            <strong>${team.icon} Team Status</strong>
+            <span style="font-size:19px;font-weight:900;margin-top:6px">${escapeHtml(teamStatus)}</span>
+            <span class="muted">${teamGames} ${teamGames===1?"game":"games"} in your current stretch with ${team.label}.</span>
+          </div>
+        </div>
+      </div>
+      <div class="results-list" style="margin-top:12px">
         <div class="result-row"><b>Win rate</b><b class="score">${rate}%</b></div>
         <div class="result-row"><b>Total points</b><b class="score">${Number(p.totalPoints||0)}</b></div>
         <div class="result-row"><b>⚡ Chaos Points</b><b class="score">${Number(p.chaosPoints||0)}</b></div>
@@ -843,6 +883,14 @@ const db = getDatabase(firebaseApp);
         scissors:Number(old.moveWinPoints?.scissors||0)+Number(gameMoveWinPoints?.[uid]?.scissors||0)
       };
       const team=chooseTeam(moveWinPoints,old.team);
+      const oldTeam=old.team||"unassigned";
+      const teamChanged=team!==oldTeam;
+      // "Team Swaps" counts switches after the player has already joined a
+      // Rock/Paper/Scissors team. The first move out of Team Unpredictable is
+      // treated as joining a team, matching the end-screen wording.
+      const teamSwaps=Number(old.teamSwaps||0)+(teamChanged && oldTeam!=="unassigned"?1:0);
+      // Team Status measures the current uninterrupted stretch on this team.
+      const teamGames=teamChanged?1:Number(old.teamGames||0)+1;
       const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
       const challengeSnap=await get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`));
       const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
@@ -861,6 +909,8 @@ const db = getDatabase(firebaseApp);
         moveWinPoints,
         previousTeam:old.team||"unassigned",
         team,
+        teamGames,
+        teamSwaps,
         recentGames:trimmedObj,
         updatedAt:Date.now()
       });
