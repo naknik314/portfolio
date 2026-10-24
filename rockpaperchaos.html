@@ -717,7 +717,7 @@ const db = getDatabase(firebaseApp);
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
   let quickDrawRound = null, quickDrawTimer = null, quickDrawIndex = 0;
-  let predictionMode = "required"; // required = competitive, optional = casual with a 0-point score floor
+  let predictionMode = "optional"; // required = competitive, optional = casual with a 0-point score floor
   let soloModeActive = false;
   let lastRoundIntroShown=null, roundIntroTimer=null;
   function showRoundIntro(roundNumber){
