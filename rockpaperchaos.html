@@ -2870,7 +2870,7 @@ async function refreshTeamPowerUI() {
           const result=snap.val(), c=result.counts||{};
           $("winnerTitle").textContent=result.success?"🎯 SOLO CHALLENGE COMPLETE!":"🎯 SOLO CHALLENGE FAILED";
           $("winnerSub").textContent=result.success?`${result.targetText} +${Number(result.reward||0)} Chaos Points!`:result.targetText;
-          $("finalScores").innerHTML=`<div class="rule-card" style="text-align:center"><strong>7-Round Quick Draw Results</strong><span style="font-size:18px;margin-top:8px">🪨 Rock ${Number(c.rock||0)} · 📄 Paper ${Number(c.paper||0)} · ✂️ Scissors ${Number(c.scissors||0)}</span><span class="muted" style="margin-top:8px">${result.team==="unassigned"?"Team Unpredictable wins when no move reaches a clear majority. A clear majority is 4 out of 7 times.":`Your challenge was to land on ${result.team[0].toUpperCase()+result.team.slice(1)} at least 4 out of 7 times.`}</span></div>`;
+          $("finalScores").innerHTML=`<div class="rule-card" style="text-align:center"><strong>7-Round Solo Results</strong><span style="font-size:18px;margin-top:8px">🪨 Rock ${Number(c.rock||0)} · 📄 Paper ${Number(c.paper||0)} · ✂️ Scissors ${Number(c.scissors||0)}</span><span class="muted" style="margin-top:8px">${result.team==="unassigned"?"Team Unpredictable wins when no move reaches a clear majority. A clear majority is 4 out of 7 times.":`Your challenge was to land on ${result.team[0].toUpperCase()+result.team.slice(1)} at least 4 out of 7 times.`}</span></div>`;
           const box=$("teamEndMessage"); if(box) box.style.display="none";
           return;
         }
