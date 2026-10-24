@@ -506,6 +506,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <span style="margin-top:8px">Complete your team challenge to earn <b>+10 Chaos Points</b>.</span>
               </details>
               <button class="btn secondary wide" id="soloModeBtn" style="margin-top:10px">🎯 Enable Solo Mode — 5 CP</button>
+              <button class="btn ghost wide hidden" id="cancelSoloModeBtn" style="margin-top:8px">Cancel Solo Mode — refund 5 CP</button>
               <span id="soloModeStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
@@ -1169,6 +1170,7 @@ const db = getDatabase(firebaseApp);
 
   async function addDemoPlayer() {
     if (!isHost) return toast("Only the host can add computer rivals.");
+    if(soloModeActive) return toast("Computer rivals are unavailable while Solo Mode is active. Cancel Solo Mode first if you want to add one.");
     if (players.length >= 8) return toast("Room is full — 8 players max.");
     const roomSnap = await get(ref(db, `rooms/${room}`));
     const roomData = roomSnap.val() || {};
@@ -1254,27 +1256,68 @@ const db = getDatabase(firebaseApp);
 
   async function refreshSoloModeLobby(){
     updateChaosPointsLobbyAvailability();
-    const btn=$("soloModeBtn"), status=$("soloModeStatus");
+    const btn=$("soloModeBtn"), status=$("soloModeStatus"), cancelBtn=$("cancelSoloModeBtn");
     if(!btn || !status) return;
     if(!room || !currentUser){
-      btn.disabled=true; status.textContent="Create a game first to activate Solo Mode."; return;
+      btn.disabled=true; status.textContent="Create a game first to activate Solo Mode.";
+      if(cancelBtn) cancelBtn.classList.add("hidden");
+      return;
     }
     const snap=await get(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`));
     soloModeActive=snap.exists() && snap.val()===true;
     const onlyOne=players.length===1 && players[0]?.uid===currentUser.uid;
     if(soloModeActive){
       btn.disabled=true; btn.style.opacity=".5"; btn.textContent="🎯 Solo Mode Active";
-      status.textContent=onlyOne?"Ready: 7 Solo minigame rounds are waiting for you.":"Solo Mode is active, but the game can only start when you are the only player.";
+      status.textContent=onlyOne
+        ?"Ready: 7 Solo minigame rounds are waiting for you."
+        :"🎯 Solo Mode requires exactly one player. Remove all other players to start, or cancel Solo Mode for a 5 CP refund.";
+      if(cancelBtn){ cancelBtn.classList.remove("hidden"); cancelBtn.disabled=false; cancelBtn.style.opacity="1"; }
     }else{
       btn.disabled=!onlyOne; btn.style.opacity=onlyOne?"1":".5"; btn.textContent=`🎯 Enable Solo Mode — ${SOLO_MODE_COST} CP`;
       status.textContent=onlyOne?"Only one player is in the lobby — Solo Mode is available.":"Solo Mode requires exactly one player in the Game Lobby.";
+      if(cancelBtn) cancelBtn.classList.add("hidden");
     }
+
+    const addBot=$("addPlayer");
+    if(addBot){
+      addBot.disabled=soloModeActive || !isHost || players.length>=8;
+      addBot.style.opacity=addBot.disabled?".5":"1";
+      addBot.textContent=soloModeActive?"+ Computer rival unavailable in Solo Mode":"+ Add computer rival";
+    }
+
     const start=$("startBtn");
     if(start){
-      const canStart=isHost && (players.length>=2 || (soloModeActive && players.length===1));
+      const canStart=isHost && (soloModeActive ? onlyOne : players.length>=2);
       start.disabled=!canStart; start.style.opacity=canStart?"1":".5";
-      start.textContent=soloModeActive && players.length===1?"Start Solo Mode →":"Start 7-round game →";
+      start.textContent=soloModeActive?"Start Solo Mode →":"Start 7-round game →";
     }
+  }
+
+  async function cancelSoloMode(){
+    if(!room || !currentUser) return;
+    const modeRef=ref(db,`rooms/${room}/soloMode/${currentUser.uid}`);
+    const modeSnap=await get(modeRef);
+    if(!modeSnap.exists() || modeSnap.val()!==true){
+      soloModeActive=false;
+      return refreshSoloModeLobby();
+    }
+    const roomSnap=await get(ref(db,`rooms/${room}`));
+    const roomData=roomSnap.val()||{};
+    if(roomData.status && roomData.status!=="lobby") return toast("Solo Mode can only be canceled before the game starts.");
+
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const profileSnap=await get(profileRef);
+    const profile=profileSnap.exists()?profileSnap.val():blankProfile();
+    const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+    await update(profileRef,{chaosPoints:balance+SOLO_MODE_COST,updatedAt:Date.now()});
+    await remove(modeRef);
+    soloModeActive=false;
+    toast(`Solo Mode canceled — ${SOLO_MODE_COST} Chaos Points refunded.`);
+    await refreshChaosPointsPageBalance();
+    await refreshSoloModeLobby();
+    await refreshRollDiceLobby();
+    await refreshDoubleAgentLobby();
+    await refreshPowerReversalLobby();
   }
 
   async function activateSoloMode(){
@@ -1330,7 +1373,7 @@ const db = getDatabase(firebaseApp);
       btn.disabled=true;
       btn.style.opacity=".5";
       btn.textContent="🕵️ Double Agent Unavailable in Solo Mode";
-      status.textContent="Solo Mode uses Quick Draw only, so Double Agent cannot be selected.";
+      status.textContent="Solo Mode has its own minigames, so Double Agent cannot be selected.";
     }else if(doubleAgentModeActive){
       select.value=doubleAgentPower;
       select.disabled=true;
@@ -1393,7 +1436,7 @@ const db = getDatabase(firebaseApp);
     status.textContent=active
       ? `Your moves will be decided by the dice for this game. ${balance} Chaos Points remaining.`
       : soloModeActive
-        ? `Solo Mode uses Quick Draw for all 7 rounds, so Roll the Dice cannot be selected.`
+        ? `Solo Mode has its own minigames, so Roll the Dice cannot be selected.`
       : balance<ROLL_DICE_COST
         ? `You have ${balance} CP. Click to check the cost.`
         : `Costs ${ROLL_DICE_COST} CP upfront and lasts for the full 7-round game.`;
@@ -1966,13 +2009,18 @@ async function refreshTeamPowerUI() {
         soloCupMoves=["rock","paper","scissors"];
         for(let i=soloCupMoves.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [soloCupMoves[i],soloCupMoves[j]]=[soloCupMoves[j],soloCupMoves[i]]; }
       }
-      if(preview) preview.innerHTML=soloCupMoves.map(m=>`<span>${hands[m]}</span>`).join("");
-      if(grid) grid.innerHTML=[0,1,2].map(i=>`<button class="btn secondary" data-solo-cup="${i}" style="min-height:86px;font-size:42px" ${selectedMove?"disabled":""}>🥤</button>`).join("");
+      if(preview) preview.innerHTML=soloCupMoves.map((m,i)=>`
+        <div style="min-width:82px">
+          <div style="font-size:46px">${hands[m]}</div>
+          <div style="font-size:13px;font-weight:900;margin-top:4px">Cup ${i+1}</div>
+        </div>`).join("");
+      if(grid) grid.innerHTML=[0,1,2].map(i=>`<button class="btn secondary" data-solo-cup="${i}" style="min-height:86px;font-size:42px" ${selectedMove?"disabled":""}>🥤<span style="display:block;font-size:12px;margin-top:4px">Cup ${i+1}</span></button>`).join("");
       if(!selectedMove){
+        if(status) status.textContent="Memorize the three moves before they hide…";
         setTimeout(()=>{
-          if(preview) preview.innerHTML="<span>↔️</span><span>🔀</span><span>↔️</span>";
-          if(status) status.textContent="Shuffled! Pick a cup.";
-        },900);
+          if(preview) preview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — the cups are shuffled!</div>";
+          if(status) status.textContent="Pick a cup to reveal the move underneath.";
+        },2500);
       }
       grid?.querySelectorAll("[data-solo-cup]").forEach(btn=>btn.onclick=()=>{
         if(selectedMove) return;
@@ -3025,6 +3073,7 @@ async function refreshTeamPowerUI() {
   $("homeBtn").onclick = leaveOnlineRoom;
 $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); };
 $("soloModeBtn").onclick = activateSoloMode;
+$("cancelSoloModeBtn").onclick = cancelSoloMode;
 $("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
 $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
