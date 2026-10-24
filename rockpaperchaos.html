@@ -2077,6 +2077,8 @@ async function refreshTeamPowerUI() {
     return safe;
   }
 
+  const moveItems={rock:"🪨",paper:"📄",scissors:"✂️"};
+
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
@@ -2115,7 +2117,7 @@ async function refreshTeamPowerUI() {
           <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${p.bot?"Computer player":isYou?"You":"Other player"}">${p.bot?"🤖":`<span class="badge" style="font-size:11px">${isYou?"YOU":"THEM"}</span>`}</div>
           <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
           
-          <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
+          <div class="reveal-move-item" style="font-size:54px;line-height:1.05;margin:14px 0 5px" aria-label="${escapeHtml(moveLabel)}">${moveItems[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
           <div class="divider" style="width:100%;margin:14px 0 11px"></div>
           <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">This round</div>
