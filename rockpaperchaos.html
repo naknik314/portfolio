@@ -409,6 +409,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </details>
 
             <div class="divider"></div>
+            <div class="rule-card" id="predictionModeCard">
+              <strong>🔮 Prediction Mode</strong>
+              <span style="margin-top:6px">The host chooses one mode for the entire 7-round game.</span>
+              <select id="predictionModeSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
+                <option value="required">Competitive — predictions required; scores can go below 0</option>
+                <option value="optional">Casual — predictions optional; scores never go below 0</option>
+              </select>
+              <span id="predictionModeHelp" class="muted" style="margin-top:7px">Competitive: predict every round except Round 4. Wrong predictions can push your score below zero.</span>
+            </div>
             <button class="btn secondary wide" id="openChaosPoints">💠 Spend Chaos Points →</button>
             <p class="note">Use Chaos Points for optional game features before the match starts.</p>
 
@@ -647,6 +656,7 @@ const db = getDatabase(firebaseApp);
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
   let quickDrawRound = null, quickDrawTimer = null, quickDrawIndex = 0;
+  let predictionMode = "required"; // required = competitive, optional = casual with a 0-point score floor
   let lastRoundIntroShown=null, roundIntroTimer=null;
   function showRoundIntro(roundNumber){
     const n=Number(roundNumber||0);
@@ -841,6 +851,7 @@ const db = getDatabase(firebaseApp);
         players.some(p => p.uid === currentUser?.uid && p.host === true);
       onlineRoom = true;
       quickDrawRound = Number(data.quickDrawRound || 0) || null;
+      predictionMode = data.predictionMode === "optional" ? "optional" : "required";
 
       if (data.status === "lobby") {
         renderLobby();
@@ -937,6 +948,22 @@ const db = getDatabase(firebaseApp);
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     $("startBtn").disabled = players.length < 2 || !isHost;
     $("startBtn").style.opacity = (players.length < 2 || !isHost) ? ".5" : "1";
+    const modeSelect=$("predictionModeSelect");
+    const modeHelp=$("predictionModeHelp");
+    if(modeSelect){
+      modeSelect.value=predictionMode;
+      modeSelect.disabled=!isHost;
+      modeSelect.onchange=async()=>{
+        if(!isHost) return;
+        predictionMode=modeSelect.value==="optional"?"optional":"required";
+        await update(ref(db,`rooms/${room}`),{predictionMode,updatedAt:Date.now()});
+      };
+    }
+    if(modeHelp){
+      modeHelp.textContent=predictionMode==="optional"
+        ?"Casual: predictions are optional. Scores have a 0-point floor and cannot go negative."
+        :"Competitive: predictions are required every round except Round 4. Wrong predictions can push scores below zero.";
+    }
     refreshChaosBotLobby();
   }
   async function removeComputerPlayer(uid) {
@@ -993,7 +1020,7 @@ const db = getDatabase(firebaseApp);
     quickDrawRound=quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
     await update(ref(db, `rooms/${room}`), {
       status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
-      quickDrawRound, updatedAt:Date.now()
+      quickDrawRound, predictionMode, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -1486,8 +1513,8 @@ async function refreshTeamPowerUI() {
       </div>` : `<div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`)}
       ${noPrediction ? `<div class="divider"></div><p class="note"><b>Round 4 · No Predictions:</b> prediction bonus is disabled this round.</p>` : `
       <div class="divider"></div>
-      <h3 style="margin-bottom:8px">🔮 Predict a rival's move <span class="muted">(optional)</span></h3>
-      <p class="muted" style="margin-top:0">Correct = +2 points. Wrong = lose a random 0–3 points. Skip it for no prediction gain or loss.</p>
+      <h3 style="margin-bottom:8px">🔮 Predict a rival's move ${predictionMode==="optional"?`<span class="muted">(optional)</span>`:""}</h3>
+      <p class="muted" style="margin-top:0">${predictionMode==="optional"?"Casual mode: Correct = +2 points. Wrong = lose a random 0–3 points, but your total score never goes below zero. Skip for no prediction gain or loss.":"Competitive mode: Prediction required. Correct = +2 points. Wrong = lose a random 0–3 points, and your total score can go below zero."}</p>
       <div class="prediction-grid">${others.map(p => `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`).join("")}</div>
       <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
@@ -1528,12 +1555,13 @@ async function refreshTeamPowerUI() {
           quickBtn.disabled=true;
           const lockBtn=$("lockBtn");
           if(lockBtn){
-            lockBtn.disabled=false;
-            lockBtn.style.opacity="1";
-            lockBtn.onclick=()=>submitTurn();
+            const ready = round===4 || predictionMode==="optional" || (!!targetId && !!predictedMove);
+            lockBtn.disabled=!ready;
+            lockBtn.style.opacity=ready?"1":".5";
+            lockBtn.onclick=()=>{ if(ready) submitTurn(); };
           }
           const waiting=$("waitingNote");
-          if(waiting) waiting.textContent=`Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. Add an optional prediction or lock your choices.`;
+          if(waiting) waiting.textContent=`Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. ${predictionMode==="optional"?"Add an optional prediction, or lock your choices.":"Add your required prediction, then lock your choices."}`;
         };
       }
     }
@@ -1600,16 +1628,20 @@ async function refreshTeamPowerUI() {
     // Reversal always appears on this round's Choose Your Move screen.
     setTimeout(()=>refreshTeamPowerUI(),0);
 
-    const ready = !!selectedMove;
+    const ready = !!selectedMove && (noPrediction || predictionMode==="optional" || (!!targetId && !!predictedMove));
     $("lockBtn").disabled=!ready;
     $("lockBtn").style.opacity=ready?"1":".5";
-    $("lockBtn").onclick=()=>{ if(selectedMove) submitTurn(); };
+    $("lockBtn").onclick=()=>{ if(ready) submitTurn(); };
   }
 
   async function submitTurn() {
     if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
     const noPrediction = round === 4;
     if (!selectedMove) return;
+    if(!noPrediction && predictionMode==="required" && (!targetId || !predictedMove)){
+      toast("Competitive mode requires a rival and prediction before locking in.");
+      return;
+    }
     const uid=currentUser.uid;
     // Each player writes only under their own UID. The UI never displays submissions before reveal.
     const powerUsedCheck=await get(ref(db,`rooms/${room}/teamPowerUsed/${uid}`));
@@ -1851,8 +1883,9 @@ async function refreshTeamPowerUI() {
       else {revealWinner="Draw!";details.push("Head-to-head tie: no win point.");}
     }
 
-    // Prediction is optional (and disabled entirely in round 4).
-    // Correct = +2. Wrong = random loss from 0 to 3 points.
+    // Prediction rules depend on the lobby-selected mode (disabled entirely in Round 4).
+    // Competitive requires a prediction and allows negative total scores.
+    // Casual allows skipping and applies a 0-point floor after all round effects.
     if(round!==4){
       players.forEach(p=>{
         const pred=submissions[p.uid]?.prediction;
@@ -2013,6 +2046,14 @@ async function refreshTeamPowerUI() {
         details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP — unavailable for the rest of this game.`);
       }
     });
+
+    // Casual mode safety net: the total score can never fall below zero.
+    // Apply this after predictions and Team Powers so every negative effect respects the floor.
+    if(predictionMode==="optional"){
+      players.forEach(p=>{
+        if(Number(scores[p.uid]||0)<0) scores[p.uid]=0;
+      });
+    }
 
     // Round 7 — Winner Takes the Round. Normal scoring and powers resolve first.
     if(round===7){
@@ -2346,6 +2387,7 @@ async function refreshTeamPowerUI() {
       isHost=data.hostUid===currentUser.uid || membership.host===true;
       onlineRoom=true;
       quickDrawRound=Number(data.quickDrawRound||0)||null;
+      predictionMode=data.predictionMode==="optional"?"optional":"required";
 
       // A refresh creates fresh local UI state. Firebase decides whether the
       // player is waiting, revealing, in the lobby, or finished.
