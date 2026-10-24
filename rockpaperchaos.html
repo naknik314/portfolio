@@ -519,6 +519,7 @@ const db = getDatabase(firebaseApp);
   };
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
+  let quickDrawRound = null, quickDrawTimer = null, quickDrawIndex = 0;
   // Player membership is removed only by the Leave action, not by temporary network disconnects.
   function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
@@ -694,6 +695,7 @@ const db = getDatabase(firebaseApp);
       isHost = data.hostUid === currentUser?.uid ||
         players.some(p => p.uid === currentUser?.uid && p.host === true);
       onlineRoom = true;
+      quickDrawRound = Number(data.quickDrawRound || 0) || null;
 
       if (data.status === "lobby") {
         renderLobby();
@@ -841,8 +843,11 @@ const db = getDatabase(firebaseApp);
     if (!isHost) return toast("Only the host can start the match.");
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
+    const quickDrawChoices=[1,3,5];
+    quickDrawRound=quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null, updatedAt:Date.now()
+      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
+      quickDrawRound, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -1271,6 +1276,7 @@ async function refreshTeamPowerUI() {
 
   function beginRound(writeState=true) {
     clearInterval(timerInt);
+    if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
     // Firebase room updates can fire several times during the same round
     // (for example when another player locks in). Only clear this player's
     // unfinished choices when we are actually entering a NEW round.
@@ -1282,8 +1288,11 @@ async function refreshTeamPowerUI() {
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
+    const isQuickDraw = round === quickDrawRound;
     const modifier = modifiers[round];
-    if(modifier){
+    if(isQuickDraw){
+      $("modifier").innerHTML = `<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
+    }else if(modifier){
       $("modifier").innerHTML = `<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
       const upcomingRound=[2,4,6].find(r=>r>round);
@@ -1324,7 +1333,14 @@ async function refreshTeamPowerUI() {
         <span>1–2 = 🪨 Rock · 3–4 = 📄 Paper · 5–6 = ✂️ Scissors</span>
         ${diceRollThisRound ? `<div style="font-size:24px;font-weight:900;margin-top:10px">You rolled a ${diceRollThisRound}! ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}</div>` : ""}
         <button class="btn wide" id="rollMoveBtn" style="margin-top:10px" ${diceRollThisRound?"disabled":""}>${diceRollThisRound?"🎲 Move chosen":"🎲 ROLL THE DICE"}</button>
-      </div>` : `<div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`}
+      </div>` : (round===quickDrawRound ? `
+      <div class="rule-card" style="text-align:center;margin-bottom:12px">
+        <strong>🎯 Quick Draw</strong>
+        <span>Watch the move cycle, then hit the button when the move you want appears.</span>
+        <div id="quickDrawDisplay" aria-live="off" style="font-size:72px;line-height:1.15;margin:14px 0 6px">${selectedMove ? hands[selectedMove] : hands[moves[quickDrawIndex%3]]}</div>
+        <div id="quickDrawName" style="font-size:20px;font-weight:900;margin-bottom:10px">${selectedMove ? selectedMove[0].toUpperCase()+selectedMove.slice(1) : moves[quickDrawIndex%3][0].toUpperCase()+moves[quickDrawIndex%3].slice(1)}</div>
+        <button class="btn wide" id="quickDrawBtn">${selectedMove ? "🎯 Locked on "+selectedMove[0].toUpperCase()+selectedMove.slice(1) : "🎯 LOCK IT!"}</button>
+      </div>` : `<div class="choices">${moves.map(m => `<button class="choice ${selectedMove===m?"selected":""}" data-move="${m}"><span class="hand">${hands[m]}</span><span>${m[0].toUpperCase()+m.slice(1)}</span></button>`).join("")}</div>`)}
       ${noPrediction ? `<div class="divider"></div><p class="note"><b>Round 4 · No Predictions:</b> prediction bonus is disabled this round.</p>` : `
       <div class="divider"></div>
       <h3 style="margin-bottom:8px">🔮 Predict a rival's move <span class="muted">(optional)</span></h3>
@@ -1341,6 +1357,43 @@ async function refreshTeamPowerUI() {
       </div>
       <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
       <p class="note" id="waitingNote">Waiting for your choice.</p>`;
+
+    if(round===quickDrawRound && !rollDiceModeActive){
+      if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
+      const display=$("quickDrawDisplay");
+      const name=$("quickDrawName");
+      const quickBtn=$("quickDrawBtn");
+      if(!selectedMove && display && name && quickBtn){
+        quickDrawIndex=Math.floor(Math.random()*3);
+        const paintQuickDraw=()=>{
+          const m=moves[quickDrawIndex%3];
+          display.textContent=hands[m];
+          name.textContent=m[0].toUpperCase()+m.slice(1);
+        };
+        paintQuickDraw();
+        quickDrawTimer=setInterval(()=>{
+          quickDrawIndex=(quickDrawIndex+1)%3;
+          paintQuickDraw();
+        },220);
+        quickBtn.onclick=()=>{
+          const landed=moves[quickDrawIndex%3];
+          selectedMove=landed;
+          if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
+          display.textContent=hands[landed];
+          name.textContent=landed[0].toUpperCase()+landed.slice(1);
+          quickBtn.textContent=`🎯 Locked on ${landed[0].toUpperCase()+landed.slice(1)}`;
+          quickBtn.disabled=true;
+          const lockBtn=$("lockBtn");
+          if(lockBtn){
+            lockBtn.disabled=false;
+            lockBtn.style.opacity="1";
+            lockBtn.onclick=()=>submitTurn();
+          }
+          const waiting=$("waitingNote");
+          if(waiting) waiting.textContent=`Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. Add an optional prediction or lock your choices.`;
+        };
+      }
+    }
 
     if(rollDiceModeActive){
       const rollBtn=$("rollMoveBtn");
@@ -1407,10 +1460,11 @@ async function refreshTeamPowerUI() {
     const ready = !!selectedMove;
     $("lockBtn").disabled=!ready;
     $("lockBtn").style.opacity=ready?"1":".5";
-    $("lockBtn").onclick=()=>{ if(ready) submitTurn(); };
+    $("lockBtn").onclick=()=>{ if(selectedMove) submitTurn(); };
   }
 
   async function submitTurn() {
+    if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
     const noPrediction = round === 4;
     if (!selectedMove) return;
     const uid=currentUser.uid;
@@ -2067,7 +2121,7 @@ async function refreshTeamPowerUI() {
     if (!isHost) return toast("Only the host can start the rematch.");
     try {
       await update(ref(db, `rooms/${room}`), {
-        status:"lobby",round:1,rounds:null,scores:null,
+        status:"lobby",round:1,rounds:null,scores:null,quickDrawRound:null,
         moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
