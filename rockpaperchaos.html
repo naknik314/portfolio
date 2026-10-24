@@ -2114,7 +2114,24 @@ async function refreshTeamPowerUI() {
       // from the seven stored round results below.
       await set(ref(db,`rooms/${room}/soloMoves`),soloMoves);
       revealWinner=`${landed[0].toUpperCase()+landed.slice(1)}!`;
-      details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}.`);
+
+      // Solo scoring: Rock/Paper/Scissors teams earn +1 whenever Quick Draw
+      // lands on their current team move. Team Unpredictable has no single
+      // correct move, so it earns no per-round points and instead plays for
+      // the final no-4-of-7 challenge reward.
+      const profileSnap=await get(ref(db,`profiles/${p.uid}`));
+      const soloTeam=(profileSnap.exists()?profileSnap.val()?.team:null)||"unassigned";
+      if(soloTeam!=="unassigned" && landed===soloTeam){
+        scores[p.uid]=Number(scores[p.uid]||0)+1;
+        details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}. That's your team move: +1 point!`);
+      }else{
+        details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}.`);
+        if(soloTeam==="unassigned"){
+          details.push(`🎲 Team Unpredictable has no per-round team-move points. Keep every move below 4 out of 7 to complete the challenge.`);
+        }else{
+          details.push(`Your team move is ${soloTeam[0].toUpperCase()+soloTeam.slice(1)}, so this round gives 0 points.`);
+        }
+      }
       details.push(`Solo totals: 🪨 Rock ${soloMoves.rock} · 📄 Paper ${soloMoves.paper} · ✂️ Scissors ${soloMoves.scissors}.`);
     } else if (players.length>=3) {
       const count={rock:0,paper:0,scissors:0};
