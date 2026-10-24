@@ -1928,6 +1928,31 @@ async function refreshTeamPowerUI() {
         teamPowerArmed=false;
       }
     }
+    if(soloModeActive){
+      $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🎯</div><h2>Quick Draw locked!</h2><p class="muted">Revealing your Solo round…</p></div>`;
+      $("phaseLabel").textContent="Revealing Solo round";
+
+      // Solo has nobody else to wait for. Resolve immediately from this
+      // submission instead of relying on another submissions-listener event.
+      // resolveSharedRound is already protected against duplicate results.
+      if(isHost){
+        const soloSubmission={
+          [uid]:{
+            move:selectedMove,
+            prediction:null,
+            teamPower:null,
+            teamPowerTarget:null,
+            locked:true,
+            submittedAt:Date.now()
+          }
+        };
+        await resolveSharedRound(soloSubmission);
+      }else{
+        watchSubmissions();
+      }
+      return;
+    }
+
     $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🔒</div><h2>Locked in!</h2><p class="muted">Waiting for everyone else…</p></div>`;
     $("phaseLabel").textContent="Waiting for players";
     watchSubmissions();
@@ -1941,6 +1966,10 @@ async function refreshTeamPowerUI() {
       const humans=players.filter(p=>!p.bot);
       const humanReady=humans.every(p=>submissions[p.uid]?.locked);
       if (isHost && humanReady) {
+        if(soloModeActive && players.length===1){
+          await resolveSharedRound(submissions);
+          return;
+        }
         const completed={...submissions};
         const chaosBotMode=await isChaosBotChallengeActive();
         for (const p of players.filter(p=>p.bot)) {
