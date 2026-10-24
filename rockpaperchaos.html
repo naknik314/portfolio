@@ -1353,6 +1353,7 @@ const db = getDatabase(firebaseApp);
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
     soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false;
+    activeTeamPower=null; teamPowerArmed=false;
     toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
     await refreshChaosPointsPageBalance();
     await refreshSoloModeLobby();
@@ -1729,6 +1730,9 @@ const db = getDatabase(firebaseApp);
 
   
   function renderExactMovePower(){
+    // Solo Mode has a completely separate power card. Never render the
+    // multiplayer powers (Barricade / Reprint / Cut in Half) in Solo Mode.
+    if(soloModeActive) return;
     const btn=$("teamPowerBtn");
     const desc=$("teamPowerDesc");
     if(!btn || !desc) return;
@@ -2313,10 +2317,12 @@ async function refreshTeamPowerUI() {
       teamPowerArmed=!teamPowerArmed;
       await refreshTeamPowerUI();
     };
-    refreshTeamPowerUI();
-    // Re-check Firebase after the move UI is built so a purchased Power
-    // Reversal always appears on this round's Choose Your Move screen.
-    setTimeout(()=>refreshTeamPowerUI(),0);
+    if(!soloModeActive){
+      refreshTeamPowerUI();
+      // Re-check Firebase after the move UI is built so a purchased Power
+      // Reversal always appears on this round's Choose Your Move screen.
+      setTimeout(()=>refreshTeamPowerUI(),0);
+    }
 
     const ready = !!selectedMove && (noPrediction || predictionMode==="optional" || (!!targetId && !!predictedMove));
     $("lockBtn").disabled=!ready;
