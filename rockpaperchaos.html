@@ -2025,7 +2025,7 @@ async function refreshTeamPowerUI() {
         setTimeout(()=>{
           if(preview) preview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — the cups are shuffled!</div>";
           if(status) status.textContent="Pick a cup to reveal the move underneath.";
-        },2500);
+        },1000);
       }
       grid?.querySelectorAll("[data-solo-cup]").forEach(btn=>btn.onclick=()=>{
         if(selectedMove) return;
@@ -2808,8 +2808,13 @@ async function refreshTeamPowerUI() {
         const team=profile.team||"unassigned";
         const maxCount=Math.max(Number(counts.rock||0),Number(counts.paper||0),Number(counts.scissors||0));
         const success=team==="unassigned" ? maxCount<4 : Number(counts[team]||0)>=4;
+        const majorityMove=["rock","paper","scissors"].find(m=>Number(counts[m]||0)>=4);
         const targetText=team==="unassigned"
-          ?"No move reached a clear majority of 4 out of 7."
+          ? (success
+              ? "No move reached a clear majority of 4 out of 7."
+              : majorityMove
+                ? `${majorityMove[0].toUpperCase()+majorityMove.slice(1)} reached a clear majority of 4 out of 7.`
+                : "A move reached a clear majority of 4 out of 7.")
           : `${team[0].toUpperCase()+team.slice(1)} landed ${Number(counts[team]||0)} out of 7 times.`;
         // A completed 7-round Solo game counts as one game played and one
         // game in the player's CURRENT Team Rank stretch. Solo still does
