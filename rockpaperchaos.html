@@ -253,15 +253,20 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 }
 
 .round-winner-label{
-  margin-top:6px;
-  padding:3px 8px;
+  position:absolute;
+  top:7px;
+  right:7px;
+  z-index:2;
+  margin:0;
+  padding:2px 5px;
   border-radius:999px;
-  font-size:10px;
-  line-height:1.2;
-  font-weight:900;
-  letter-spacing:.07em;
+  font-size:8px;
+  line-height:1.1;
+  font-weight:850;
+  letter-spacing:.04em;
   background:rgba(250,204,21,.18);
-  border:1px solid rgba(250,204,21,.58);
+  border:1px solid rgba(250,204,21,.55);
+  pointer-events:none;
 }
 
 /* Brief round-number splash so everyone can immediately tell a new round started. */
