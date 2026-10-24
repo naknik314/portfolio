@@ -1797,7 +1797,7 @@ async function refreshTeamPowerUI() {
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
-          details.push(`${p.name} earned +${1*multiplier} minority counter bonus: ${myMove[0].toUpperCase()+myMove.slice(1)} ${count[myMove]||0} + counter bonus | ${majorityMove[0].toUpperCase()+majorityMove.slice(1)} ${count[majorityMove]||0}.`);
+          details.push(`COUNTER BONUS — ${p.name} earned +${1*multiplier}: ${myMove[0].toUpperCase()+myMove.slice(1)} ${count[myMove]||0} + ${1*multiplier} counter bonus = ${(count[myMove]||0)+(1*multiplier)} | ${majorityMove[0].toUpperCase()+majorityMove.slice(1)} ${count[majorityMove]||0}.`);
         }
       });
 
@@ -1815,7 +1815,7 @@ async function refreshTeamPowerUI() {
             : `${label} ${totals[m]}`;
         }).join(" | ");
         const counterWasNotEnough=moves.some(m=>counterMoves[m]>0 && m!==tied[0]);
-        details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison${counterWasNotEnough?" — the minority counter bonus was not enough":""}. (${totalSummary})`);
+        details.unshift(`${counterWasNotEnough?"COUNTER BONUS — ":""}${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison${counterWasNotEnough?" — the minority counter bonus was not enough":""}. (${totalSummary})`);
       } else if(tied.length===3) {
         revealWinner="Draw!";
         details.unshift("All three move totals tie: round draw.");
@@ -1826,8 +1826,9 @@ async function refreshTeamPowerUI() {
           {
             const counterMove=withCounter[0];
             const otherMove=tied.find(m=>m!==counterMove);
-            const counterEffective=(count[counterMove]||0)+1;
-            details.unshift(`${counterMove[0].toUpperCase()+counterMove.slice(1)} wins the tied move totals with its counter bonus. (${counterMove[0].toUpperCase()+counterMove.slice(1)} ${count[counterMove]||0} + counter bonus = ${counterEffective} | ${otherMove[0].toUpperCase()+otherMove.slice(1)} ${count[otherMove]||0})`);
+            const counterBonus=counterMoves[counterMove]||0;
+            const counterEffective=(count[counterMove]||0)+counterBonus;
+            details.unshift(`COUNTER BONUS — ${counterMove[0].toUpperCase()+counterMove.slice(1)} wins the tied move totals. (${counterMove[0].toUpperCase()+counterMove.slice(1)} ${count[counterMove]||0} + ${counterBonus} counter bonus = ${counterEffective} | ${otherMove[0].toUpperCase()+otherMove.slice(1)} ${count[otherMove]||0})`);
           }
         } else if(tied.length===2){
           // Two tied move groups still resolve by Rock-Paper-Scissors rather than becoming a draw.
@@ -2113,7 +2114,7 @@ async function refreshTeamPowerUI() {
         return `<div class="choice ${isRoundWinner?"round-winning-card":""}" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
           <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${p.bot?"Computer player":isYou?"You":"Other player"}">${p.bot?"🤖":`<span class="badge" style="font-size:11px">${isYou?"YOU":"THEM"}</span>`}</div>
           <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
-          ${isRoundWinner?'<div class="round-winner-label">WINNER ✨</div>':""}
+          
           <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
           <div class="divider" style="width:100%;margin:14px 0 11px"></div>
@@ -2123,7 +2124,7 @@ async function refreshTeamPowerUI() {
           <b class="score" style="font-size:16px">${total} pts</b>
         </div>`;
       }).join("")}</div>
-      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT")).slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
+      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counters=normal.filter(d=>d.includes("COUNTER BONUS"));const rest=normal.filter(d=>!d.includes("COUNTER BONUS"));return [...counters,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
     if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
   }
