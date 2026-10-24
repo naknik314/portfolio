@@ -258,12 +258,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
   right:7px;
   z-index:2;
   margin:0;
-  padding:2px 5px;
+  padding:1px 4px;
   border-radius:999px;
-  font-size:8px;
-  line-height:1.1;
-  font-weight:850;
-  letter-spacing:.04em;
+  font-size:6px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.025em;
   background:rgba(250,204,21,.18);
   border:1px solid rgba(250,204,21,.55);
   pointer-events:none;
@@ -1797,7 +1797,7 @@ async function refreshTeamPowerUI() {
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
-          details.push(`${p.name} earned +${1*multiplier} minority counter bonus for countering the majority.`);
+          details.push(`${p.name} earned +${1*multiplier} minority counter bonus: ${myMove[0].toUpperCase()+myMove.slice(1)} ${count[myMove]||0} + counter bonus | ${majorityMove[0].toUpperCase()+majorityMove.slice(1)} ${count[majorityMove]||0}.`);
         }
       });
 
@@ -1808,8 +1808,14 @@ async function refreshTeamPowerUI() {
       const tied=moves.filter(m=>totals[m]===top);
       if(tied.length===1) {
         revealWinner=`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins!`;
-        const totalSummary=moves.filter(m=>totals[m]>0).map(m=>`${m[0].toUpperCase()+m.slice(1)} ${totals[m]}`).join(" · ");
-        details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison (${totalSummary}).`);
+        const totalSummary=moves.filter(m=>totals[m]>0).map(m=>{
+          const label=m[0].toUpperCase()+m.slice(1);
+          return counterMoves[m]>0
+            ? `${label} ${count[m]||0} + counter bonus = ${totals[m]}`
+            : `${label} ${totals[m]}`;
+        }).join(" | ");
+        const counterWasNotEnough=moves.some(m=>counterMoves[m]>0 && m!==tied[0]);
+        details.unshift(`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison${counterWasNotEnough?" — the minority counter bonus was not enough":""}. (${totalSummary})`);
       } else if(tied.length===3) {
         revealWinner="Draw!";
         details.unshift("All three move totals tie: round draw.");
@@ -1817,7 +1823,12 @@ async function refreshTeamPowerUI() {
         const withCounter=tied.filter(m=>counterMoves[m]>0);
         if(withCounter.length===1){
           revealWinner=`${withCounter[0][0].toUpperCase()+withCounter[0].slice(1)} wins!`;
-          details.unshift(`${withCounter[0][0].toUpperCase()+withCounter[0].slice(1)} wins the tied move totals with its counter bonus.`);
+          {
+            const counterMove=withCounter[0];
+            const otherMove=tied.find(m=>m!==counterMove);
+            const counterEffective=(count[counterMove]||0)+1;
+            details.unshift(`${counterMove[0].toUpperCase()+counterMove.slice(1)} wins the tied move totals with its counter bonus. (${counterMove[0].toUpperCase()+counterMove.slice(1)} ${count[counterMove]||0} + counter bonus = ${counterEffective} | ${otherMove[0].toUpperCase()+otherMove.slice(1)} ${count[otherMove]||0})`);
+          }
         } else if(tied.length===2){
           // Two tied move groups still resolve by Rock-Paper-Scissors rather than becoming a draw.
           // Example: 2 Paper vs 2 Scissors -> Scissors wins.
