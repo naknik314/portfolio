@@ -1930,7 +1930,24 @@ async function refreshTeamPowerUI() {
       </div>`:`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
         <span>⚡ No team power was used this round.</span>
       </div>`}
-      <div class="results-list">${players.map(p=>`<div class="result-row"><div><b>${escapeHtml(p.name)} ${p.uid===currentUser?.uid?'<span class="badge">YOU</span>':""}</b><div class="muted" style="font-size:12px;margin-top:4px">Played ${hands[playedMoves[p.uid]||"rock"]} ${playedMoves[p.uid]||"rock"}</div></div><div style="text-align:right"><b class="score">${Number(resultScores[p.uid] ?? p.score ?? 0)} pts</b><div class="muted" style="font-size:12px;margin-top:4px">${Number(roundPoints[p.uid]||0)>0?"+":""}${Number(roundPoints[p.uid]||0)} this round</div></div></div>`).join("")}</div>
+      <div class="choices" style="align-items:stretch">${players.map(p=>{
+        const move=playedMoves[p.uid]||"rock";
+        const moveLabel=move[0].toUpperCase()+move.slice(1);
+        const total=Number(resultScores[p.uid] ?? p.score ?? 0);
+        const roundTotal=Number(roundPoints[p.uid]||0);
+        const isYou=p.uid===currentUser?.uid;
+        return `<div class="choice" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
+          ${p.bot?'<div style="font-size:25px;line-height:1;margin-bottom:5px" aria-label="Computer player">🤖</div>':""}
+          <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}${isYou?' <span class="badge">YOU</span>':""}</b>
+          <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
+          <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
+          <div class="divider" style="width:100%;margin:14px 0 11px"></div>
+          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Total points</div>
+          <b class="score" style="font-size:21px;margin-top:2px">${total} pts</b>
+          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">This round</div>
+          <b style="font-size:16px">${roundTotal>0?"+":""}${roundTotal} pts</b>
+        </div>`;
+      }).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT")).slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>")}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
     if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
