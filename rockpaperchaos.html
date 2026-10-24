@@ -972,22 +972,58 @@ const db = getDatabase(firebaseApp);
     const heading=$("lobbyTeamHeading");
     if(!info || !heading || !currentUser) return;
     try{
-      const snap=await get(ref(db,`profiles/${currentUser.uid}`));
+      const reads=[get(ref(db,`profiles/${currentUser.uid}`))];
+      if(room){
+        reads.push(
+          get(ref(db,`rooms/${room}/doubleAgent/${currentUser.uid}`)),
+          get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`)),
+          get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`))
+        );
+      }
+      const results=await Promise.all(reads);
+      const snap=results[0];
       const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
       const team=profile.team||"unassigned";
+
+      let basePowerName="", basePowerDesc="";
       if(team==="rock"){
-        heading.textContent="🪨 Team Rock";
-        info.innerHTML=`Team power: <b>🪨 Barricade</b><br><span class="muted">Protects you from negative points and point-loss effects for the round.</span>`;
+        heading.textContent="🪨 Team Rock"; basePowerName="🪨 Barricade";
+        basePowerDesc="Protects you from negative points and point-loss effects for the round.";
       }else if(team==="paper"){
-        heading.textContent="📄 Team Paper";
-        info.innerHTML=`Team power: <b>📄 Reprint</b><br><span class="muted">Copies the highest positive points another player earns that round.</span>`;
+        heading.textContent="📄 Team Paper"; basePowerName="📄 Reprint";
+        basePowerDesc="Copies the highest positive points another player earns that round.";
       }else if(team==="scissors"){
-        heading.textContent="✂️ Team Scissors";
-        info.innerHTML=`Team power: <b>✂️ Cut in Half</b><br><span class="muted">Cuts another player’s positive round points in half.</span>`;
+        heading.textContent="✂️ Team Scissors"; basePowerName="✂️ Cut in Half";
+        basePowerDesc="Cuts another player’s positive round points in half.";
       }else{
         heading.textContent="🎲 Team Unpredictable";
-        info.innerHTML=`<span class="muted">Get a random Rock, Paper, or Scissors team power once the game begins.</span>`;
+        basePowerDesc="Get a random Rock, Paper, or Scissors team power once the game begins.";
       }
+
+      const daVal=room && results[1]?.exists()?results[1].val():null;
+      const daPower=daVal && ["rock","paper","scissors"].includes(daVal.power)?daVal.power:null;
+      const swapActive=room && (
+        (results[2]?.exists() && results[2].val()===true) ||
+        (results[3]?.exists() && results[3].val()===true)
+      );
+
+      let html=basePowerName
+        ? `Team power: <b>${basePowerName}</b><br><span class="muted">${basePowerDesc}</span>`
+        : `<span class="muted">${basePowerDesc}</span>`;
+
+      const normal={rock:"🪨 Barricade",paper:"📄 Reprint",scissors:"✂️ Cut in Half"};
+      const swapped={rock:"🪨 Stonewall",paper:"📄 Misprint",scissors:"✂️ Cut Your Losses"};
+      if(daPower){
+        html+=`<div class="divider" style="margin:10px 0"></div><b>🕵️ Double Agent active:</b> ${normal[daPower]}`;
+        if(swapActive) html+=`<br><b>⚡ Power Swap active:</b> ${normal[daPower]} → <b>${swapped[daPower]}</b>`;
+      }else if(swapActive){
+        if(team==="unassigned"){
+          html+=`<div class="divider" style="margin:10px 0"></div><b>⚡ Power Swap active</b><br><span class="muted">Your random Team Power will become its swapped version once the game begins.</span>`;
+        }else{
+          html+=`<div class="divider" style="margin:10px 0"></div><b>⚡ Power Swap active:</b> ${normal[team]} → <b>${swapped[team]}</b>`;
+        }
+      }
+      info.innerHTML=html;
     }catch(error){
       console.warn("Could not load lobby team",error);
       heading.textContent="Your team";
@@ -1173,6 +1209,7 @@ const db = getDatabase(firebaseApp);
     toast(`Double Agent Mode active: ${doubleAgentPowerLabel(chosen)}.`);
     await refreshChaosPointsPageBalance();
     await refreshDoubleAgentLobby();
+    await refreshLobbyTeamCard();
   }
 
   const ROLL_DICE_COST=15;
@@ -1346,6 +1383,7 @@ const db = getDatabase(firebaseApp);
     toast("🔄 Power Swap ready — 50 Chaos Points will be spent only if you use it.");
     await refreshPowerReversalLobby();
     await refreshChaosBotLobby();
+    await refreshLobbyTeamCard();
     // If the move screen is already rendered, immediately reload the active
     // power from Firebase so Reprint/Barricade/Cut in Half changes to its
     // alternate version without requiring a page reload.
