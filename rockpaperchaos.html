@@ -1797,7 +1797,7 @@ async function refreshTeamPowerUI() {
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
           counterMoves[myMove]++;
-          details.push(`${p.name} earned +${1*multiplier} for the counter bonus by playing ${myMove[0].toUpperCase()+myMove.slice(1)}.`);
+          details.push(`${p.name} earned +${1*multiplier} for the counter bonus by playing ${myMove[0].toUpperCase()+myMove.slice(1)} against ${majorityMove[0].toUpperCase()+majorityMove.slice(1)}.`);
         }
       });
 
@@ -2126,7 +2126,7 @@ async function refreshTeamPowerUI() {
           <b class="score" style="font-size:16px">${total} pts</b>
         </div>`;
       }).join("")}</div>
-      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing/i.test(d));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing/i.test(d));return [...counterSummaries,...playerCounterCredits,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
+      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d));return [...counterSummaries,...playerCounterCredits,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
     if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
   }
