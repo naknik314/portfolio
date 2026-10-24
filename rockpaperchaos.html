@@ -1722,7 +1722,7 @@ async function refreshTeamPowerUI() {
     const shownPowerName=activeTeamPower.displayName||activeTeamPower.name;
     // Regular teams get a clear "Your team power" label.
     // Team Unpredictable keeps the Jack of All Trades wording so its random-power identity is clear.
-    $("teamPowerDesc").textContent=displayedPowerDesc+" One use per game.";
+    // renderExactMovePower() already rendered the current power description.
     const targetWrap=$("scissorsTargetWrap");
     const targetChoices=$("scissorsTargetChoices");
     if(activeTeamPower.key==="scissors"){
@@ -1909,8 +1909,8 @@ async function refreshTeamPowerUI() {
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <span id="teamPowerDesc">One use per game.</span>
         <div id="scissorsTargetWrap" style="display:none;margin-top:10px">
-          <div style="font-weight:900;margin-bottom:7px">✂️ Cut in Half target</div>
-          <div class="muted" style="margin-bottom:8px">Choose who to cut. This is separate from your prediction target.</div>
+          <div style="font-weight:900;margin-bottom:7px">✂️ Choose your Cut in Half target</div>
+          <div class="muted" style="margin-bottom:8px">Pick one player below. This choice is separate from your required prediction target.</div>
           <div id="scissorsTargetChoices" class="prediction-grid"></div>
         </div>
         <button class="btn secondary wide" id="teamPowerBtn" style="margin-top:9px">⚡ Use Team Power</button>
