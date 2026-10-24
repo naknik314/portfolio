@@ -1940,7 +1940,16 @@ async function refreshTeamPowerUI() {
     if(!sorted.length) return;
     $("winnerTitle").textContent=sorted.length>1&&sorted[0].score===sorted[1].score?"It's a tie!":`${sorted[0].name} wins!`;
     $("winnerSub").textContent=`${sorted[0].score} points · ${sorted.length} players · 7 rounds of chaos`;
-    $("finalScores").innerHTML=sorted.map((p,i)=>`<div class="result-row"><div><b>${i===0?"👑 ":""}${escapeHtml(p.name)}</b><div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div></div><b class="score">${p.score} pts</b></div>`).join("");
+    $("finalScores").innerHTML=sorted.map((p,i)=>{
+      const isYou=p.uid===currentUser?.uid;
+      return `<div class="result-row" ${isYou?'style="border:2px solid #22c55e;background:rgba(34,197,94,.10);box-shadow:0 0 0 2px rgba(34,197,94,.08)"':""}>
+        <div>
+          <b>${i===0?"👑 ":""}${escapeHtml(p.name)}${isYou?' <span style="display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;vertical-align:2px">YOU</span>':""}</b>
+          <div class="muted" style="font-size:12px">${i===0?"Chaos champion":`Rank #${i+1}`}</div>
+        </div>
+        <b class="score">${p.score} pts</b>
+      </div>`;
+    }).join("");
     showEndTeamMessage();
   }
 
