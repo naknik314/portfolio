@@ -420,8 +420,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="section-label">Your game</div>
             <div class="code" id="roomCode">------</div>
             <div class="muted" style="margin-top:8px;font-size:12px">Share this code so friends know which open game to pick.</div>
-            <div class="rule-card" id="lobbyTeamCard" style="margin-top:14px">
-              <strong id="lobbyTeamHeading">⚡ Your Team: Loading…</strong>
+            <div class="divider"></div>
+            <div class="section-label">Your team</div>
+            <div class="rule-card" id="lobbyTeamCard">
+              <strong id="lobbyTeamHeading">Loading…</strong>
               <span id="lobbyTeamInfo" style="margin-top:7px"></span>
             </div>
             <div class="divider"></div>
@@ -974,21 +976,21 @@ const db = getDatabase(firebaseApp);
       const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
       const team=profile.team||"unassigned";
       if(team==="rock"){
-        heading.textContent="⚡ Your Team: 🪨 Team Rock";
+        heading.textContent="🪨 Team Rock";
         info.innerHTML=`Team power: <b>🪨 Barricade</b><br><span class="muted">Protects you from negative points and point-loss effects for the round.</span>`;
       }else if(team==="paper"){
-        heading.textContent="⚡ Your Team: 📄 Team Paper";
+        heading.textContent="📄 Team Paper";
         info.innerHTML=`Team power: <b>📄 Reprint</b><br><span class="muted">Copies the highest positive points another player earns that round.</span>`;
       }else if(team==="scissors"){
-        heading.textContent="⚡ Your Team: ✂️ Team Scissors";
+        heading.textContent="✂️ Team Scissors";
         info.innerHTML=`Team power: <b>✂️ Cut in Half</b><br><span class="muted">Cuts another player’s positive round points in half.</span>`;
       }else{
-        heading.textContent="⚡ Your Team: 🎲 Team Unpredictable";
+        heading.textContent="🎲 Team Unpredictable";
         info.innerHTML=`<span class="muted">Get a random Rock, Paper, or Scissors team power once the game begins.</span>`;
       }
     }catch(error){
       console.warn("Could not load lobby team",error);
-      heading.textContent="⚡ Your Team";
+      heading.textContent="Your team";
       info.textContent="Your team is unavailable right now.";
     }
   }
