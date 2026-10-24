@@ -766,7 +766,7 @@ const db = getDatabase(firebaseApp);
     return {
       gamesPlayed:0,wins:0,ties:0,totalPoints:0,chaosPoints:0,
       moveWinPoints:{rock:0,paper:0,scissors:0},
-      team:"unassigned",teamGames:0,teamSwaps:0,recentGames:{}
+      team:"unassigned",teamGames:0,teamSwaps:0,longestTeamGames:0,longestTeam:"unassigned",recentGames:{}
     };
   }
 
@@ -811,6 +811,10 @@ const db = getDatabase(firebaseApp);
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
     const teamGames=Math.max(0,Number(p.teamGames||0));
     const teamSwaps=Math.max(0,Number(p.teamSwaps||0));
+    const savedLongest=Math.max(0,Number(p.longestTeamGames||0));
+    const longestTeamGames=Math.max(savedLongest,teamGames);
+    const longestTeamKey=teamGames>=savedLongest?(p.team||"unassigned"):(p.longestTeam||"unassigned");
+    const longestTeamMeta=teamMeta[longestTeamKey]||teamMeta.unassigned;
     const teamStatus=teamStatusFor(p.team||"unassigned",teamGames);
     const recent=Object.values(p.recentGames||{}).sort((a,b)=>Number(b.endedAt||0)-Number(a.endedAt||0)).slice(0,5);
     $("statsContent").innerHTML=`
@@ -823,9 +827,11 @@ const db = getDatabase(firebaseApp);
         </div>
         <div class="stats-team-side">
           <div class="rule-card">
-            <strong>🔄 Team Swaps</strong>
-            <span style="font-size:24px;font-weight:900;margin-top:6px">${teamSwaps}</span>
-            <span class="muted">${teamSwaps===1?"1 time":"Times you have switched from one established team to another."}</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <strong>🔄 Team Swaps</strong>
+              <span style="font-size:24px;font-weight:900">${teamSwaps}</span>
+            </div>
+            <span class="muted">Longest stretch: ${longestTeamMeta.label} — ${longestTeamGames} ${longestTeamGames===1?"game":"games"}.</span>
           </div>
           <div class="rule-card">
             <strong>${team.icon} Team Rank</strong>
@@ -896,6 +902,12 @@ const db = getDatabase(firebaseApp);
       const teamSwaps=Number(old.teamSwaps||0)+(teamChanged && oldTeam!=="unassigned"?1:0);
       // Team Rank measures the current uninterrupted stretch on this team.
       const teamGames=teamChanged?1:Number(old.teamGames||0)+1;
+      const previousLongest=Math.max(Number(old.longestTeamGames||0),Number(old.teamGames||0));
+      const previousLongestTeam=Number(old.longestTeamGames||0)>=Number(old.teamGames||0)
+        ? (old.longestTeam||oldTeam)
+        : oldTeam;
+      const longestTeamGames=teamGames>previousLongest?teamGames:previousLongest;
+      const longestTeam=teamGames>previousLongest?team:previousLongestTeam;
       const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
       const challengeSnap=await get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`));
       const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
@@ -916,6 +928,8 @@ const db = getDatabase(firebaseApp);
         team,
         teamGames,
         teamSwaps,
+        longestTeamGames,
+        longestTeam,
         recentGames:trimmedObj,
         updatedAt:Date.now()
       });
@@ -2821,9 +2835,17 @@ async function refreshTeamPowerUI() {
         // not change wins, ties, team assignment, team swaps, total points,
         // or winning-move stats.
         if(!roomData.statsSaved){
+          const nextTeamGames=Number(profile.teamGames||0)+1;
+          const previousLongest=Math.max(Number(profile.longestTeamGames||0),Number(profile.teamGames||0));
+          const previousLongestTeam=Number(profile.longestTeamGames||0)>=Number(profile.teamGames||0)
+            ? (profile.longestTeam||profile.team||"unassigned")
+            : (profile.team||"unassigned");
           const profileUpdates={
             gamesPlayed:Number(profile.gamesPlayed||0)+1,
-            teamGames:Number(profile.teamGames||0)+1,
+            wins:Number(profile.wins||0)+(success?1:0),
+            teamGames:nextTeamGames,
+            longestTeamGames:nextTeamGames>previousLongest?nextTeamGames:previousLongest,
+            longestTeam:nextTeamGames>previousLongest?(profile.team||"unassigned"):previousLongestTeam,
             updatedAt:Date.now()
           };
           if(success && !roomData.soloRewardPaid){
