@@ -2911,7 +2911,13 @@ async function refreshTeamPowerUI() {
       const snap=await get(ref(db,"rooms"));
       const all=snap.exists()?snap.val():{};
       const rooms=Object.entries(all)
-        .filter(([code,r])=>r && r.status==="lobby")
+        .filter(([code,r])=>{
+          if(!r || r.status!=="lobby") return false;
+          // Solo Mode rooms are private to the solo player and should not
+          // appear as joinable rooms.
+          const soloActive=Object.values(r.soloMode||{}).some(v=>v===true);
+          return !soloActive;
+        })
         .map(([code,r])=>{
           const realPlayers=Object.values(r.players||{}).filter(p=>!p.bot);
           return {code,count:realPlayers.length,createdAt:Number(r.createdAt||0)};
@@ -2950,6 +2956,11 @@ async function refreshTeamPowerUI() {
       if (!snap.exists()) return toast("Room not found. Check the code and try again.");
       const data = snap.val();
       if (data.status && data.status !== "lobby") return toast("That game has already started.");
+      const soloActive=Object.values(data.soloMode||{}).some(v=>v===true);
+      const alreadyMember=Boolean(data.players?.[user.uid]);
+      if(soloActive && !alreadyMember){
+        return toast("🎯 Solo Mode active — this room can't accept other players. Choose another room or create a new game.");
+      }
       const count = data.players ? Object.keys(data.players).length : 0;
       if (!data.players?.[user.uid] && count >= 8) return toast("That room is full.");
       const requestedName = selectedUsername;
