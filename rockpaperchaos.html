@@ -1434,10 +1434,53 @@ const db = getDatabase(firebaseApp);
   let soloPowerUsed=false;
   let soloPowerActive=false;
   let soloQuickDrawDelay=220;
+  function chooseCupCrusherX2Targets(cupMoves,team="unassigned"){
+    const indexed=cupMoves.map((m,i)=>({m,i}));
+    if(team!=="unassigned"){
+      // Established teams (including a borrowed Double Agent family) keep
+      // their actual challenge-team move safe and crush the other two.
+      return indexed.filter(x=>x.m!==team).map(x=>x.i).slice(0,2);
+    }
+    const mode=String(prompt("Cup Crusher ×2: type Keep to protect the move you want, Avoid to name 2 moves to crush, or Random.")||"random").trim().toLowerCase();
+    if(mode==="keep"){
+      const keep=String(prompt("Which move should stay uncrushed? Rock, Paper, or Scissors.")||"").trim().toLowerCase();
+      if(moves.includes(keep)) return indexed.filter(x=>x.m!==keep).map(x=>x.i).slice(0,2);
+    }
+    if(mode==="avoid"){
+      const first=String(prompt("First move to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
+      const second=String(prompt("Second move to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
+      if(moves.includes(first) && moves.includes(second) && first!==second){
+        return indexed.filter(x=>x.m===first || x.m===second).map(x=>x.i).slice(0,2);
+      }
+    }
+    // Random fallback leaves one random cup.
+    const shuffled=indexed.slice().sort(()=>Math.random()-.5);
+    return shuffled.slice(0,2).map(x=>x.i);
+  }
+
+  function chooseSelectiveSlicerX2Pairs(team="unassigned"){
+    if(team!=="unassigned"){
+      // Established challenge teams keep their own move-pair safe.
+      return moves.filter(m=>m!==team).slice(0,2);
+    }
+    const mode=String(prompt("Selective Slicer ×2: type Keep to protect the pair you want, Avoid to name 2 pairs to slice, or Random.")||"random").trim().toLowerCase();
+    if(mode==="keep"){
+      const keep=String(prompt("Which pair should stay? Rock, Paper, or Scissors.")||"").trim().toLowerCase();
+      if(moves.includes(keep)) return moves.filter(m=>m!==keep);
+    }
+    if(mode==="avoid"){
+      const first=String(prompt("First pair to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
+      const second=String(prompt("Second pair to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
+      if(moves.includes(first) && moves.includes(second) && first!==second) return [first,second];
+    }
+    // Random fallback leaves one random pair.
+    return moves.slice().sort(()=>Math.random()-.5).slice(0,2);
+  }
+
   const SOLO_POWER_LEVELS={
-    rock:{regular:"Cup Crusher",swapped:"Cup Crusher ×2",regularEffect:"Crush 1 unwanted cup",swappedEffect:"Crush 2 unwanted cups"},
+    rock:{regular:"Cup Crusher",swapped:"Cup Crusher ×2",regularEffect:"Crush 1 unwanted cup",swappedEffect:"Crush 2 cups; Team Unpredictable can choose 2 moves to avoid or choose the 1 move to keep safe"},
     paper:{regular:"Quick Peek",swapped:"Quick Peek ×2",regularEffect:"350 ms per move",swappedEffect:"700 ms per move"},
-    scissors:{regular:"Selective Slicer",swapped:"Selective Slicer ×2",regularEffect:"Cut 1 unwanted pair",swappedEffect:"Cut 2 unwanted pairs"}
+    scissors:{regular:"Selective Slicer",swapped:"Selective Slicer ×2",regularEffect:"Cut 1 unwanted pair",swappedEffect:"Cut 2 pairs; Team Unpredictable can choose 2 pairs to avoid or choose the 1 pair to keep safe"}
   };
 
   async function refreshRollDiceLobby(){
@@ -2007,11 +2050,26 @@ async function refreshTeamPowerUI() {
               return;
             }
             if(family==="rock"){
-              // Regular Cup Crusher removes one random unwanted cup. It helps,
-              // but still leaves the player with two cups to choose from.
+              // Cup Crusher follows the player's ACTUAL Solo challenge team.
+              // Team Rock keeps Rock safe. If another established team borrowed
+              // Cup Crusher through Double Agent, that team's move stays safe.
+              // Team Unpredictable can choose a move to avoid or let it be random.
               if(!soloCupMoves.length) soloCupMoves=["rock","paper","scissors"];
-              const crushIndex=Math.floor(Math.random()*soloCupMoves.length);
-              const crushed=soloCupMoves[crushIndex];
+              let avoidMove=null;
+              if(team==="unassigned"){
+                const answer=String(prompt("Cup Crusher: which move do you want to avoid? Type Rock, Paper, Scissors, or Random.")||"random").trim().toLowerCase();
+                avoidMove=moves.includes(answer)?answer:null;
+              }
+              let crushCandidates;
+              if(team==="unassigned"){
+                crushCandidates=avoidMove
+                  ? soloCupMoves.map((m,i)=>({m,i})).filter(x=>x.m===avoidMove)
+                  : soloCupMoves.map((m,i)=>({m,i}));
+              }else{
+                crushCandidates=soloCupMoves.map((m,i)=>({m,i})).filter(x=>x.m!==team);
+              }
+              const chosen=crushCandidates[Math.floor(Math.random()*crushCandidates.length)];
+              const crushIndex=chosen.i, crushed=chosen.m;
               const grid=$("soloCupGrid");
               if(grid){
                 const buttons=[...grid.querySelectorAll("[data-solo-cup]")];
@@ -2020,10 +2078,13 @@ async function refreshTeamPowerUI() {
                   buttons[crushIndex].innerHTML=`💥<span style="display:block;font-size:12px;margin-top:4px">Crushed</span>`;
                 }
               }
-              const status=$("soloCupStatus"); if(status) status.textContent=`Cup Crusher removed 1 cup (${hands[crushed]}). Pick from the 2 cups left.`;
+              const status=$("soloCupStatus");
+              if(status) status.textContent=team==="unassigned"
+                ? `Cup Crusher removed ${hands[crushed]} ${crushed}. Pick from the 2 cups left.`
+                : `Cup Crusher kept your ${hands[team]} ${team} team move safe and crushed ${hands[crushed]} ${crushed}. Pick from the 2 cups left.`;
             }else{
-              // Regular Selective Slicer removes one whole move-pair, leaving
-              // four cards and two possible matching moves.
+              // Selective Slicer follows the player's ACTUAL Solo challenge
+              // team, matching Cup Crusher's strategy rules.
               if(!soloCardDeck.length){
                 soloCardDeck=["rock","rock","paper","paper","scissors","scissors"];
                 for(let i=soloCardDeck.length-1;i>0;i--){
@@ -2031,7 +2092,14 @@ async function refreshTeamPowerUI() {
                   [soloCardDeck[i],soloCardDeck[j]]=[soloCardDeck[j],soloCardDeck[i]];
                 }
               }
-              const pairToCut=moves[Math.floor(Math.random()*moves.length)];
+              let pairToCut=null;
+              if(team==="unassigned"){
+                const answer=String(prompt("Selective Slicer: which pair do you want to avoid? Type Rock, Paper, Scissors, or Random.")||"random").trim().toLowerCase();
+                pairToCut=moves.includes(answer)?answer:moves[Math.floor(Math.random()*moves.length)];
+              }else{
+                const candidates=moves.filter(m=>m!==team);
+                pairToCut=candidates[Math.floor(Math.random()*candidates.length)];
+              }
               const grid=$("soloCardGrid");
               if(grid){
                 [...grid.querySelectorAll("[data-solo-card]")].forEach((button,i)=>{
@@ -2042,7 +2110,10 @@ async function refreshTeamPowerUI() {
                   }
                 });
               }
-              const status=$("soloCardStatus"); if(status) status.textContent=`Selective Slicer removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`;
+              const status=$("soloCardStatus");
+              if(status) status.textContent=team==="unassigned"
+                ? `Selective Slicer removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`
+                : `Selective Slicer kept your ${hands[team]} ${team} team pair safe and removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`;
             }
             const waiting=$("waitingNote"); if(waiting) waiting.textContent="Solo Team Power used — finish the minigame to lock in your move.";
             if(powerBtn){ powerBtn.disabled=true; powerBtn.style.opacity=".5"; powerBtn.textContent="⚡ Solo Power Already Used"; }
