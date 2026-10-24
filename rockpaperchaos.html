@@ -195,6 +195,62 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
     }
   }
 
+
+/* Moves Revealed: keep the large 3-card feel for small games,
+   but fit 4+ players across in balanced, narrower cards. */
+.reveal-player-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:12px;
+  width:100%;
+}
+.reveal-player-cards.reveal-many{
+  grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+}
+.reveal-player-cards.reveal-many .choice{
+  width:auto;
+  min-width:0;
+  padding-left:9px !important;
+  padding-right:9px !important;
+}
+.reveal-player-cards.reveal-many .choice > div:nth-of-type(2){
+  font-size:50px !important;
+}
+@media (max-width:700px){
+  .reveal-player-cards,
+  .reveal-player-cards.reveal-many{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media (max-width:420px){
+  .reveal-player-cards,
+  .reveal-player-cards.reveal-many{
+    grid-template-columns:1fr;
+  }
+}
+
+/* Winning move cards get a subtle animated sheen for faster round scanning. */
+.round-winning-card{
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 0 0 2px rgba(250,204,21,.38),0 8px 24px rgba(250,204,21,.12);
+}
+.round-winning-card::after{
+  content:"";
+  position:absolute;
+  inset:-35% -70%;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.08) 44%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.08) 56%,transparent 62%);
+  transform:translateX(-45%);
+  animation:roundWinnerSheen 2.4s ease-in-out infinite;
+}
+@keyframes roundWinnerSheen{
+  0%,28%{transform:translateX(-45%)}
+  68%,100%{transform:translateX(45%)}
+}
+@media (prefers-reduced-motion:reduce){
+  .round-winning-card::after{animation:none;opacity:.3}
+}
 </style>
 </head>
 <body>
@@ -1946,13 +2002,15 @@ async function refreshTeamPowerUI() {
       </div>`:`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
         <span>⚡ No team power was used this round.</span>
       </div>`}
-      <div class="choices" style="align-items:stretch">${players.map(p=>{
+      <div class="choices reveal-player-cards ${players.length>3?"reveal-many":""}" style="align-items:stretch">${players.map(p=>{
         const move=playedMoves[p.uid]||"rock";
         const moveLabel=move[0].toUpperCase()+move.slice(1);
         const total=Number(resultScores[p.uid] ?? p.score ?? 0);
         const roundTotal=Number(roundPoints[p.uid]||0);
         const isYou=p.uid===currentUser?.uid;
-        return `<div class="choice" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
+        const winningMoves = revealWinner==="Draw!" ? [] : String(revealWinner).split(" + ").map(x=>x.trim().toLowerCase());
+        const isRoundWinner = winningMoves.includes(move);
+        return `<div class="choice ${isRoundWinner?"round-winning-card":""}" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
           <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${p.bot?"Computer player":isYou?"You":"Other player"}">${p.bot?"🤖":`<span class="badge" style="font-size:11px">${isYou?"YOU":"THEM"}</span>`}</div>
           <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
           <div style="font-size:58px;line-height:1.05;margin:14px 0 5px">${hands[move]}</div>
