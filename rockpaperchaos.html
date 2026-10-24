@@ -1226,6 +1226,14 @@ const db = getDatabase(firebaseApp);
   async function activateSoloMode(){
     if(!room || !currentUser) return toast("Create a game first to activate Solo Mode.");
     if(players.length!==1 || players[0]?.uid!==currentUser.uid) return toast("Solo Mode is only available when you are the only player.");
+    const conflictSnap=await get(ref(db,`rooms/${room}`));
+    const conflictData=conflictSnap.val()||{};
+    const hasDice=conflictData.rollDiceMode?.[currentUser.uid]===true;
+    const hasDoubleAgent=Boolean(conflictData.doubleAgent?.[currentUser.uid]?.power);
+    const hasSwap=conflictData.powerSwap?.[currentUser.uid]===true || conflictData.powerReversal?.[currentUser.uid]===true;
+    if(hasDice || hasDoubleAgent || hasSwap){
+      return toast("Solo Mode can't be combined with Roll the Dice, Double Agent, or Power Swap. Start a fresh lobby without those options to use Solo Mode.");
+    }
     const profileRef=ref(db,`profiles/${currentUser.uid}`);
     const snap=await get(profileRef);
     const profile=snap.exists()?snap.val():blankProfile();
@@ -1237,6 +1245,9 @@ const db = getDatabase(firebaseApp);
     toast("🎯 Solo Mode active — all 7 rounds will be Quick Draw.");
     await refreshChaosPointsPageBalance();
     await refreshSoloModeLobby();
+    await refreshRollDiceLobby();
+    await refreshDoubleAgentLobby();
+    await refreshPowerReversalLobby();
   }
 
   const DOUBLE_AGENT_COST=40;
@@ -1260,7 +1271,13 @@ const db = getDatabase(firebaseApp);
     const val=snap.exists()?snap.val():null;
     doubleAgentModeActive=Boolean(val?.power);
     doubleAgentPower=doubleAgentModeActive?val.power:null;
-    if(doubleAgentModeActive){
+    if(soloModeActive && !doubleAgentModeActive){
+      select.disabled=true;
+      btn.disabled=true;
+      btn.style.opacity=".5";
+      btn.textContent="🕵️ Double Agent Unavailable in Solo Mode";
+      status.textContent="Solo Mode uses Quick Draw only, so Double Agent cannot be selected.";
+    }else if(doubleAgentModeActive){
       select.value=doubleAgentPower;
       select.disabled=true;
       btn.disabled=true;
@@ -1278,6 +1295,7 @@ const db = getDatabase(firebaseApp);
 
   async function activateDoubleAgentMode(){
     if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
+    if(soloModeActive) return toast("Double Agent cannot be used with Solo Mode.");
     const chosen=$("doubleAgentPowerSelect")?.value||"";
     if(!["rock","paper","scissors"].includes(chosen)) return toast("Choose Barricade, Reprint, or Cut in Half first.");
     const ps=await get(ref(db,`profiles/${currentUser.uid}`));
@@ -1310,11 +1328,13 @@ const db = getDatabase(firebaseApp);
     const active=ms.exists() && ms.val()===true;
     rollDiceModeActive=active;
 
-    btn.disabled=active;
-    btn.style.opacity=active?".55":"1";
-    btn.textContent=active ? "🎲 Roll the Dice Mode Active" : `🎲 Enable Roll the Dice Mode — ${ROLL_DICE_COST} CP`;
+    btn.disabled=active || soloModeActive;
+    btn.style.opacity=(active || soloModeActive)?".55":"1";
+    btn.textContent=active ? "🎲 Roll the Dice Mode Active" : soloModeActive ? "🎲 Roll the Dice Unavailable in Solo Mode" : `🎲 Enable Roll the Dice Mode — ${ROLL_DICE_COST} CP`;
     status.textContent=active
       ? `Your moves will be decided by the dice for this game. ${balance} Chaos Points remaining.`
+      : soloModeActive
+        ? `Solo Mode uses Quick Draw for all 7 rounds, so Roll the Dice cannot be selected.`
       : balance<ROLL_DICE_COST
         ? `You have ${balance} CP. Click to check the cost.`
         : `Costs ${ROLL_DICE_COST} CP upfront and lasts for the full 7-round game.`;
@@ -1322,6 +1342,7 @@ const db = getDatabase(firebaseApp);
 
   async function activateRollDiceMode(){
     if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
+    if(soloModeActive) return toast("Roll the Dice cannot be used with Solo Mode.");
     if(!room || !currentUser) return;
     const modeRef=ref(db,`rooms/${room}/rollDiceMode/${currentUser.uid}`);
     if((await get(modeRef)).val()===true) return refreshRollDiceLobby();
@@ -1431,14 +1452,18 @@ const db = getDatabase(firebaseApp);
       active=legacySnap.exists() && legacySnap.val()===true;
     }
 
-    btn.disabled=active;
-    btn.style.opacity=active?".55":"1";
+    btn.disabled=active || soloModeActive;
+    btn.style.opacity=(active || soloModeActive)?".55":"1";
     btn.textContent=active
       ? "⚡ Power Swap Active"
-      : `⚡ Activate Power Swap — ${REVERSAL_COST} CP when used`;
+      : soloModeActive
+        ? "⚡ Power Swap Unavailable in Solo Mode"
+        : `⚡ Activate Power Swap — ${REVERSAL_COST} CP when used`;
 
     status.textContent=active
       ? `Ready for this game. You still have ${balance} CP; ${REVERSAL_COST} CP will be spent only if you use the swapped power.`
+      : soloModeActive
+        ? `Team Powers are disabled in Solo Mode, so Power Swap cannot be selected.`
       : balance<REVERSAL_COST
         ? `You have ${balance} CP. Click to check the cost.`
         : `You have ${balance} CP. Activation is free; ${REVERSAL_COST} CP is spent only if you use the swapped power.`;
@@ -1446,6 +1471,7 @@ const db = getDatabase(firebaseApp);
 
   async function activatePowerReversal(){
     if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
+    if(soloModeActive) return toast("Power Swap cannot be used with Solo Mode.");
     if(!room || !currentUser) return;
     const activeRef=ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`);
     const activeSnap=await get(activeRef);
@@ -2115,23 +2141,10 @@ async function refreshTeamPowerUI() {
       await set(ref(db,`rooms/${room}/soloMoves`),soloMoves);
       revealWinner=`${landed[0].toUpperCase()+landed.slice(1)}!`;
 
-      // Solo scoring: Rock/Paper/Scissors teams earn +1 whenever Quick Draw
-      // lands on their current team move. Team Unpredictable has no single
-      // correct move, so it earns no per-round points and instead plays for
-      // the final no-4-of-7 challenge reward.
-      const profileSnap=await get(ref(db,`profiles/${p.uid}`));
-      const soloTeam=(profileSnap.exists()?profileSnap.val()?.team:null)||"unassigned";
-      if(soloTeam!=="unassigned" && landed===soloTeam){
-        scores[p.uid]=Number(scores[p.uid]||0)+1;
-        details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}. That's your team move: +1 point!`);
-      }else{
-        details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}.`);
-        if(soloTeam==="unassigned"){
-          details.push(`🎲 Team Unpredictable has no per-round team-move points. Keep every move below 4 out of 7 to complete the challenge.`);
-        }else{
-          details.push(`Your team move is ${soloTeam[0].toUpperCase()+soloTeam.slice(1)}, so this round gives 0 points.`);
-        }
-      }
+      // Every Solo Quick Draw round is worth +1 point for the move landed on.
+      // Team membership controls only the final Solo challenge goal.
+      scores[p.uid]=Number(scores[p.uid]||0)+1;
+      details.push(`🎯 Solo Quick Draw — +1 point for ${landed[0].toUpperCase()+landed.slice(1)}.`);
       details.push(`Solo totals: 🪨 Rock ${soloMoves.rock} · 📄 Paper ${soloMoves.paper} · ✂️ Scissors ${soloMoves.scissors}.`);
     } else if (players.length>=3) {
       const count={rock:0,paper:0,scissors:0};
@@ -2527,9 +2540,13 @@ async function refreshTeamPowerUI() {
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
           <div class="divider" style="width:100%;margin:14px 0 11px"></div>
           <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">This round</div>
-          <b style="font-size:21px;margin-top:2px">${roundTotal>0?"+":""}${roundTotal} pts</b>
+          <b style="font-size:21px;margin-top:2px">${soloModeActive?`+1 pt for ${moveItems[move]} ${escapeHtml(moveLabel)}`:`${roundTotal>0?"+":""}${roundTotal} pts`}</b>
+          ${soloModeActive?`
+          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">Solo totals</div>
+          <b class="score" style="font-size:15px;line-height:1.55">🪨 ${(()=>{const line=(details||[]).find(d=>String(d).startsWith("Solo totals:"));const m=String(line||"").match(/Rock (\d+) · 📄 Paper (\d+) · ✂️ Scissors (\d+)/);return m?m[1]:0;})()} · 📄 ${(()=>{const line=(details||[]).find(d=>String(d).startsWith("Solo totals:"));const m=String(line||"").match(/Rock (\d+) · 📄 Paper (\d+) · ✂️ Scissors (\d+)/);return m?m[2]:0;})()} · ✂️ ${(()=>{const line=(details||[]).find(d=>String(d).startsWith("Solo totals:"));const m=String(line||"").match(/Rock (\d+) · 📄 Paper (\d+) · ✂️ Scissors (\d+)/);return m?m[3]:0;})()}</b>
+          `:`
           <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">Total points</div>
-          <b class="score" style="font-size:16px">${total} pts</b>
+          <b class="score" style="font-size:16px">${total} pts</b>`}
         </div>`;
       }).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d));return [...counterSummaries,...playerCounterCredits,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
