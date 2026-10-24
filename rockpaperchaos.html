@@ -485,6 +485,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         
 
             <div class="rule-card">
+              <strong>🎯 Solo Mode</strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about Solo Mode</summary>
+                <span style="display:block;margin-top:10px">Solo Mode is available only when you are the only player in the Game Lobby. All 7 rounds are Quick Draw rounds.</span>
+                <span>🪨 <b>Team Rock:</b> land on Rock at least 4 out of 7 times.</span>
+                <span>📄 <b>Team Paper:</b> land on Paper at least 4 out of 7 times.</span>
+                <span>✂️ <b>Team Scissors:</b> land on Scissors at least 4 out of 7 times.</span>
+                <span>🎲 <b>Team Unpredictable:</b> finish without any move reaching a clear majority. <b>A clear majority is 4 out of 7 times.</b></span>
+                <span style="margin-top:8px">Complete your team challenge to earn <b>+10 Chaos Points</b>.</span>
+              </details>
+              <button class="btn secondary wide" id="soloModeBtn" style="margin-top:10px">🎯 Enable Solo Mode — 5 CP</button>
+              <span id="soloModeStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <div class="rule-card">
               <strong>🎲 Roll the Dice Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Roll the Dice Mode</summary>
@@ -692,6 +707,7 @@ const db = getDatabase(firebaseApp);
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
   let quickDrawRound = null, quickDrawTimer = null, quickDrawIndex = 0;
   let predictionMode = "required"; // required = competitive, optional = casual with a 0-point score floor
+  let soloModeActive = false;
   let lastRoundIntroShown=null, roundIntroTimer=null;
   function showRoundIntro(roundNumber){
     const n=Number(roundNumber||0);
@@ -887,6 +903,7 @@ const db = getDatabase(firebaseApp);
       onlineRoom = true;
       quickDrawRound = Number(data.quickDrawRound || 0) || null;
       predictionMode = data.predictionMode === "optional" ? "optional" : "required";
+      soloModeActive = data.soloMode?.[currentUser?.uid] === true;
 
       if (data.status === "lobby") {
         renderLobby();
@@ -1046,8 +1063,10 @@ const db = getDatabase(firebaseApp);
     });
     $("addPlayer").disabled = players.length >= 8 || !isHost;
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
-    $("startBtn").disabled = players.length < 2 || !isHost;
-    $("startBtn").style.opacity = (players.length < 2 || !isHost) ? ".5" : "1";
+    const canStart = isHost && (players.length >= 2 || (soloModeActive && players.length === 1));
+    $("startBtn").disabled = !canStart;
+    $("startBtn").style.opacity = canStart ? "1" : ".5";
+    $("startBtn").textContent = soloModeActive && players.length===1 ? "Start Solo Mode →" : "Start 7-round game →";
     const modeSelect=$("predictionModeSelect");
     const modeHelp=$("predictionModeHelp");
     if(modeSelect){
@@ -1065,6 +1084,7 @@ const db = getDatabase(firebaseApp);
         :"Competitive: predictions are required every round except Round 4. Wrong predictions can push scores below zero.";
     }
     refreshChaosBotLobby();
+    refreshSoloModeLobby();
   }
   async function removeComputerPlayer(uid) {
     if (!isHost) return toast("Only the host can remove computer players.");
@@ -1112,15 +1132,18 @@ const db = getDatabase(firebaseApp);
     return reverse ? (wins ? -1 : 1) : (wins ? 1 : -1);
   }
   async function startGame() {
-    if (players.length < 2) return;
     if (!isHost) return toast("Only the host can start the match.");
+    const soloSnap=currentUser?await get(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`)):null;
+    soloModeActive=Boolean(soloSnap?.exists() && soloSnap.val()===true);
+    if(soloModeActive && players.length!==1) return toast("Solo Mode can only start when you are the only player.");
+    if(!soloModeActive && players.length<2) return toast("Add another player, or enable Solo Mode.");
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     const quickDrawChoices=[1,3,5];
-    quickDrawRound=quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
+    quickDrawRound=soloModeActive?1:quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
     await update(ref(db, `rooms/${room}`), {
       status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
-      quickDrawRound, predictionMode, updatedAt:Date.now()
+      quickDrawRound, predictionMode, soloMoves:soloModeActive?{rock:0,paper:0,scissors:0}:null, soloResult:null, soloRewardPaid:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -1141,7 +1164,7 @@ const db = getDatabase(firebaseApp);
     const hasLobby=hasActiveGameLobby();
     const notice=$("chaosPointsLobbyNotice");
     if(notice) notice.style.display=hasLobby?"none":"block";
-    ["rollDiceBtn","chaosBotBtn","doubleAgentBtn","powerReversalBtn"].forEach(id=>{
+    ["soloModeBtn","rollDiceBtn","chaosBotBtn","doubleAgentBtn","powerReversalBtn"].forEach(id=>{
       const btn=$(id);
       if(!btn) return;
       if(!hasLobby){
@@ -1156,6 +1179,50 @@ const db = getDatabase(firebaseApp);
         btn.title="";
       }
     });
+  }
+
+  const SOLO_MODE_COST=5;
+  const SOLO_MODE_REWARD=10;
+
+  async function refreshSoloModeLobby(){
+    updateChaosPointsLobbyAvailability();
+    const btn=$("soloModeBtn"), status=$("soloModeStatus");
+    if(!btn || !status) return;
+    if(!room || !currentUser){
+      btn.disabled=true; status.textContent="Create a game first to activate Solo Mode."; return;
+    }
+    const snap=await get(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`));
+    soloModeActive=snap.exists() && snap.val()===true;
+    const onlyOne=players.length===1 && players[0]?.uid===currentUser.uid;
+    if(soloModeActive){
+      btn.disabled=true; btn.style.opacity=".5"; btn.textContent="🎯 Solo Mode Active";
+      status.textContent=onlyOne?"Ready: all 7 rounds will be Quick Draw rounds.":"Solo Mode is active, but the game can only start when you are the only player.";
+    }else{
+      btn.disabled=!onlyOne; btn.style.opacity=onlyOne?"1":".5"; btn.textContent=`🎯 Enable Solo Mode — ${SOLO_MODE_COST} CP`;
+      status.textContent=onlyOne?"Only one player is in the lobby — Solo Mode is available.":"Solo Mode requires exactly one player in the Game Lobby.";
+    }
+    const start=$("startBtn");
+    if(start){
+      const canStart=isHost && (players.length>=2 || (soloModeActive && players.length===1));
+      start.disabled=!canStart; start.style.opacity=canStart?"1":".5";
+      start.textContent=soloModeActive && players.length===1?"Start Solo Mode →":"Start 7-round game →";
+    }
+  }
+
+  async function activateSoloMode(){
+    if(!room || !currentUser) return toast("Create a game first to activate Solo Mode.");
+    if(players.length!==1 || players[0]?.uid!==currentUser.uid) return toast("Solo Mode is only available when you are the only player.");
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const snap=await get(profileRef);
+    const profile=snap.exists()?snap.val():blankProfile();
+    const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+    if(balance<SOLO_MODE_COST) return toast("Not enough Chaos Points.");
+    await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
+    await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
+    soloModeActive=true;
+    toast("🎯 Solo Mode active — all 7 rounds will be Quick Draw.");
+    await refreshChaosPointsPageBalance();
+    await refreshSoloModeLobby();
   }
 
   const DOUBLE_AGENT_COST=40;
@@ -1594,10 +1661,12 @@ async function refreshTeamPowerUI() {
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
-    const isQuickDraw = round === quickDrawRound;
+    const isQuickDraw = soloModeActive || round === quickDrawRound;
     const modifier = modifiers[round];
     if(isQuickDraw){
-      $("modifier").innerHTML = `<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
+      $("modifier").innerHTML = soloModeActive
+        ? `<b>Round ${round}: 🎯 Solo Quick Draw</b><span>All 7 rounds are Quick Draw. Time your lock-in to land the move your team needs!</span>`
+        : `<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
     }else if(modifier){
       $("modifier").innerHTML = `<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
@@ -1618,7 +1687,7 @@ async function refreshTeamPowerUI() {
   }
 
   function renderMovePicker() {
-    const noPrediction = round === 4;
+    const noPrediction = soloModeActive || round === 4;
     const others = opponents();
     $("timer").textContent = "WAITING";
     const currentPlayer = me();
@@ -1660,7 +1729,7 @@ async function refreshTeamPowerUI() {
       <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
       <p class="note" id="waitingNote">Waiting for your choice.</p>`;
 
-    if(round===quickDrawRound && !rollDiceModeActive){
+    if((soloModeActive || round===quickDrawRound) && !rollDiceModeActive){
       if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
       const display=$("quickDrawDisplay");
       const name=$("quickDrawName");
@@ -1687,7 +1756,7 @@ async function refreshTeamPowerUI() {
           quickBtn.disabled=true;
           const lockBtn=$("lockBtn");
           if(lockBtn){
-            const ready = round===4 || predictionMode==="optional" || (!!targetId && !!predictedMove);
+            const ready = soloModeActive || round===4 || predictionMode==="optional" || (!!targetId && !!predictedMove);
             lockBtn.disabled=!ready;
             lockBtn.style.opacity=ready?"1":".5";
             lockBtn.onclick=()=>{ if(ready) submitTurn(); };
@@ -1768,7 +1837,7 @@ async function refreshTeamPowerUI() {
 
   async function submitTurn() {
     if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
-    const noPrediction = round === 4;
+    const noPrediction = soloModeActive || round === 4;
     if (!selectedMove) return;
     if(!noPrediction && predictionMode==="required" && (!targetId || !predictedMove)){
       toast("Competitive mode requires a rival and prediction before locking in.");
@@ -1777,7 +1846,7 @@ async function refreshTeamPowerUI() {
     const uid=currentUser.uid;
     // Each player writes only under their own UID. The UI never displays submissions before reveal.
     const powerUsedCheck=await get(ref(db,`rooms/${room}/teamPowerUsed/${uid}`));
-    const canUseTeamPower=!noPrediction && teamPowerArmed && activeTeamPower && !(powerUsedCheck.exists() && powerUsedCheck.val()===true);
+    const canUseTeamPower=!soloModeActive && !noPrediction && teamPowerArmed && activeTeamPower && !(powerUsedCheck.exists() && powerUsedCheck.val()===true);
     if(teamPowerArmed && !canUseTeamPower){
       teamPowerArmed=false;
       toast("Your team power is already used up, so it was not submitted again.");
@@ -1926,7 +1995,16 @@ async function refreshTeamPowerUI() {
     const played={};
     players.forEach(p=>played[p.uid]=submissions[p.uid]?.move || "rock");
 
-    if (players.length>=3) {
+    if(soloModeActive && players.length===1){
+      const p=players[0], landed=played[p.uid];
+      const soloSnap=await get(ref(db,`rooms/${room}/soloMoves`));
+      const soloMoves={rock:0,paper:0,scissors:0,...(soloSnap.val()||{})};
+      soloMoves[landed]=Number(soloMoves[landed]||0)+1;
+      await set(ref(db,`rooms/${room}/soloMoves`),soloMoves);
+      revealWinner=`${landed[0].toUpperCase()+landed.slice(1)}!`;
+      details.push(`🎯 Solo Quick Draw — you landed on ${landed[0].toUpperCase()+landed.slice(1)}.`);
+      details.push(`Solo totals: 🪨 Rock ${soloMoves.rock} · 📄 Paper ${soloMoves.paper} · ✂️ Scissors ${soloMoves.scissors}.`);
+    } else if (players.length>=3) {
       const count={rock:0,paper:0,scissors:0};
       players.forEach(p=>count[played[p.uid]]++);
       const maxCount=Math.max(...Object.values(count));
@@ -2018,7 +2096,7 @@ async function refreshTeamPowerUI() {
     // Prediction rules depend on the lobby-selected mode (disabled entirely in Round 4).
     // Competitive requires a prediction and allows negative total scores.
     // Casual allows skipping and applies a 0-point floor after all round effects.
-    if(round!==4){
+    if(!soloModeActive && round!==4){
       players.forEach(p=>{
         const pred=submissions[p.uid]?.prediction;
         if(!pred) {
@@ -2188,7 +2266,7 @@ async function refreshTeamPowerUI() {
     }
 
     // Round 7 — Winner Takes the Round. Normal scoring and powers resolve first.
-    if(round===7){
+    if(round===7 && !soloModeActive){
       const winningMoveMatch=String(revealWinner||"").match(/^(Rock|Paper|Scissors) wins!/i);
       const winningMove=winningMoveMatch?winningMoveMatch[1].toLowerCase():null;
       if(winningMove){
@@ -2336,11 +2414,34 @@ async function refreshTeamPowerUI() {
       const roomSnap=await get(ref(db, `rooms/${room}`));
       const roomData=roomSnap.val()||{};
       const finalScores=roomData.scores||{};
-      if(!roomData.statsSaved){
-        await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{});
-        await update(ref(db, `rooms/${room}`), {statsSaved:true});
+      const soloActive=roomData.soloMode?.[currentUser?.uid]===true;
+      if(soloActive){
+        const counts={rock:0,paper:0,scissors:0,...(roomData.soloMoves||{})};
+        const profileRef=ref(db,`profiles/${currentUser.uid}`);
+        const profileSnap=await get(profileRef);
+        const profile=profileSnap.exists()?profileSnap.val():blankProfile();
+        const team=profile.team||"unassigned";
+        const maxCount=Math.max(Number(counts.rock||0),Number(counts.paper||0),Number(counts.scissors||0));
+        const success=team==="unassigned" ? maxCount<4 : Number(counts[team]||0)>=4;
+        const targetText=team==="unassigned"
+          ?"No move reached a clear majority of 4 out of 7."
+          : `${team[0].toUpperCase()+team.slice(1)} landed ${Number(counts[team]||0)} out of 7 times.`;
+        if(success && !roomData.soloRewardPaid){
+          const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+          await update(profileRef,{chaosPoints:balance+SOLO_MODE_REWARD,updatedAt:Date.now()});
+        }
+        await update(ref(db, `rooms/${room}`), {
+          soloResult:{success,team,counts,targetText,reward:success?SOLO_MODE_REWARD:0},
+          soloRewardPaid:success?true:Boolean(roomData.soloRewardPaid),
+          statsSaved:true,status:"finished",scores:finalScores,updatedAt:Date.now()
+        });
+      }else{
+        if(!roomData.statsSaved){
+          await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{});
+          await update(ref(db, `rooms/${room}`), {statsSaved:true});
+        }
+        await update(ref(db, `rooms/${room}`), {status:"finished",scores:finalScores,updatedAt:Date.now()});
       }
-      await update(ref(db, `rooms/${room}`), {status:"finished",scores:finalScores,updatedAt:Date.now()});
     } else {
       round++;
       await update(ref(db, `rooms/${room}`), {round,updatedAt:Date.now()});
@@ -2383,9 +2484,22 @@ async function refreshTeamPowerUI() {
     }
   }
 
-  function finishGame(showScreen=true) {
+  async function finishGame(showScreen=true) {
     clearInterval(timerInt);
     if(showScreen!==false) show("end"); else show("end");
+    if(soloModeActive && room && currentUser){
+      try{
+        const snap=await get(ref(db,`rooms/${room}/soloResult`));
+        if(snap.exists()){
+          const result=snap.val(), c=result.counts||{};
+          $("winnerTitle").textContent=result.success?"🎯 SOLO CHALLENGE COMPLETE!":"🎯 SOLO CHALLENGE FAILED";
+          $("winnerSub").textContent=result.success?`${result.targetText} +${Number(result.reward||0)} Chaos Points!`:result.targetText;
+          $("finalScores").innerHTML=`<div class="rule-card" style="text-align:center"><strong>7-Round Quick Draw Results</strong><span style="font-size:18px;margin-top:8px">🪨 Rock ${Number(c.rock||0)} · 📄 Paper ${Number(c.paper||0)} · ✂️ Scissors ${Number(c.scissors||0)}</span><span class="muted" style="margin-top:8px">${result.team==="unassigned"?"Team Unpredictable wins when no move reaches a clear majority. A clear majority is 4 out of 7 times.":`Your challenge was to land on ${result.team[0].toUpperCase()+result.team.slice(1)} at least 4 out of 7 times.`}</span></div>`;
+          const box=$("teamEndMessage"); if(box) box.style.display="none";
+          return;
+        }
+      }catch(e){ console.warn("Could not load Solo Mode result",e); }
+    }
     const sorted=[...players].sort((a,b)=>b.score-a.score);
     if(!sorted.length) return;
     $("winnerTitle").textContent=sorted.length>1&&sorted[0].score===sorted[1].score?"It's a tie!":`${sorted[0].name} wins!`;
@@ -2572,7 +2686,7 @@ async function refreshTeamPowerUI() {
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,quickDrawRound:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
@@ -2582,6 +2696,7 @@ async function refreshTeamPowerUI() {
   };
   $("homeBtn").onclick = leaveOnlineRoom;
 $("statsHome").onclick = () => { show("home"); loadCommunityTeams(); };
+$("soloModeBtn").onclick = activateSoloMode;
 $("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
 $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
@@ -2644,6 +2759,7 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
     updateChaosPointsLobbyAvailability();
     await refreshChaosPointsPageBalance();
     await refreshChaosBotLobby();
+    await refreshSoloModeLobby();
     await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
     await refreshRollDiceLobby();
