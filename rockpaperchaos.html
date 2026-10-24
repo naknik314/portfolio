@@ -1723,15 +1723,21 @@ async function refreshTeamPowerUI() {
     // Regular teams get a clear "Your team power" label.
     // Team Unpredictable keeps the Jack of All Trades wording so its random-power identity is clear.
     $("teamPowerDesc").textContent=displayedPowerDesc+" One use per game.";
-    const targetSelect=$("scissorsTarget");
+    const targetWrap=$("scissorsTargetWrap");
+    const targetChoices=$("scissorsTargetChoices");
     if(activeTeamPower.key==="scissors"){
-      targetSelect.style.display="";
-      targetSelect.innerHTML='<option value="">Choose a player to cut…</option>'+
-        players.filter(p=>p.uid!==currentUser.uid).map(p=>`<option value="${p.uid}">${p.name}</option>`).join("");
-      if(scissorsTargetUid) targetSelect.value=scissorsTargetUid;
-      targetSelect.onchange=()=>{ scissorsTargetUid=targetSelect.value||null; };
+      if(targetWrap) targetWrap.style.display="";
+      if(targetChoices){
+        targetChoices.innerHTML=players.filter(p=>p.uid!==currentUser.uid).map(p=>
+          `<button type="button" class="predict ${scissorsTargetUid===p.uid?"selected":""}" data-cut-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`
+        ).join("");
+        targetChoices.querySelectorAll("[data-cut-target]").forEach(b=>b.onclick=()=>{
+          scissorsTargetUid=b.dataset.cutTarget||null;
+          targetChoices.querySelectorAll("[data-cut-target]").forEach(x=>x.classList.toggle("selected",x.dataset.cutTarget===scissorsTargetUid));
+        });
+      }
     } else {
-      targetSelect.style.display="none";
+      if(targetWrap) targetWrap.style.display="none";
       scissorsTargetUid=null;
     }
     const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
@@ -1745,17 +1751,14 @@ async function refreshTeamPowerUI() {
       btn.style.opacity=".5";
       btn.style.cursor="not-allowed";
       btn.textContent="Team Power Already Used";
-      if(targetSelect){
-        targetSelect.disabled=true;
-        targetSelect.style.display="none";
-      }
+      if(targetWrap) targetWrap.style.display="none";
       return;
     }
 
     btn.dataset.powerUsed="false";
     btn.removeAttribute("aria-disabled");
     btn.style.cursor="";
-    if(targetSelect) targetSelect.disabled=round===4;
+    if(targetChoices) targetChoices.querySelectorAll("button").forEach(b=>b.disabled=round===4);
     btn.disabled=round===4;
     btn.style.opacity=btn.disabled?".5":"1";
     btn.textContent=round===4?"Unavailable in Round 4":teamPowerArmed?"⚡ Team Power Active":"⚡ Use Team Power";
@@ -1905,9 +1908,11 @@ async function refreshTeamPowerUI() {
       </div>` : `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <span id="teamPowerDesc">One use per game.</span>
-        <select id="scissorsTarget" style="display:none;width:100%;margin-top:9px;padding:10px;border-radius:10px">
-          <option value="">Choose a player to cut…</option>
-        </select>
+        <div id="scissorsTargetWrap" style="display:none;margin-top:10px">
+          <div style="font-weight:900;margin-bottom:7px">✂️ Cut in Half target</div>
+          <div class="muted" style="margin-bottom:8px">Choose who to cut. This is separate from your prediction target.</div>
+          <div id="scissorsTargetChoices" class="prediction-grid"></div>
+        </div>
         <button class="btn secondary wide" id="teamPowerBtn" style="margin-top:9px">⚡ Use Team Power</button>
       </div>`}
       <button class="btn wide" id="lockBtn" disabled style="opacity:.5">Lock choices ✓</button>
@@ -2136,6 +2141,10 @@ async function refreshTeamPowerUI() {
     if (!selectedMove) return;
     if(!noPrediction && predictionMode==="required" && (!targetId || !predictedMove)){
       toast("Competitive mode requires a rival and prediction before locking in.");
+      return;
+    }
+    if(teamPowerArmed && activeTeamPower?.key==="scissors" && !scissorsTargetUid){
+      toast("Choose a Cut in Half target before locking in. Your prediction target is a separate choice.");
       return;
     }
     const uid=currentUser.uid;
