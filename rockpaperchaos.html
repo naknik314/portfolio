@@ -1227,7 +1227,7 @@ const db = getDatabase(firebaseApp);
     quickDrawRound=soloModeActive?1:quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
     await update(ref(db, `rooms/${room}`), {
       status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
-      quickDrawRound, predictionMode, soloMoves:soloModeActive?{rock:0,paper:0,scissors:0}:null, soloResult:null, soloRewardPaid:null, updatedAt:Date.now()
+      quickDrawRound, predictionMode, soloMoves:soloModeActive?{rock:0,paper:0,scissors:0}:null, soloResult:null, soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null, updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
@@ -1352,7 +1352,7 @@ const db = getDatabase(firebaseApp);
     if(balance<SOLO_MODE_COST) return toast("Not enough Chaos Points.");
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
-    soloModeActive=true;
+    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false;
     toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
     await refreshChaosPointsPageBalance();
     await refreshSoloModeLobby();
@@ -1430,6 +1430,15 @@ const db = getDatabase(firebaseApp);
   let soloCupMoves=[];
   let soloCupRevealed=false;
   let soloSpinnerRunning=false;
+  let soloPowerFamily=null;
+  let soloPowerUsed=false;
+  let soloPowerActive=false;
+  let soloQuickDrawDelay=220;
+  const SOLO_POWER_LEVELS={
+    rock:{regular:"Cup Crusher",swapped:"Cup Crusher ×2",regularEffect:"Crush 1 unwanted cup",swappedEffect:"Crush 2 unwanted cups"},
+    paper:{regular:"Quick Peek",swapped:"Quick Peek ×2",regularEffect:"350 ms per move",swappedEffect:"700 ms per move"},
+    scissors:{regular:"Selective Slicer",swapped:"Selective Slicer ×2",regularEffect:"Cut 1 unwanted pair",swappedEffect:"Cut 2 unwanted pairs"}
+  };
 
   async function refreshRollDiceLobby(){
     updateChaosPointsLobbyAvailability();
@@ -1815,6 +1824,7 @@ async function refreshTeamPowerUI() {
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
       soloCardDeck=[]; soloCardFlips=[]; soloCupMoves=[]; soloCupRevealed=false; soloSpinnerRunning=false;
+      soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
       showRoundIntro(round);
     }
@@ -1917,8 +1927,11 @@ async function refreshTeamPowerUI() {
       ${soloModeActive ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🎯 Solo Mode</strong>
-        <span class="muted" style="margin-top:6px">Team Powers are not available in Solo Mode.</span>
         <span id="soloMoveGoalText" style="margin-top:8px;font-weight:800">How you win depends on your current team.</span>
+        <div class="divider"></div>
+        <span id="soloPowerDesc" style="font-weight:800">⚡ Loading your Solo Team Power…</span>
+        <span id="soloPowerHint" class="muted" style="margin-top:5px">One use per Solo challenge.</span>
+        <button class="btn secondary wide" id="soloPowerBtn" type="button" style="margin-top:9px" disabled>⚡ Solo Team Power</button>
       </div>` : `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <span id="teamPowerDesc">One use per game.</span>
@@ -1948,6 +1961,97 @@ async function refreshTeamPowerUI() {
       }
     }
 
+    if(soloModeActive && currentUser){
+      const powerBtn=$("soloPowerBtn");
+      const powerDesc=$("soloPowerDesc");
+      const powerHint=$("soloPowerHint");
+      Promise.all([
+        get(ref(db,`profiles/${currentUser.uid}`)),
+        get(ref(db,`rooms/${room}/soloPowerFamily/${currentUser.uid}`)),
+        get(ref(db,`rooms/${room}/soloPowerUsed/${currentUser.uid}`))
+      ]).then(async ([profileSnap,familySnap,usedSnap])=>{
+        const team=(profileSnap.exists()?profileSnap.val()?.team:null)||"unassigned";
+        let family=familySnap.exists()?familySnap.val():null;
+        if(!family){
+          family=team==="unassigned"?["rock","paper","scissors"][Math.floor(Math.random()*3)]:team;
+          await set(ref(db,`rooms/${room}/soloPowerFamily/${currentUser.uid}`),family);
+        }
+        soloPowerFamily=family;
+        soloPowerUsed=usedSnap.exists() && usedSnap.val()===true;
+        const info={
+          rock:{name:"🪨 Cup Crusher",desc:"Crush 1 unwanted cup, leaving 2 choices.",rounds:[3,5]},
+          paper:{name:"📄 Quick Peek",desc:"Slow Quick Draw to 350 ms per move.",rounds:[1,4]},
+          scissors:{name:"✂️ Selective Slicer",desc:"Slice away 1 unwanted pair, leaving 4 cards.",rounds:[2,6]}
+        }[family];
+        const teamPrefix=team==="unassigned"?"🎲 Jack of All Trades → ":"";
+        if(powerDesc) powerDesc.textContent=`${teamPrefix}${info.name}`;
+        const available=info.rounds.includes(round);
+        if(powerHint) powerHint.textContent=soloPowerUsed
+          ?"Used up for this Solo challenge."
+          : available
+            ?"Available this round. One use per Solo challenge."
+            : `Save it for ${family==="rock"?"Cup Shuffle":family==="paper"?"Quick Draw":"Match the Cards"}.`;
+        if(powerBtn){
+          powerBtn.disabled=soloPowerUsed || !available || soloPowerActive;
+          powerBtn.style.opacity=powerBtn.disabled?".5":"1";
+          powerBtn.textContent=soloPowerUsed?"⚡ Solo Power Already Used":soloPowerActive?`⚡ ${info.name.replace(/^[^ ]+ /,"")} Active`:`⚡ Use ${info.name.replace(/^[^ ]+ /,"")}`;
+          powerBtn.onclick=async()=>{
+            if(soloPowerUsed || soloPowerActive || !available) return;
+            soloPowerActive=true;
+            soloPowerUsed=true;
+            await set(ref(db,`rooms/${room}/soloPowerUsed/${currentUser.uid}`),true);
+            if(family==="paper"){
+              soloQuickDrawDelay=350;
+              toast("📄 Quick Peek active — Quick Draw is slower!");
+              renderMovePicker();
+              return;
+            }
+            if(family==="rock"){
+              // Regular Cup Crusher removes one random unwanted cup. It helps,
+              // but still leaves the player with two cups to choose from.
+              if(!soloCupMoves.length) soloCupMoves=["rock","paper","scissors"];
+              const crushIndex=Math.floor(Math.random()*soloCupMoves.length);
+              const crushed=soloCupMoves[crushIndex];
+              const grid=$("soloCupGrid");
+              if(grid){
+                const buttons=[...grid.querySelectorAll("[data-solo-cup]")];
+                if(buttons[crushIndex]){
+                  buttons[crushIndex].disabled=true;
+                  buttons[crushIndex].innerHTML=`💥<span style="display:block;font-size:12px;margin-top:4px">Crushed</span>`;
+                }
+              }
+              const status=$("soloCupStatus"); if(status) status.textContent=`Cup Crusher removed 1 cup (${hands[crushed]}). Pick from the 2 cups left.`;
+            }else{
+              // Regular Selective Slicer removes one whole move-pair, leaving
+              // four cards and two possible matching moves.
+              if(!soloCardDeck.length){
+                soloCardDeck=["rock","rock","paper","paper","scissors","scissors"];
+                for(let i=soloCardDeck.length-1;i>0;i--){
+                  const j=Math.floor(Math.random()*(i+1));
+                  [soloCardDeck[i],soloCardDeck[j]]=[soloCardDeck[j],soloCardDeck[i]];
+                }
+              }
+              const pairToCut=moves[Math.floor(Math.random()*moves.length)];
+              const grid=$("soloCardGrid");
+              if(grid){
+                [...grid.querySelectorAll("[data-solo-card]")].forEach((button,i)=>{
+                  if(soloCardDeck[i]===pairToCut){
+                    button.disabled=true;
+                    button.textContent="✂️";
+                    button.dataset.sliced="true";
+                  }
+                });
+              }
+              const status=$("soloCardStatus"); if(status) status.textContent=`Selective Slicer removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`;
+            }
+            const waiting=$("waitingNote"); if(waiting) waiting.textContent="Solo Team Power used — finish the minigame to lock in your move.";
+            if(powerBtn){ powerBtn.disabled=true; powerBtn.style.opacity=".5"; powerBtn.textContent="⚡ Solo Power Already Used"; }
+            if(powerHint) powerHint.textContent="Used up for this Solo challenge.";
+          };
+        }
+      }).catch(()=>{ if(powerDesc) powerDesc.textContent="⚡ Solo Team Power unavailable right now."; });
+    }
+
     if((soloModeActive && (round===1 || round===4)) || (!soloModeActive && round===quickDrawRound && !rollDiceModeActive)){
       if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
       const display=$("quickDrawDisplay");
@@ -1964,7 +2068,7 @@ async function refreshTeamPowerUI() {
         quickDrawTimer=setInterval(()=>{
           quickDrawIndex=(quickDrawIndex+1)%3;
           paintQuickDraw();
-        },220);
+        },soloQuickDrawDelay);
         quickBtn.onclick=()=>{
           const landed=moves[quickDrawIndex%3];
           selectedMove=landed;
