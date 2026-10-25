@@ -1045,6 +1045,14 @@ const db = getDatabase(firebaseApp);
   }
 
   async function createRoom() {
+    // Starting a new game must never be blocked by a stale/lost previous room.
+    if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+    forgetRoom();
+    onlineRoom=false;
+    isHost=false;
+    room="";
+    players=[];
+
     try {
       const user = await ensureSignedIn();
       room = await makeUniqueRoomCode();
@@ -3487,6 +3495,12 @@ async function refreshTeamPowerUI() {
       return true;
     }catch(error){
       console.warn("Could not restore game after refresh",error);
+      if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+      forgetRoom();
+      onlineRoom=false;
+      isHost=false;
+      room="";
+      players=[];
       show("home");
       return false;
     }
