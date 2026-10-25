@@ -3199,6 +3199,7 @@ async function refreshTeamPowerUI() {
             points:Number(finalScores[currentUser.uid]||0),
             players:1,
             solo:true,
+            roundsPlayed:soloRoundsPlayed,
             endedAt:Date.now()
           };
           const trimmedRecent=Object.entries(recentGames)
