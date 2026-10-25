@@ -864,7 +864,7 @@ const db = getDatabase(firebaseApp);
         <div class="result-row"><b>✂️ Scissors</b><b class="score">${Number(p.moveWinPoints?.scissors||0)}</b></div>
       </div>
       <div class="section-label">Recent games</div>
-      <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${g.solo?"Solo":`${Number(g.players||0)} players`}</div></div><b class="score">${Number(g.points||0)} pts</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
+      <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${g.solo?"Solo":`${Number(g.players||0)} players`}</div></div><b class="score">${g.solo?`${Number(g.roundsPlayed||7)} rounds`:`${Number(g.points||0)} pts`}</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
     const statsStoreBtn=$("statsChaosStoreBtn");
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
       chaosPointsReturnScreen="stats";
