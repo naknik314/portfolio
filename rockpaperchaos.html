@@ -327,7 +327,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 <div id="app">
   <div class="wrap">
     <header class="top">
-      <div class="brand"><div class="logo" aria-label="Dice icon">🎲</div><span>RPS WITH A TWIST</span></div>
+      <div class="brand"><div class="logo" aria-label="Dice icon"><span id="rpsDieLogo" aria-label="Rock Paper Scissors die" style="display:inline-grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);width:48px;height:48px;padding:5px;box-sizing:border-box;border:3px solid currentColor;border-radius:11px;line-height:1;background:rgba(255,255,255,.12);align-items:center;justify-items:center;transform:rotate(-4deg)">
+  <span style="font-size:16px;grid-column:1;grid-row:1">✊</span>
+  <span style="font-size:16px;grid-column:2;grid-row:1">✋</span>
+  <span style="font-size:16px;grid-column:1 / span 2;grid-row:2">✌️</span>
+</span></div><span>RPS WITH A TWIST</span></div>
       <span class="pill">PARTY MODE · 2–8 PLAYERS</span>
     </header>
 
@@ -628,6 +632,7 @@ const db = getDatabase(firebaseApp);
   const screens = ["reconnecting","home","newGameGuide","openRoomsScreen","lobby","chaosPoints","game","stats","end"];
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
+
   const botNames = ["Byte Bot","Pixel Bot","Circuit Bot","Beep Bot","Chaos Droid","Gear Bot","Zap Bot","Robo Rumble"];
 
   const themedNames = [
