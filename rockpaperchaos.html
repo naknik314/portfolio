@@ -977,7 +977,12 @@ const db = getDatabase(firebaseApp);
       onlineRoom = true;
       quickDrawRound = Number(data.quickDrawRound || 0) || null;
       predictionMode = data.predictionMode === "optional" ? "optional" : "required";
-      soloModeActive = data.soloMode?.[currentUser?.uid] === true;
+      const roomMarksSolo = data.soloMode?.[currentUser?.uid] === true;
+      const soloPlayingFallback = data.status==="playing" &&
+        players.length===1 &&
+        players[0]?.uid===currentUser?.uid &&
+        data.soloMoves!=null;
+      soloModeActive = roomMarksSolo || soloPlayingFallback;
 
       if (data.status === "lobby") {
         renderLobby();
@@ -1231,7 +1236,11 @@ const db = getDatabase(firebaseApp);
     quickDrawRound=soloModeActive?1:quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
     await update(ref(db, `rooms/${room}`), {
       status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
-      quickDrawRound, predictionMode, soloMoves:soloModeActive?{rock:0,paper:0,scissors:0}:null, soloResult:null, soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null, updatedAt:Date.now()
+      quickDrawRound, predictionMode,
+      soloMode:soloModeActive?{[currentUser.uid]:true}:null,
+      soloMoves:soloModeActive?{rock:0,paper:0,scissors:0}:null,
+      soloResult:null, soloRewardPaid:null, soloPowerFamily:null, soloPowerUsed:null,
+      updatedAt:Date.now()
     });
     round = 1;
     beginRound(false);
