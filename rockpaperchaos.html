@@ -2208,9 +2208,7 @@ async function refreshTeamPowerUI() {
                 });
               }
               const status=$("soloCardStatus");
-              if(status) status.textContent=team==="unassigned"
-                ? `Selective Slicer removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`
-                : `Selective Slicer kept your ${hands[team]} ${team} team pair safe and removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`;
+              if(status) status.textContent="Selective Slicer sliced away 1 unwanted pair. The 4 remaining cards stay hidden — find and clear a matching pair.";
               }
             }
             const waiting=$("waitingNote"); if(waiting) waiting.textContent="Solo Team Power used — finish the minigame to lock in your move.";
