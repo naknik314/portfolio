@@ -1440,6 +1440,7 @@ const db = getDatabase(firebaseApp);
   let soloCardFlips=[];
   let soloCupMoves=[];
   let soloCupRevealed=false;
+  let soloCupPreviewDone=false;
   let soloSpinnerRunning=false;
   let soloPowerFamily=null;
   let soloPowerUsed=false;
@@ -1882,7 +1883,7 @@ async function refreshTeamPowerUI() {
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
-      soloCardDeck=[]; soloCardFlips=[]; soloCupMoves=[]; soloCupRevealed=false; soloSpinnerRunning=false;
+      soloCardDeck=[]; soloCardFlips=[]; soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloSpinnerRunning=false;
       soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
       showRoundIntro(round);
@@ -2115,7 +2116,7 @@ async function refreshTeamPowerUI() {
                   }
                 });
                 const status=$("soloCupStatus");
-                if(status) status.textContent=`Cup Crusher ×2 removed ${crushedMoves.map(m=>hands[m]+" "+m).join(" and ")}. Only 1 cup remains.`;
+                if(status) status.textContent="Cup Crusher ×2 crushed 2 cups. The remaining cup stays hidden — choose it to reveal your move.";
               }else{
               // Cup Crusher follows the player's ACTUAL Solo challenge team.
               // Team Rock keeps Rock safe. If another established team borrowed
@@ -2147,8 +2148,8 @@ async function refreshTeamPowerUI() {
               }
               const status=$("soloCupStatus");
               if(status) status.textContent=team==="unassigned"
-                ? `Cup Crusher removed ${hands[crushed]} ${crushed}. Pick from the 2 cups left.`
-                : `Cup Crusher kept your ${hands[team]} ${team} team move safe and crushed ${hands[crushed]} ${crushed}. Pick from the 2 cups left.`;
+                ? "Cup Crusher crushed 1 cup. The 2 remaining cups stay hidden — pick one."
+                : "Cup Crusher crushed 1 unwanted cup. The 2 remaining cups stay hidden — pick one.";
               }
             }else{
               if(soloPowerUpgraded){
@@ -2294,18 +2295,25 @@ async function refreshTeamPowerUI() {
         soloCupMoves=["rock","paper","scissors"];
         for(let i=soloCupMoves.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [soloCupMoves[i],soloCupMoves[j]]=[soloCupMoves[j],soloCupMoves[i]]; }
       }
-      if(preview) preview.innerHTML=soloCupMoves.map((m,i)=>`
-        <div style="min-width:82px">
-          <div style="font-size:46px">${hands[m]}</div>
-          <div style="font-size:13px;font-weight:900;margin-top:4px">Cup ${i+1}</div>
-        </div>`).join("");
+      if(preview){
+        preview.innerHTML=soloCupPreviewDone
+          ? "<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — the cups are shuffled!</div>"
+          : soloCupMoves.map((m,i)=>`
+              <div style="min-width:82px">
+                <div style="font-size:46px">${hands[m]}</div>
+                <div style="font-size:13px;font-weight:900;margin-top:4px">Cup ${i+1}</div>
+              </div>`).join("");
+      }
       if(grid) grid.innerHTML=[0,1,2].map(i=>`<button class="btn secondary" data-solo-cup="${i}" style="min-height:86px;font-size:42px" ${selectedMove?"disabled":""}>🥤<span style="display:block;font-size:12px;margin-top:4px">Cup ${i+1}</span></button>`).join("");
-      if(!selectedMove){
+      if(!selectedMove && !soloCupPreviewDone){
         if(status) status.textContent="Memorize the three moves before they hide…";
         setTimeout(()=>{
+          soloCupPreviewDone=true;
           if(preview) preview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — the cups are shuffled!</div>";
           if(status) status.textContent="Pick a cup to reveal the move underneath.";
         },1000);
+      }else if(!selectedMove && status){
+        status.textContent="Pick a cup to reveal the move underneath.";
       }
       grid?.querySelectorAll("[data-solo-cup]").forEach(btn=>btn.onclick=()=>{
         if(selectedMove) return;
