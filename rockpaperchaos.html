@@ -399,7 +399,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <button class="btn secondary wide" id="dontShowGameGuide" style="margin-top:10px">Don’t show game rules again</button>
             </div>
           </div>
-          <div class="tutorial-step"><strong>⚡ Team Powers</strong><div class="muted" style="margin-top:8px;font-size:12px">🎯 <b>Solo Mode:</b> Team Powers, Double Agent, and Power Swap are also available in Solo Mode, with Solo-specific powers.</div><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>🎲 Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul></div>
+          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>🎲 Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul></div>
         </div>
         <button class="btn wide" id="continueToGame">Continue to game →</button>
       </div>
@@ -412,7 +412,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <button class="btn ghost" id="backFromOpenRooms">← Back</button>
         </div>
         <div id="openRooms" class="results-list" style="margin-top:12px">
-          <div class="rule-card"><span>Looking for open games…</span></div>
+          
+<div style="height:12px"></div>
+<div class="muted" style="padding-top:10px;border-top:1px solid var(--border);font-size:12px">
+  🎯 <b>Solo Mode:</b> Solo Mode has its own Team Powers: 🪨 Cup Crusher, 📄 Quick Peek, and ✂️ Selective Slicer. Team Unpredictable gets one of the three. These are separate from the regular multiplayer Team Powers.
+</div>
+<div class="rule-card"><span>Looking for open games…</span></div>
         </div>
         <button class="btn secondary wide" id="refreshRooms" style="margin-top:12px">↻ Refresh games</button>
       </div>
@@ -498,7 +503,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>🎯 Solo Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Solo Mode</summary>
-                <span style="display:block;margin-top:10px">Solo Mode is available only when you are the only player in the Game Lobby. It has 7 minigame rounds in a mixed order: <b>Quick Draw, Match the Cards, Cup Shuffle, Quick Draw, Cup Shuffle, Match the Cards, then a final Chaos Spinner.</b> <b>How you win depends on your current team.</b></span>
+                <span style="display:block;margin-top:10px">Solo Mode is available only when you are the only player in the Game Lobby. It has 7 minigame rounds featuring <b>Quick Draw, Match the Cards, Cup Shuffle, and a final Chaos Spinner.</b> <b>How you win depends on your current team.</b></span>
                 <span>🪨 <b>Team Rock:</b> land on Rock at least 4 out of 7 times.</span>
                 <span>📄 <b>Team Paper:</b> land on Paper at least 4 out of 7 times.</span>
                 <span>✂️ <b>Team Scissors:</b> land on Scissors at least 4 out of 7 times.</span>
