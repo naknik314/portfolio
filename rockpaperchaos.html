@@ -1325,7 +1325,8 @@ const db = getDatabase(firebaseApp);
     const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
     await update(profileRef,{chaosPoints:balance+SOLO_MODE_COST,updatedAt:Date.now()});
     await remove(modeRef);
-    soloModeActive=false;
+    soloModeActive=false; soloPowerUpgraded=false;
+    await set(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`),null);
     toast(`Solo Mode canceled — ${SOLO_MODE_COST} Chaos Points refunded.`);
     await refreshChaosPointsPageBalance();
     await refreshSoloModeLobby();
@@ -1352,7 +1353,8 @@ const db = getDatabase(firebaseApp);
     if(balance<SOLO_MODE_COST) return toast("Not enough Chaos Points.");
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
-    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false;
+    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false;
+    await set(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`),false);
     activeTeamPower=null; teamPowerArmed=false;
     toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
     await refreshChaosPointsPageBalance();
@@ -1434,6 +1436,8 @@ const db = getDatabase(firebaseApp);
   let soloPowerFamily=null;
   let soloPowerUsed=false;
   let soloPowerActive=false;
+  let soloPowerUpgraded=false;
+  const SOLO_POWER_X2_COST=10;
   let soloQuickDrawDelay=220;
   function chooseCupCrusherX2Targets(cupMoves,team="unassigned"){
     const indexed=cupMoves.map((m,i)=>({m,i}));
@@ -1979,6 +1983,8 @@ async function refreshTeamPowerUI() {
         <span id="soloPowerDesc" style="font-weight:800">⚡ Loading your Solo Team Power…</span>
         <span id="soloPowerHint" class="muted" style="margin-top:5px">One use per Solo challenge.</span>
         <button class="btn secondary wide" id="soloPowerBtn" type="button" style="margin-top:9px" disabled>⚡ Solo Team Power</button>
+        <button class="btn secondary wide" id="soloPowerUpgradeBtn" type="button" style="margin-top:7px" disabled>⚡ Upgrade to ×2 — 10 CP</button>
+        <span id="soloPowerUpgradeHint" class="muted" style="margin-top:5px">Buy the ×2 buff any time before using your Solo power.</span>
       </div>` : `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <span id="teamPowerDesc">One use per game.</span>
@@ -2012,11 +2018,14 @@ async function refreshTeamPowerUI() {
       const powerBtn=$("soloPowerBtn");
       const powerDesc=$("soloPowerDesc");
       const powerHint=$("soloPowerHint");
+      const upgradeBtn=$("soloPowerUpgradeBtn");
+      const upgradeHint=$("soloPowerUpgradeHint");
       Promise.all([
         get(ref(db,`profiles/${currentUser.uid}`)),
         get(ref(db,`rooms/${room}/soloPowerFamily/${currentUser.uid}`)),
-        get(ref(db,`rooms/${room}/soloPowerUsed/${currentUser.uid}`))
-      ]).then(async ([profileSnap,familySnap,usedSnap])=>{
+        get(ref(db,`rooms/${room}/soloPowerUsed/${currentUser.uid}`)),
+        get(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`))
+      ]).then(async ([profileSnap,familySnap,usedSnap,upgradeSnap])=>{
         const team=(profileSnap.exists()?profileSnap.val()?.team:null)||"unassigned";
         let family=familySnap.exists()?familySnap.val():null;
         if(!family){
@@ -2025,13 +2034,42 @@ async function refreshTeamPowerUI() {
         }
         soloPowerFamily=family;
         soloPowerUsed=usedSnap.exists() && usedSnap.val()===true;
+        soloPowerUpgraded=upgradeSnap.exists() && upgradeSnap.val()===true;
+        const balance=Number((profileSnap.exists()?profileSnap.val()?.chaosPoints:0)||0);
         const info={
           rock:{name:"🪨 Cup Crusher",desc:"Crush 1 unwanted cup, leaving 2 choices.",rounds:[3,5]},
           paper:{name:"📄 Quick Peek",desc:"Slow Quick Draw to 350 ms per move.",rounds:[1,4]},
           scissors:{name:"✂️ Selective Slicer",desc:"Slice away 1 unwanted pair, leaving 4 cards.",rounds:[2,6]}
         }[family];
         const teamPrefix=team==="unassigned"?"🎲 Jack of All Trades → ":"";
-        if(powerDesc) powerDesc.textContent=`${teamPrefix}${info.name} — ${info.desc}`;
+        const level=SOLO_POWER_LEVELS[family];
+        const shownName=soloPowerUpgraded?level.swapped:level.regular;
+        const shownEffect=soloPowerUpgraded?level.swappedEffect:level.regularEffect;
+        if(powerDesc) powerDesc.textContent=`${teamPrefix}${hands[family]} ${shownName} — ${shownEffect}.`;
+        if(upgradeBtn){
+          upgradeBtn.disabled=soloPowerUsed || soloPowerUpgraded || balance<SOLO_POWER_X2_COST;
+          upgradeBtn.style.opacity=upgradeBtn.disabled?".5":"1";
+          upgradeBtn.textContent=soloPowerUpgraded?"⚡ ×2 Upgrade Active":soloPowerUsed?"⚡ ×2 Upgrade Unavailable — Power Used":`⚡ Upgrade ${level.regular} to ×2 — ${SOLO_POWER_X2_COST} CP`;
+          if(upgradeHint) upgradeHint.textContent=soloPowerUpgraded
+            ? `${level.swapped} is active for this Solo challenge.`
+            : soloPowerUsed
+              ? "The ×2 buff must be bought before your Solo power is used."
+              : balance<SOLO_POWER_X2_COST
+                ? `You have ${balance} CP. The ×2 buff costs ${SOLO_POWER_X2_COST} CP.`
+                : `You have ${balance} CP. Buy the ×2 buff now or later before using the power.`;
+          upgradeBtn.onclick=async()=>{
+            if(soloPowerUsed || soloPowerUpgraded) return;
+            const freshSnap=await get(ref(db,`profiles/${currentUser.uid}`));
+            const fresh=freshSnap.exists()?freshSnap.val():blankProfile();
+            const freshBalance=Number(fresh.chaosPoints==null?fresh.totalPoints||0:fresh.chaosPoints);
+            if(freshBalance<SOLO_POWER_X2_COST) return toast("Not enough Chaos Points for the ×2 Solo buff.");
+            await update(ref(db,`profiles/${currentUser.uid}`),{chaosPoints:freshBalance-SOLO_POWER_X2_COST,updatedAt:Date.now()});
+            await set(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`),true);
+            soloPowerUpgraded=true;
+            toast(`⚡ ${level.swapped} active — ${SOLO_POWER_X2_COST} Chaos Points spent.`);
+            renderMovePicker();
+          };
+        }
         const available=info.rounds.includes(round);
         if(powerHint) powerHint.textContent=soloPowerUsed
           ?"Used up for this Solo challenge."
@@ -2041,19 +2079,36 @@ async function refreshTeamPowerUI() {
         if(powerBtn){
           powerBtn.disabled=soloPowerUsed || !available || soloPowerActive;
           powerBtn.style.opacity=powerBtn.disabled?".5":"1";
-          powerBtn.textContent=soloPowerUsed?"⚡ Solo Power Already Used":soloPowerActive?`⚡ ${info.name.replace(/^[^ ]+ /,"")} Active`:`⚡ Use ${info.name.replace(/^[^ ]+ /,"")}`;
+          const actionName=soloPowerUpgraded?SOLO_POWER_LEVELS[family].swapped:SOLO_POWER_LEVELS[family].regular;
+          powerBtn.textContent=soloPowerUsed?"⚡ Solo Power Already Used":soloPowerActive?`⚡ ${actionName} Active`:`⚡ Use ${actionName}`;
           powerBtn.onclick=async()=>{
             if(soloPowerUsed || soloPowerActive || !available) return;
             soloPowerActive=true;
             soloPowerUsed=true;
             await set(ref(db,`rooms/${room}/soloPowerUsed/${currentUser.uid}`),true);
             if(family==="paper"){
-              soloQuickDrawDelay=350;
-              toast("📄 Quick Peek active — Quick Draw is slower!");
+              soloQuickDrawDelay=soloPowerUpgraded?700:350;
+              toast(soloPowerUpgraded?"📄 Quick Peek ×2 active — Quick Draw is 700 ms per move!":"📄 Quick Peek active — Quick Draw is slower!");
               renderMovePicker();
               return;
             }
             if(family==="rock"){
+              if(soloPowerUpgraded){
+                if(!soloCupMoves.length) soloCupMoves=["rock","paper","scissors"];
+                const crushIndices=chooseCupCrusherX2Targets(soloCupMoves,team);
+                const grid=$("soloCupGrid");
+                const buttons=grid?[...grid.querySelectorAll("[data-solo-cup]")]:[];
+                const crushedMoves=[];
+                crushIndices.forEach(i=>{
+                  crushedMoves.push(soloCupMoves[i]);
+                  if(buttons[i]){
+                    buttons[i].disabled=true;
+                    buttons[i].innerHTML=`💥<span style="display:block;font-size:12px;margin-top:4px">Crushed</span>`;
+                  }
+                });
+                const status=$("soloCupStatus");
+                if(status) status.textContent=`Cup Crusher ×2 removed ${crushedMoves.map(m=>hands[m]+" "+m).join(" and ")}. Only 1 cup remains.`;
+              }else{
               // Cup Crusher follows the player's ACTUAL Solo challenge team.
               // Team Rock keeps Rock safe. If another established team borrowed
               // Cup Crusher through Double Agent, that team's move stays safe.
@@ -2086,7 +2141,30 @@ async function refreshTeamPowerUI() {
               if(status) status.textContent=team==="unassigned"
                 ? `Cup Crusher removed ${hands[crushed]} ${crushed}. Pick from the 2 cups left.`
                 : `Cup Crusher kept your ${hands[team]} ${team} team move safe and crushed ${hands[crushed]} ${crushed}. Pick from the 2 cups left.`;
+              }
             }else{
+              if(soloPowerUpgraded){
+                if(!soloCardDeck.length){
+                  soloCardDeck=["rock","rock","paper","paper","scissors","scissors"];
+                  for(let i=soloCardDeck.length-1;i>0;i--){
+                    const j=Math.floor(Math.random()*(i+1));
+                    [soloCardDeck[i],soloCardDeck[j]]=[soloCardDeck[j],soloCardDeck[i]];
+                  }
+                }
+                const pairsToCut=chooseSelectiveSlicerX2Pairs(team);
+                const grid=$("soloCardGrid");
+                if(grid){
+                  [...grid.querySelectorAll("[data-solo-card]")].forEach((button,i)=>{
+                    if(pairsToCut.includes(soloCardDeck[i])){
+                      button.disabled=true;
+                      button.textContent="✂️";
+                      button.dataset.sliced="true";
+                    }
+                  });
+                }
+                const status=$("soloCardStatus");
+                if(status) status.textContent=`Selective Slicer ×2 removed the ${pairsToCut.map(m=>hands[m]+" "+m).join(" and ")} pairs. The remaining pair is your match.`;
+              }else{
               // Selective Slicer follows the player's ACTUAL Solo challenge
               // team, matching Cup Crusher's strategy rules.
               if(!soloCardDeck.length){
@@ -2118,6 +2196,7 @@ async function refreshTeamPowerUI() {
               if(status) status.textContent=team==="unassigned"
                 ? `Selective Slicer removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`
                 : `Selective Slicer kept your ${hands[team]} ${team} team pair safe and removed the ${hands[pairToCut]} pair. Find a match among the 4 cards left.`;
+              }
             }
             const waiting=$("waitingNote"); if(waiting) waiting.textContent="Solo Team Power used — finish the minigame to lock in your move.";
             if(powerBtn){ powerBtn.disabled=true; powerBtn.style.opacity=".5"; powerBtn.textContent="⚡ Solo Power Already Used"; }
@@ -3335,7 +3414,7 @@ async function refreshTeamPowerUI() {
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,quickDrawRound:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null,soloPowerUpgraded:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
