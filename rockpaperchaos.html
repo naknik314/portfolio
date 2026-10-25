@@ -2213,10 +2213,18 @@ async function refreshTeamPowerUI() {
                 const candidates=moves.filter(m=>m!==team);
                 pairToCut=candidates[Math.floor(Math.random()*candidates.length)];
               }
+              // Regular Selective Slicer removes one pair from the actual
+              // Match-the-Cards state, not just visually. This leaves four
+              // playable hidden cards and two possible pairs.
+              soloCardMatched=soloCardDeck
+                .map((m,i)=>m===pairToCut?i:null)
+                .filter(i=>i!==null);
+              soloCardFlips=[];
+
               const grid=$("soloCardGrid");
               if(grid){
                 [...grid.querySelectorAll("[data-solo-card]")].forEach((button,i)=>{
-                  if(soloCardDeck[i]===pairToCut){
+                  if(soloCardMatched.includes(i)){
                     button.disabled=true;
                     button.textContent="✂️";
                     button.dataset.sliced="true";
@@ -2224,7 +2232,7 @@ async function refreshTeamPowerUI() {
                 });
               }
               const status=$("soloCardStatus");
-              if(status) status.textContent="Selective Slicer sliced away 1 unwanted pair. The 4 remaining cards stay hidden — find and clear a matching pair.";
+              if(status) status.textContent="Selective Slicer sliced away 1 unwanted pair. That pair is already eliminated. The 4 remaining cards stay hidden — find and clear a matching pair.";
               }
             }
             const waiting=$("waitingNote"); if(waiting) waiting.textContent="Solo Team Power used — finish the minigame to lock in your move.";
