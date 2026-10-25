@@ -3482,13 +3482,35 @@ async function refreshTeamPowerUI() {
       isHost=data.hostUid===currentUser.uid || membership.host===true;
       onlineRoom=true;
       quickDrawRound=Number(data.quickDrawRound||0)||null;
-      predictionMode=data.predictionMode==="optional"?"optional":"required";
+      predictionMode=data.predictionMode==="required"?"required":"optional";
 
       // A refresh creates fresh local UI state. Firebase decides whether the
       // player is waiting, revealing, in the lobby, or finished.
       preparedRound=null;
       selectedMove=null; targetId=null; predictedMove=null;
       teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+
+      // Route immediately instead of leaving the reconnect screen visible
+      // while waiting for the realtime listener's first callback.
+      if(data.status==="lobby"){
+        show("lobby");
+        renderLobby(data);
+      }else if(data.status==="finished"){
+        show("end");
+        renderEnd(data.scores||{});
+      }else if(data.status==="playing"){
+        round=Number(data.round||1);
+        show("game");
+        beginRound(true);
+      }else{
+        // Unknown/stale room state: release it rather than trapping the player.
+        if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+        forgetRoom();
+        onlineRoom=false; isHost=false; room=""; players=[];
+        show("home");
+        toast("That old game is no longer active. You can start a new one.");
+        return false;
+      }
 
       listenToRoom(code);
       toast("Reconnected to your game.");
