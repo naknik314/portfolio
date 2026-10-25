@@ -2313,7 +2313,7 @@ async function refreshTeamPowerUI() {
         grid.innerHTML=soloCardDeck.map((m,i)=>{
           const cleared=soloCardMatched.includes(i);
           const face=soloCardFlips.includes(i)||selectedMove;
-          return `<button class="btn secondary" data-solo-card="${i}" style="min-height:78px;font-size:${face?"34px":"28px"};${cleared?"opacity:.3":""}" ${(selectedMove||cleared)?"disabled":""}>${cleared?"✓":face?hands[m]:"?"}</button>`;
+          return `<button class="btn secondary" data-solo-card="${i}" style="min-height:78px;font-size:${face?"34px":"28px"};${cleared?"opacity:.3":""}" ${(selectedMove||cleared)?"disabled":""}>${cleared?"✂️":face?hands[m]:"?"}</button>`;
         }).join("");
         grid.querySelectorAll("[data-solo-card]").forEach(btn=>btn.onclick=()=>{
           const idx=Number(btn.dataset.soloCard);
