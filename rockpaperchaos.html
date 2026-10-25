@@ -2177,8 +2177,24 @@ async function refreshTeamPowerUI() {
                     }
                   });
                 }
-                const status=$("soloCardStatus");
-                if(status) status.textContent=`Selective Slicer ×2 removed the ${pairsToCut.map(m=>hands[m]+" "+m).join(" and ")} pairs. The remaining pair is your match.`;
+                // With the last-pair rule, ×2 removes two unwanted pairs and
+                // immediately awards the one untouched pair as the Solo move.
+                // Count every sliced card as already eliminated in the
+                // Match-the-Cards state. Otherwise the card renderer can still
+                // treat the untouched pair as the first manually-cleared pair.
+                soloCardMatched=soloCardDeck
+                  .map((m,i)=>pairsToCut.includes(m)?i:null)
+                  .filter(i=>i!==null);
+                soloCardFlips=[];
+
+                const remainingPair=moves.find(m=>!pairsToCut.includes(m));
+                if(remainingPair){
+                  selectedMove=remainingPair;
+                  const status=$("soloCardStatus");
+                  if(status) status.textContent=`Selective Slicer ×2 sliced away 2 unwanted pairs. ${hands[remainingPair]} ${remainingPair[0].toUpperCase()+remainingPair.slice(1)} is the last pair and automatically becomes your move.`;
+                  const lock=$("lockBtn");
+                  if(lock){ lock.disabled=false; lock.style.opacity="1"; lock.onclick=submitTurn; }
+                }
               }else{
               // Selective Slicer follows the player's ACTUAL Solo challenge
               // team, matching Cup Crusher's strategy rules.
