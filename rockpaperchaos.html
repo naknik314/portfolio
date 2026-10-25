@@ -1879,7 +1879,7 @@ async function refreshTeamPowerUI() {
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
-      soloCardDeck=[]; soloCardFlips=[]; soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloSpinnerRunning=false;
+      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloSpinnerRunning=false;
       soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
       showRoundIntro(round);
@@ -1894,7 +1894,7 @@ async function refreshTeamPowerUI() {
       const soloRoundInfo = (round===1 || round===4)
         ? ["🎯 Quick Draw","Time your stop to land on Rock, Paper, or Scissors."]
         : (round===2 || round===6)
-          ? ["🃏 Match the Cards","Flip cards until you find your first matching pair. That pair becomes your move."]
+          ? ["🃏 Match the Cards","Find and clear matching pairs. The last pair remaining determines your move."]
           : (round===3 || round===5)
             ? ["🥤 Cup Shuffle","Track the hidden moves, then choose a cup. The move underneath becomes your move."]
             : ["🎡 Chaos Spinner","Spin the final wheel. Wherever it lands becomes your Round 7 move."];
@@ -1942,9 +1942,9 @@ async function refreshTeamPowerUI() {
       </div>` : (round===2 || round===6) ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🃏 Match the Cards</strong>
-        <span>There are 2 Rock, 2 Paper, and 2 Scissors cards. Flip two at a time. Your first matching pair becomes your move.</span>
+        <span>There are 2 Rock, 2 Paper, and 2 Scissors cards. Flip two at a time and clear matching pairs. The last pair remaining determines your move.</span>
         <div id="soloCardGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px"></div>
-        <span id="soloCardStatus" class="muted" style="margin-top:9px">${selectedMove?`Matched ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}!`:"Find your first pair."}</span>
+        <span id="soloCardStatus" class="muted" style="margin-top:9px">${selectedMove?`Last pair: ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)}!`:"Find and clear a matching pair."}</span>
       </div>` : (round===3 || round===5) ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🥤 Cup Shuffle</strong>
@@ -2260,24 +2260,33 @@ async function refreshTeamPowerUI() {
       const paintCards=()=>{
         if(!grid) return;
         grid.innerHTML=soloCardDeck.map((m,i)=>{
+          const cleared=soloCardMatched.includes(i);
           const face=soloCardFlips.includes(i)||selectedMove;
-          return `<button class="btn secondary" data-solo-card="${i}" style="min-height:78px;font-size:${face?"34px":"28px"}" ${selectedMove?"disabled":""}>${face?hands[m]:"?"}</button>`;
+          return `<button class="btn secondary" data-solo-card="${i}" style="min-height:78px;font-size:${face?"34px":"28px"};${cleared?"opacity:.3":""}" ${(selectedMove||cleared)?"disabled":""}>${cleared?"✓":face?hands[m]:"?"}</button>`;
         }).join("");
         grid.querySelectorAll("[data-solo-card]").forEach(btn=>btn.onclick=()=>{
           const idx=Number(btn.dataset.soloCard);
-          if(selectedMove || soloCardFlips.includes(idx) || soloCardFlips.length>=2) return;
+          if(selectedMove || soloCardMatched.includes(idx) || soloCardFlips.includes(idx) || soloCardFlips.length>=2) return;
           soloCardFlips.push(idx); paintCards();
           if(soloCardFlips.length===2){
             const [a,b]=soloCardFlips;
             if(soloCardDeck[a]===soloCardDeck[b]){
-              selectedMove=soloCardDeck[a];
-              if(status) status.textContent=`Match! ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)} becomes your move.`;
-              paintCards();
-              const lock=$("lockBtn"); if(lock){ lock.disabled=false; lock.style.opacity="1"; lock.onclick=submitTurn; }
-              const waiting=$("waitingNote"); if(waiting) waiting.textContent="Matching pair found. Lock your move to continue.";
+              soloCardMatched.push(a,b);
+              soloCardFlips=[];
+              const remaining=soloCardDeck.map((m,i)=>({m,i})).filter(x=>!soloCardMatched.includes(x.i));
+              if(remaining.length===2){
+                selectedMove=remaining[0].m;
+                if(status) status.textContent=`Last pair! ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)} becomes your move.`;
+                paintCards();
+                const lock=$("lockBtn"); if(lock){ lock.disabled=false; lock.style.opacity="1"; lock.onclick=submitTurn; }
+                const waiting=$("waitingNote"); if(waiting) waiting.textContent="Last matching pair determined. Lock your move to continue.";
+              }else{
+                if(status) status.textContent="Pair cleared! Find the next matching pair.";
+                paintCards();
+              }
             }else{
-              if(status) status.textContent="Not a match — try again!";
-              setTimeout(()=>{ soloCardFlips=[]; paintCards(); if(status) status.textContent="Find your first pair."; },650);
+              if(status) status.textContent="Not a match — remember those cards and try again!";
+              setTimeout(()=>{ soloCardFlips=[]; paintCards(); if(status) status.textContent="Find and clear a matching pair."; },650);
             }
           }
         });
