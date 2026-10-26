@@ -3710,9 +3710,21 @@ async function refreshTeamPowerUI() {
         const landed=earlyRoomData.rounds?.[r]?.results?.moves?.[currentUser.uid];
         if(moves.includes(landed)) earlyCounts[landed]++;
       }
-      earlySoloLocked=earlyTeam==="unassigned"
-        ? Math.max(earlyCounts.rock,earlyCounts.paper,earlyCounts.scissors)>=4
-        : Number(earlyCounts[earlyTeam]||0)>=4;
+      if(earlyTeam==="unassigned"){
+        // Team Unpredictable keeps its special suspense rule: it only ends
+        // early when a move actually reaches 4 (an immediate loss).
+        earlySoloLocked=Math.max(earlyCounts.rock,earlyCounts.paper,earlyCounts.scissors)>=4;
+      }else{
+        const teamHits=Number(earlyCounts[earlyTeam]||0);
+        const roundsRemaining=7-round;
+
+        // Rock/Paper/Scissors Solo challenges end as soon as the outcome is
+        // mathematically decided: reaching 4 wins immediately, while being
+        // unable to reach 4 even with every remaining round ends in a loss.
+        const alreadyWon=teamHits>=4;
+        const impossibleToReachFour=(teamHits+roundsRemaining)<4;
+        earlySoloLocked=alreadyWon || impossibleToReachFour;
+      }
     }
 
     if(round===7 || earlySoloLocked){
@@ -3743,7 +3755,7 @@ async function refreshTeamPowerUI() {
               : majorityMove
                 ? `${majorityMove[0].toUpperCase()+majorityMove.slice(1)} reached a clear majority of 4 out of 7.`
                 : "A move reached a clear majority of 4 out of 7.")
-          : `${team[0].toUpperCase()+team.slice(1)} landed ${Number(counts[team]||0)} out of 7 times.`;
+          : `${team[0].toUpperCase()+team.slice(1)} landed ${Number(counts[team]||0)} ${Number(counts[team]||0)===1?"time":"times"} in ${soloRoundsPlayed} ${soloRoundsPlayed===1?"round":"rounds"}.`;
         // A completed 7-round Solo game counts as one game played and one
         // game in the player's CURRENT Team Rank stretch. A successful challenge
         // also counts as a win for Win Rate. Solo does not change ties, team
