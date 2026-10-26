@@ -615,10 +615,17 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 // Firebase App Check with reCAPTCHA Enterprise / Fraud Defense.
 // Keep enforcement OFF in Firebase until valid requests appear in App Check metrics.
-const appCheck = initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaEnterpriseProvider("6LdEUP0tAAAAADEDcdh6DmRymTQTzpcwOzuOdC_h"),
-  isTokenAutoRefreshEnabled: true
-});
+// App Check should never prevent the rest of the game JavaScript from loading.
+// If App Check cannot initialize on this browser/domain, keep the UI working and
+// let Firebase return the actual database/auth error when a request is attempted.
+try {
+  initializeAppCheck(firebaseApp, {
+    provider: new ReCaptchaEnterpriseProvider("6LdEUP0tAAAAADEDcdh6DmRymTQTzpcwOzuOdC_h"),
+    isTokenAutoRefreshEnabled: true
+  });
+} catch (error) {
+  console.warn("Firebase App Check did not initialize:", error);
+}
 
 const auth = getAuth(firebaseApp);
 const db = getDatabase(firebaseApp);
@@ -3553,7 +3560,7 @@ async function refreshTeamPowerUI() {
     await createRoom();
   }
 
-  $("createBtn").onclick = ()=>{
+  $("createBtn").onclick = async ()=>{
     gameGuideOpenedFromLobby=false;
     if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
     forgetRoom();
@@ -3562,11 +3569,10 @@ async function refreshTeamPowerUI() {
     room="";
     players=[];
     predictionMode="optional";
-    if(localStorage.getItem("rpcHideGameGuide")==="1"){
-      createNewGameFromGuide();
-    }else{
-      show("newGameGuide");
-    }
+
+    // Always give immediate visual feedback. This also avoids an old saved
+    // "skip guide" preference making the button appear dead if Firebase fails.
+    show("newGameGuide");
   };
   $("skipGameGuide").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):createNewGameFromGuide();
   $("continueToGame").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):createNewGameFromGuide();
