@@ -821,6 +821,17 @@ const db = getDatabase(firebaseApp);
     const snap=await get(ref(db,`profiles/${user.uid}`));
     const p=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
     if(snap.exists() && snap.val().chaosPoints==null) p.chaosPoints=Number(p.totalPoints||0);
+    // Recalculate the displayed team immediately from the player's existing
+    // winning-move totals. This fixes old saved team values without requiring
+    // the player to finish another game first.
+    const recalculatedTeam=chooseTeam(p.moveWinPoints||{},p.team||"unassigned");
+    const savedTeam=String(p.team||"unassigned");
+    p.team=recalculatedTeam;
+    if(currentUser && recalculatedTeam!==savedTeam){
+      update(ref(db,`profiles/${currentUser.uid}`),{team:recalculatedTeam}).catch(error=>{
+        console.warn("Could not save recalculated team",error);
+      });
+    }
     const team=teamMeta[p.team]||teamMeta.unassigned;
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
     const teamGames=Math.max(0,Number(p.teamGames||0));
