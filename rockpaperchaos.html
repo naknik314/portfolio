@@ -337,7 +337,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 
 <section id="reconnecting">
       <div class="panel" style="max-width:520px;margin:72px auto;text-align:center">
-        <div style="font-size:48px;margin-bottom:10px">🎲</div>
+        <div style="margin-bottom:10px;display:flex;justify-content:center">
+          <img src="rock-paper-chaos-logo.png" alt="Rock Paper Chaos logo" style="width:56px;height:56px;object-fit:contain;display:block">
+        </div>
         <div class="eyebrow">Rock Paper Chaos</div>
         <h2 style="margin:6px 0 8px">Reconnecting to your game…</h2>
         <p class="muted" style="margin:0">Restoring your player and checking for an active room.</p>
@@ -383,7 +385,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <button type="button" class="rule-card community-team-card" data-team-bio="rock" style="text-align:center;cursor:pointer"><strong>🪨 Team Rock</strong><span id="teamRockCount">0 players</span><small class="muted">View team profile →</small></button>
           <button type="button" class="rule-card community-team-card" data-team-bio="paper" style="text-align:center;cursor:pointer"><strong>📄 Team Paper</strong><span id="teamPaperCount">0 players</span><small class="muted">View team profile →</small></button>
           <button type="button" class="rule-card community-team-card" data-team-bio="scissors" style="text-align:center;cursor:pointer"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span><small class="muted">View team profile →</small></button>
-          <button type="button" class="rule-card community-team-card" data-team-bio="unassigned" style="text-align:center;cursor:pointer"><strong>🎲 Team Unpredictable</strong><span id="teamUnpredictableCount">0 players</span><small class="muted">View team profile →</small></button>
+          <button type="button" class="rule-card community-team-card" data-team-bio="unassigned" style="text-align:center;cursor:pointer"><strong>❓ Team Unpredictable</strong><span id="teamUnpredictableCount">0 players</span><small class="muted">View team profile →</small></button>
         </div>
         
       </div>
@@ -443,7 +445,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <button class="btn secondary wide" id="dontShowGameGuide" style="margin-top:10px">Don’t show game rules again</button>
             </div>
           </div>
-          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>🎲 Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul>
+          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>❓ Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul>
 <div style="height:14px"></div>
 <span class="muted" style="display:block;font-size:13px">🎯 <b>Solo Mode:</b> Solo Mode has its own Solo-specific team powers.</span>
 </div>
@@ -602,7 +604,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <span>🪨 Barricade → <b>Stonewall</b> — blocks everyone else's positive round points before they are awarded. Barricade cannot block Stonewall because this prevents a gain rather than causing a point loss.</span>
                 <span>📄 Reprint → <b>Misprint</b> — copies the strongest negative result another player earns that round to everyone except you.</span>
                 <span>✂️ Cut in Half → <b>Cut Your Losses</b> — cancels all negative points you earn that round.</span>
-                <span>🎲 Team Unpredictable gets the swapped version of its random power.</span>
+                <span>❓ Team Unpredictable gets the swapped version of its random power.</span>
               </details>
               <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:10px">⚡ Activate Power Swap — 50 CP when used</button>
               <span id="powerReversalStatus" class="muted" style="margin-top:7px"></span>
@@ -818,7 +820,7 @@ const db = getDatabase(firebaseApp);
     rock:{label:"Team Rock",icon:"🪨"},
     paper:{label:"Team Paper",icon:"📄"},
     scissors:{label:"Team Scissors",icon:"✂️"},
-    unassigned:{label:"Team Unpredictable",icon:"🎲"}
+    unassigned:{label:"Team Unpredictable",icon:"❓"}
   };
 
   function blankProfile() {
@@ -884,13 +886,13 @@ const db = getDatabase(firebaseApp);
       ranks:"Cutting Cadet → Sharper Student → Scissor Whiz"
     },
     unassigned:{
-      title:"🎲 Team Unpredictable",
+      title:"❓ Team Unpredictable",
       tagline:"The Wild Cards",
       style:"Play style: Versatility & unpredictability",
       description:"Why choose one style when you can keep everyone guessing? Team Unpredictable belongs to players whose winning-move totals are tied, making variety part of the team's identity.",
-      power:"🎲 Random Team Power — receives Barricade, Reprint, or Cut in Half for the game.",
-      swapped:"🎲 Random Swapped Power — gets the swapped version of a random Team Power: Stonewall, Misprint, or Cut Your Losses.",
-      solo:"🎲 Random Solo Team Power — receives Cup Crusher, Quick Peek, or Selective Slicer for the Solo challenge.",
+      power:"❓ Random Team Power — receives Barricade, Reprint, or Cut in Half for the game.",
+      swapped:"❓ Random Swapped Power — gets the swapped version of a random Team Power: Stonewall, Misprint, or Cut Your Losses.",
+      solo:"❓ Random Solo Team Power — receives Cup Crusher, Quick Peek, or Selective Slicer for the Solo challenge.",
       ranks:"Random Rookie → Erratic Enthusiast → Jack of All Trades"
     }
   };
@@ -1282,7 +1284,7 @@ const db = getDatabase(firebaseApp);
         heading.textContent="✂️ Team Scissors"; basePowerName="✂️ Cut in Half";
         basePowerDesc="Cuts another player’s positive round points in half.";
       }else{
-        heading.textContent="🎲 Team Unpredictable";
+        heading.textContent="❓ Team Unpredictable";
         basePowerDesc="Get a random Rock, Paper, or Scissors team power once the game begins.";
       }
 
@@ -1943,7 +1945,7 @@ let soloCupCrusherX2Choice=null;
       if(roomData.status!=="playing"){
         return {
           key:"unpredictablePending",
-          name:"🎲 Random Team Power",
+          name:"❓ Random Team Power",
           displayName:"A random Rock, Paper, or Scissors team power",
           desc:"Your random power will be revealed after the game starts.",
           team:"unassigned",
@@ -1975,7 +1977,7 @@ let soloCupCrusherX2Choice=null;
       power.displayName=power.name;
     }
     if(isUnpredictable && power){
-      power.displayName=`🎲 Team Unpredictable → ${power.name.replace(/^[^ ]+ /,"")}`;
+      power.displayName=`❓ Team Unpredictable → ${power.name.replace(/^[^ ]+ /,"")}`;
       power.desc=`Team Unpredictable randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
     } else if(reversalActive && power){
       power.displayName=power.name;
@@ -2000,7 +2002,7 @@ let soloCupCrusherX2Choice=null;
     }
 
     if(activeTeamPower.pending){
-      desc.innerHTML=`<b style="display:block;margin-bottom:6px">🎲 Team Unpredictable</b><b>Team power: A random Rock, Paper, or Scissors team power</b><br><span class="muted">Your exact power is revealed after the game starts. One use per game.</span>`;
+      desc.innerHTML=`<b style="display:block;margin-bottom:6px">❓ Team Unpredictable</b><b>Team power: A random Rock, Paper, or Scissors team power</b><br><span class="muted">Your exact power is revealed after the game starts. One use per game.</span>`;
       btn.textContent="⚡ Random Team Power";
       btn.disabled=true;
       btn.style.opacity=".5";
@@ -2013,7 +2015,7 @@ let soloCupCrusherX2Choice=null;
     const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
     const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
-      activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
+      activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
 
     desc.innerHTML=`<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${prefix}: ${powerName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
 
@@ -2039,7 +2041,7 @@ async function refreshTeamPowerUI() {
     activeTeamPower=await loadActiveTeamPower();
     if(!activeTeamPower) return;
     if(activeTeamPower.pending){
-      $("teamPowerDesc").innerHTML=`<b style="display:block;margin-bottom:6px">🎲 Team Unpredictable</b><b>Team power: A random Rock, Paper, or Scissors team power</b><br><span class="muted">Your exact power is revealed after the game starts. One use per game.</span>`;
+      $("teamPowerDesc").innerHTML=`<b style="display:block;margin-bottom:6px">❓ Team Unpredictable</b><b>Team power: A random Rock, Paper, or Scissors team power</b><br><span class="muted">Your exact power is revealed after the game starts. One use per game.</span>`;
       btn.disabled=true;
       btn.style.opacity=".5";
       btn.textContent="⚡ Random Team Power";
@@ -2109,7 +2111,7 @@ async function refreshTeamPowerUI() {
       exactName=String(exactName).replace(/^🔄\s*Your swapped team power:\s*/i,"").replace(/^Your team power:\s*/i,"");
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
-        activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "🎲 Team Unpredictable";
+        activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
       const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
       $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
     }
@@ -2295,7 +2297,7 @@ async function refreshTeamPowerUI() {
           paper:{name:"📄 Quick Peek",desc:"Slow Quick Draw to 350 ms per move.",rounds:[1,4]},
           scissors:{name:"✂️ Selective Slicer",desc:"Slice away 1 unwanted pair, leaving 4 cards.",rounds:[2,6]}
         }[family];
-        const teamPrefix=team==="unassigned"?"🎲 Team Unpredictable → ":"";
+        const teamPrefix=team==="unassigned"?"❓ Team Unpredictable → ":"";
         const level=SOLO_POWER_LEVELS[family];
         const shownName=soloPowerUpgraded?level.swapped:level.regular;
         const shownEffect=soloPowerUpgraded?level.swappedEffect:level.regularEffect;
