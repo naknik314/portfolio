@@ -798,8 +798,8 @@ const db = getDatabase(firebaseApp);
     const level=games>=10?2:games>=5?1:0;
     const names={
       rock:["Grain of Sand","Progressing Pebble","Rock Solid"],
-      paper:["Newcomer Note","Page Pupil","Paper Prodigy"],
-      scissors:["Cutting Cadet","Sharpening Shears","Scissor Whiz"],
+      paper:["Noteworthy Newcomer","Page Pupil","Paper Prodigy"],
+      scissors:["Cutting Cadet","Sharper Student","Scissor Whiz"],
       unassigned:["Random Rookie","Erratic Enthusiast","Jack of All Trades"]
     };
     return (names[team]||names.unassigned)[level];
