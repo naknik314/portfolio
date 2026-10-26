@@ -1215,10 +1215,13 @@ const db = getDatabase(firebaseApp);
     if(!room) return toast("This game room is no longer active.");
     const bot=players.find(p=>p.uid===uid && p.bot);
     if(!bot) return toast("That computer player is no longer in the room.");
+
+    // Remove locally first so the lobby is immediately ready to add another bot.
+    players=players.filter(p=>p.uid!==uid);
+    renderLobby();
+
     try{
       await remove(ref(db,`rooms/${room}/players/${uid}`));
-      players=players.filter(p=>p.uid!==uid);
-      renderLobby();
       toast(`${bot.name} removed.`);
     }catch(error){
       console.error("Remove computer failed:",error);
@@ -1226,18 +1229,25 @@ const db = getDatabase(firebaseApp);
     }
   }
 
+  let addingComputerPlayer=false;
+
   async function addDemoPlayer() {
+    if(addingComputerPlayer) return;
     if(!isHost) return toast("Only the host can add computer rivals.");
     if(!room) return toast("This game room is no longer active.");
     if(soloModeActive) return toast("Computer rivals are unavailable while Solo Mode is active.");
     if(players.length>=8) return toast("Room is full — 8 players max.");
 
+    addingComputerPlayer=true;
+    const addButton=$("addDemo");
+    if(addButton) addButton.disabled=true;
+
     const existingNames=new Set(players.map(p=>String(p.name||"").toLowerCase()));
     const available=botNames.filter(n=>!existingNames.has(n.toLowerCase()));
-    let name=available.length
+    const name=available.length
       ? available[Math.floor(Math.random()*available.length)]
       : `Rival Bot ${Math.floor(Math.random()*900+100)}`;
-    const botId=`bot_${Date.now()}_${Math.floor(Math.random()*10000)}`;
+    const botId=`bot_${Date.now()}_${Math.floor(Math.random()*1000000)}`;
     const botData={name,bot:true,host:false,score:0,joinedAt:Date.now()};
 
     try{
@@ -1250,6 +1260,13 @@ const db = getDatabase(firebaseApp);
     }catch(error){
       console.error("Add computer failed:",error);
       toast("Couldn’t add the computer rival.");
+    }finally{
+      addingComputerPlayer=false;
+      const currentAddButton=$("addDemo");
+      if(currentAddButton){
+        currentAddButton.disabled=soloModeActive || players.length>=8 || !isHost;
+        currentAddButton.style.opacity=currentAddButton.disabled?".5":"1";
+      }
     }
   }
   function escapeHtml(value) {
@@ -3575,17 +3592,23 @@ async function refreshTeamPowerUI() {
     players=[];
     predictionMode="optional";
 
-    // Always give immediate visual feedback. This also avoids an old saved
-    // "skip guide" preference making the button appear dead if Firebase fails.
-    show("newGameGuide");
+    // Respect the saved "Don't show again" preference.
+    if(localStorage.getItem("rpcHideGameGuide")==="1"){
+      createNewGameFromGuide();
+    }else{
+      show("newGameGuide");
+    }
   };
   $("skipGameGuide").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):createNewGameFromGuide();
   $("continueToGame").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):createNewGameFromGuide();
   $("dontShowGameGuide").onclick = ()=>{
     localStorage.setItem("rpcHideGameGuide","1");
-    toast("Game rules will be skipped when you create future games. You can still open the guide from the Game Lobby.");
-    if(gameGuideOpenedFromLobby) show("lobby");
-    else createNewGameFromGuide();
+    toast("Game Guide will be skipped for future new games on this device. You can still open it from the Game Lobby.");
+    if(gameGuideOpenedFromLobby){
+      show("lobby");
+    }else{
+      createNewGameFromGuide();
+    }
   };
   $("openGameGuide").onclick = ()=>{
     gameGuideOpenedFromLobby=true;
