@@ -368,8 +368,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div><div class="section-label" style="color:var(--muted)">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
-            <button type="button" class="btn secondary" id="statsBtn">My stats 🎲</button>
+            <button type="button" class="btn secondary" id="refreshUsername"><span id="refreshUsernameEmoji">😄</span> Refresh username</button>
+            <button type="button" class="btn secondary" id="statsBtn">My stats 📊</button>
           </div>
         </div>
         <div class="start-grid">
@@ -803,7 +803,12 @@ const db = getDatabase(firebaseApp);
   function theme(name) {
     return {icon:"🎲",label:"Random game username"};
   }
+  function randomUsernameEmoji(){
+    const faces=["😄","😂","😁","😆","😊","🤪","😎","🥳","😺"];
+    return faces[Math.floor(Math.random()*faces.length)];
+  }
   function updateUsername() {
+    if($("refreshUsernameEmoji")) $("refreshUsernameEmoji").textContent=randomUsernameEmoji();
     $("chosenUsername").textContent = selectedUsername;
     $("chosenIcon").textContent = theme(selectedUsername).icon;
     $("chosenIcon").setAttribute("aria-label",theme(selectedUsername).label);
