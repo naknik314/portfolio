@@ -1550,6 +1550,7 @@ const db = getDatabase(firebaseApp);
 let soloCupShuffling=false;
 let soloCupRoundInitialized=0;
 let soloCupPreviewTimer=null;
+let soloCupShuffleCompletedRound=0;
   let soloSpinnerRunning=false;
   let soloPowerFamily=null;
   let soloPowerUsed=false;
@@ -1988,7 +1989,7 @@ async function refreshTeamPowerUI() {
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
-      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; if(soloCupPreviewTimer){ clearTimeout(soloCupPreviewTimer); soloCupPreviewTimer=null; } soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloCupRoundInitialized=0; soloSpinnerRunning=false;
+      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; if(soloCupPreviewTimer){ clearTimeout(soloCupPreviewTimer); soloCupPreviewTimer=null; } soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloCupRoundInitialized=0; soloCupShuffleCompletedRound=0; soloSpinnerRunning=false;
       soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
       showRoundIntro(round);
@@ -2533,6 +2534,7 @@ async function refreshTeamPowerUI() {
         soloCupRevealed=false;
         soloCupPreviewDone=false;
         soloCupShuffling=false;
+        soloCupShuffleCompletedRound=0;
       }
       const preview=$("soloCupPreview"), grid=$("soloCupGrid"), status=$("soloCupStatus");
       if(!soloCupMoves.length){
@@ -2548,13 +2550,16 @@ async function refreshTeamPowerUI() {
                 <div style="font-size:13px;font-weight:900;margin-top:4px">Cup ${i+1}</div>
               </div>`).join("");
       }
-      if(grid) grid.innerHTML=[0,1,2].map(i=>`<button class="btn secondary" data-solo-cup="${i}" style="min-height:86px;font-size:42px;transition:transform .22s ease" ${(selectedMove||soloCupShuffling||!soloCupPreviewDone)?"disabled":""}>🥤<span style="display:block;font-size:12px;margin-top:4px">Cup ${i+1}</span></button>`).join("");
+      if(grid) grid.innerHTML=[0,1,2].map(i=>`<button class="btn secondary" data-solo-cup="${i}" style="min-height:86px;font-size:42px;transition:transform .22s ease" ${(selectedMove||soloCupShuffling||!soloCupPreviewDone||soloCupShuffleCompletedRound!==round)?"disabled":""}>🥤<span style="display:block;font-size:12px;margin-top:4px">Cup ${i+1}</span></button>`).join("");
 
       const runCupShuffle=()=>{
-        if(soloCupShuffling || selectedMove || !grid) return;
-        const buttons=[...grid.querySelectorAll("[data-solo-cup]")];
+        if(soloCupShuffling || selectedMove) return;
+        const liveGrid=$("soloCupGrid");
+        const liveStatus=$("soloCupStatus");
+        if(!liveGrid) return;
+        const buttons=[...liveGrid.querySelectorAll("[data-solo-cup]")];
         if(buttons.length!==3){
-          if(status) status.textContent="Cup Shuffle could not start. Try the round again.";
+          if(liveStatus) liveStatus.textContent="Cup Shuffle is resetting…";
           return;
         }
 
@@ -2564,7 +2569,7 @@ async function refreshTeamPowerUI() {
           b.style.transform="";
           b.style.transition="transform .24s ease";
         });
-        if(status) status.textContent="Track the cups while they shuffle…";
+        if(liveStatus) liveStatus.textContent="Track the cups while they shuffle…";
 
         let swaps=0;
         const doSwap=()=>{
@@ -2574,7 +2579,8 @@ async function refreshTeamPowerUI() {
               b.disabled=false;
             });
             soloCupShuffling=false;
-            if(status) status.textContent="Shuffle complete — pick the cup you tracked.";
+            soloCupShuffleCompletedRound=round;
+            if(liveStatus) liveStatus.textContent="Shuffle complete — pick the cup you tracked.";
             return;
           }
 
@@ -2611,31 +2617,32 @@ async function refreshTeamPowerUI() {
 
       if(!selectedMove && !soloCupPreviewDone){
         if(status) status.textContent="Memorize the three moves before they hide…";
-
-        // IMPORTANT: renderMovePicker can run repeatedly from Firebase room
-        // updates during the same round. Do not restart this 1-second timer
-        // on every render, or Cup Shuffle can remain stuck until a refresh.
         if(!soloCupPreviewTimer){
           const cupRoundAtStart=round;
           soloCupPreviewTimer=setTimeout(()=>{
             soloCupPreviewTimer=null;
             if(!soloModeActive || round!==cupRoundAtStart || soloCupRoundInitialized!==cupRoundAtStart || selectedMove) return;
-
             soloCupPreviewDone=true;
-
-            // Re-query the live elements because the move picker may have
-            // re-rendered while the preview timer was running.
             const livePreview=$("soloCupPreview");
             if(livePreview) livePreview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — track the cups!</div>";
-
+            // Start against the CURRENT DOM, not the DOM from an older render.
             runCupShuffle();
           },1000);
         }
-      }else if(!selectedMove && !soloCupShuffling && status){
-        status.textContent="Pick a cup to reveal the move underneath.";
+      }else if(!selectedMove && soloCupPreviewDone && soloCupShuffleCompletedRound!==round && !soloCupShuffling){
+        // If a render interrupted/replaced the animated cups, restart the
+        // shuffle automatically. A page refresh is never required.
+        setTimeout(()=>{
+          if(soloModeActive && (round===3 || round===5) && !selectedMove &&
+             soloCupPreviewDone && soloCupShuffleCompletedRound!==round && !soloCupShuffling){
+            runCupShuffle();
+          }
+        },0);
+      }else if(!selectedMove && soloCupShuffleCompletedRound===round && !soloCupShuffling && status){
+        status.textContent="Shuffle complete — pick the cup you tracked.";
       }
       grid?.querySelectorAll("[data-solo-cup]").forEach(btn=>btn.onclick=()=>{
-        if(selectedMove || soloCupShuffling || !soloCupPreviewDone) return;
+        if(selectedMove || soloCupShuffling || !soloCupPreviewDone || soloCupShuffleCompletedRound!==round) return;
         const idx=Number(btn.dataset.soloCup);
         selectedMove=soloCupMoves[idx];
         soloCupRevealed=true;
