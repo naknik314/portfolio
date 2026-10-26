@@ -1466,7 +1466,7 @@ const db = getDatabase(firebaseApp);
     if(balance<SOLO_MODE_COST) return toast("Not enough Chaos Points.");
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
-    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false; soloSelectiveSlicerChoice=null; soloSelectiveSlicerX2Choice=null; soloCupCrusherChoice=null;
+    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false; soloSelectiveSlicerChoice=null; soloSelectiveSlicerX2Choice=null; soloCupCrusherChoice=null; soloCupCrusherX2Choice=null;
     await set(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`),false);
     activeTeamPower=null; teamPowerArmed=false;
     toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
@@ -1558,31 +1558,20 @@ let soloCupShuffleCompletedRound=0;
 let soloSelectiveSlicerChoice=null;
 let soloSelectiveSlicerX2Choice=null;
 let soloCupCrusherChoice=null;
+let soloCupCrusherX2Choice=null;
   let soloPowerUpgraded=false;
   const SOLO_POWER_X2_COST=10;
   let soloQuickDrawDelay=220;
   function chooseCupCrusherX2Targets(cupMoves,team="unassigned"){
     const indexed=cupMoves.map((m,i)=>({m,i}));
     if(team!=="unassigned"){
-      // Established teams (including a borrowed Double Agent family) keep
-      // their actual challenge-team move safe and crush the other two.
       return indexed.filter(x=>x.m!==team).map(x=>x.i).slice(0,2);
     }
-    const mode=String(prompt("Cup Crusher ×2: type Keep to protect the move you want, Avoid to name 2 moves to crush, or Random.")||"random").trim().toLowerCase();
-    if(mode==="keep"){
-      const keep=String(prompt("Which move should stay uncrushed? Rock, Paper, or Scissors.")||"").trim().toLowerCase();
-      if(moves.includes(keep)) return indexed.filter(x=>x.m!==keep).map(x=>x.i).slice(0,2);
-    }
-    if(mode==="avoid"){
-      const first=String(prompt("First move to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
-      const second=String(prompt("Second move to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
-      if(moves.includes(first) && moves.includes(second) && first!==second){
-        return indexed.filter(x=>x.m===first || x.m===second).map(x=>x.i).slice(0,2);
-      }
-    }
-    // Random fallback leaves one random cup.
-    const shuffled=indexed.slice().sort(()=>Math.random()-.5);
-    return shuffled.slice(0,2).map(x=>x.i);
+    const choice=soloCupCrusherX2Choice;
+    if(!choice) return null;
+    if(choice==="random") return indexed.slice().sort(()=>Math.random()-.5).slice(0,2).map(x=>x.i);
+    if(moves.includes(choice)) return indexed.filter(x=>x.m!==choice).map(x=>x.i).slice(0,2);
+    return null;
   }
 
   function chooseSelectiveSlicerX2Pairs(team="unassigned"){
@@ -1917,7 +1906,9 @@ async function refreshTeamPowerUI() {
     if(activeTeamPower.key==="scissors"){
       if(targetWrap) targetWrap.style.display="";
       if(targetChoices){
-        targetChoices.innerHTML=players.filter(p=>p.uid!==currentUser.uid).map(p=>
+        const cutCandidates=players.filter(p=>p.uid!==currentUser.uid);
+        if(cutCandidates.length===1) scissorsTargetUid=cutCandidates[0].uid;
+        targetChoices.innerHTML=cutCandidates.map(p=>
           `<button type="button" class="predict ${scissorsTargetUid===p.uid?"selected":""}" data-cut-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`
         ).join("");
         targetChoices.querySelectorAll("[data-cut-target]").forEach(b=>b.onclick=()=>{
@@ -2200,7 +2191,33 @@ async function refreshTeamPowerUI() {
             if(soloPowerUsed || soloPowerActive || !available) return;
 
             // Team Unpredictable regular Cup Crusher also uses in-game buttons.
-            if(family==="rock" && !soloPowerUpgraded && team==="unassigned" && !soloCupCrusherChoice){
+            if(family==="rock" && soloPowerUpgraded && team==="unassigned" && !soloCupCrusherX2Choice){
+        if(soloCupShuffling || soloCupShuffleCompletedRound!==round){
+          if(powerHint) powerHint.textContent="Wait for Cup Shuffle to finish before using Cup Crusher ×2.";
+          return;
+        }
+        if(powerDesc){
+          powerDesc.innerHTML=`
+            <b>Cup Crusher ×2 — which cup should stay safe?</b>
+            <div class="muted" style="margin-top:5px">The other two cups will be crushed.</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px">
+              <button type="button" class="btn secondary" data-cup-x2-choice="rock">🪨 Keep Rock</button>
+              <button type="button" class="btn secondary" data-cup-x2-choice="paper">📄 Keep Paper</button>
+              <button type="button" class="btn secondary" data-cup-x2-choice="scissors">✂️ Keep Scissors</button>
+              <button type="button" class="btn secondary" data-cup-x2-choice="random">🎲 Random</button>
+            </div>`;
+          powerDesc.querySelectorAll("[data-cup-x2-choice]").forEach(choiceBtn=>{
+            choiceBtn.onclick=()=>{
+              soloCupCrusherX2Choice=choiceBtn.dataset.cupX2Choice;
+              powerBtn.click();
+            };
+          });
+        }
+        if(powerHint) powerHint.textContent="Choose the cup to keep safe. Your Solo power is not used until you choose.";
+        return;
+      }
+
+      if(family==="rock" && !soloPowerUpgraded && team==="unassigned" && !soloCupCrusherChoice){
               if(powerDesc){
                 powerDesc.innerHTML=`
                   <b>Which move do you want to avoid?</b>
@@ -2281,6 +2298,12 @@ async function refreshTeamPowerUI() {
               if(soloPowerUpgraded){
                 if(!soloCupMoves.length) soloCupMoves=["rock","paper","scissors"];
                 const crushIndices=chooseCupCrusherX2Targets(soloCupMoves,team);
+                if(!crushIndices || crushIndices.length!==2){
+                  soloPowerUsed=false;
+                  soloPowerActive=false;
+                  return;
+                }
+                soloCupCrusherX2Choice=null;
                 const grid=$("soloCupGrid");
                 const buttons=grid?[...grid.querySelectorAll("[data-solo-cup]")]:[];
                 const crushedMoves=[];
@@ -2798,7 +2821,10 @@ async function refreshTeamPowerUI() {
           teamPowerArmed=false;
         }
       } else {
-        await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+        // Cut in Half is consumed only if it actually succeeds at resolution.
+        if(activeTeamPower?.key!=="scissors"){
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+        }
         teamPowerArmed=false;
       }
     }
@@ -3159,6 +3185,7 @@ async function refreshTeamPowerUI() {
         if(total>0){
           const reduced=Math.floor(total/2);
           scores[target.uid]=reduced;
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
           details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. 🔥 CHAOS HIT: ${target.name}'s TOTAL game score was cut from ${total} to ${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
         } else {
           details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
@@ -3171,6 +3198,7 @@ async function refreshTeamPowerUI() {
         if(gain>0){
           const reduced=Math.floor(gain/2);
           scores[target.uid]-=(gain-reduced);
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
           details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's current positive round points in half. SUCCESS: +${gain} became +${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
         } else {
           details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no positive points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
