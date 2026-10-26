@@ -3613,14 +3613,10 @@ async function refreshTeamPowerUI() {
     }
 
     if(predictionMode==="optional"){
-      const hasPointLossEvent=details.some(line=>{
-        const s=String(line||"");
-        return /-\d+/.test(s) ||
-               /negative points|negative result|cut in half|cut from|Misprint|Cut Your Losses/i.test(s);
-      });
-      if(hasPointLossEvent){
-        details.push(`ℹ️ Casual mode: points can't go below 0.`);
-      }
+      // Always show the Casual-mode floor reminder in Round Highlights.
+      // This is a mode rule, not just a prediction note, so it remains visible
+      // even in rounds where no negative event happened to match the detector.
+      details.push(`ℹ️ Casual mode: points can't go below 0.`);
     }
 
     // Round 7 — Winner Takes the Round. Normal scoring and powers resolve first.
