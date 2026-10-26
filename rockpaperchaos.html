@@ -383,6 +383,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div class="rule-card" style="text-align:center"><strong>🪨 Team Rock</strong><span id="teamRockCount">0 players</span></div>
           <div class="rule-card" style="text-align:center"><strong>📄 Team Paper</strong><span id="teamPaperCount">0 players</span></div>
           <div class="rule-card" style="text-align:center"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span></div>
+          <div class="rule-card" style="text-align:center"><strong>🎲 Team Unpredictable</strong><span id="teamUnpredictableCount">0 players</span></div>
         </div>
         
       </div>
@@ -821,11 +822,12 @@ const db = getDatabase(firebaseApp);
   async function loadCommunityTeams() {
     try {
       const snap=await get(ref(db,"profiles"));
-      const counts={rock:0,paper:0,scissors:0};
+      const counts={rock:0,paper:0,scissors:0,unassigned:0};
       if(snap.exists()) Object.values(snap.val()).forEach(p=>{ if(counts[p.team]!==undefined) counts[p.team]++; });
       $("teamRockCount").textContent=`${counts.rock} ${counts.rock===1?"player":"players"}`;
       $("teamPaperCount").textContent=`${counts.paper} ${counts.paper===1?"player":"players"}`;
       $("teamScissorsCount").textContent=`${counts.scissors} ${counts.scissors===1?"player":"players"}`;
+      $("teamUnpredictableCount").textContent=`${counts.unassigned} ${counts.unassigned===1?"player":"players"}`;
     } catch(e) { console.warn("Team counts unavailable",e); }
   }
 
