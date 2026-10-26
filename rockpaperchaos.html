@@ -787,8 +787,10 @@ const db = getDatabase(firebaseApp);
     const max=Math.max(vals.rock,vals.paper,vals.scissors);
     if(max<=0) return "unassigned";
     const leaders=Object.keys(vals).filter(k=>vals[k]===max);
-    if(leaders.length===1) return leaders[0];
-    return leaders.includes(oldTeam) ? oldTeam : "unassigned";
+    // A tie for the highest winning-move total means Team Unpredictable.
+    // Do not keep the player's previous Rock/Paper/Scissors team during a tie.
+    if(leaders.length!==1) return "unassigned";
+    return leaders[0];
   }
 
   function teamStatusFor(team="unassigned", teamGames=0) {
