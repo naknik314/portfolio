@@ -380,12 +380,39 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <div class="divider"></div>
         <div class="section-label">Community teams</div>
         <div class="prediction-grid" id="teamCounts">
-          <div class="rule-card" style="text-align:center"><strong>🪨 Team Rock</strong><span id="teamRockCount">0 players</span></div>
-          <div class="rule-card" style="text-align:center"><strong>📄 Team Paper</strong><span id="teamPaperCount">0 players</span></div>
-          <div class="rule-card" style="text-align:center"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span></div>
-          <div class="rule-card" style="text-align:center"><strong>🎲 Team Unpredictable</strong><span id="teamUnpredictableCount">0 players</span></div>
+          <button type="button" class="rule-card community-team-card" data-team-bio="rock" style="text-align:center;cursor:pointer"><strong>🪨 Team Rock</strong><span id="teamRockCount">0 players</span><small class="muted">View team profile →</small></button>
+          <button type="button" class="rule-card community-team-card" data-team-bio="paper" style="text-align:center;cursor:pointer"><strong>📄 Team Paper</strong><span id="teamPaperCount">0 players</span><small class="muted">View team profile →</small></button>
+          <button type="button" class="rule-card community-team-card" data-team-bio="scissors" style="text-align:center;cursor:pointer"><strong>✂️ Team Scissors</strong><span id="teamScissorsCount">0 players</span><small class="muted">View team profile →</small></button>
+          <button type="button" class="rule-card community-team-card" data-team-bio="unassigned" style="text-align:center;cursor:pointer"><strong>🎲 Team Unpredictable</strong><span id="teamUnpredictableCount">0 players</span><small class="muted">View team profile →</small></button>
         </div>
         
+      </div>
+    </section>
+
+
+
+    <section id="teamBio" class="hidden">
+      <div class="panel" style="max-width:760px;margin:24px auto">
+        <div class="screen-title">
+          <div>
+            <div class="eyebrow">Community team profile</div>
+            <h2 id="teamBioTitle">Team Profile</h2>
+            <div class="sub" id="teamBioTagline"></div>
+          </div>
+          <button type="button" class="btn ghost" id="teamBioBack">← Back</button>
+        </div>
+        <div class="rule-card" style="margin-top:16px">
+          <strong id="teamBioStyle"></strong>
+          <span id="teamBioDescription" style="margin-top:7px"></span>
+        </div>
+        <div class="prediction-grid" style="margin-top:12px">
+          <div class="rule-card"><strong>⚡ Multiplayer Team Power</strong><span id="teamBioPower"></span></div>
+          <div class="rule-card"><strong>🎯 Solo Team Power</strong><span id="teamBioSoloPower"></span></div>
+        </div>
+        <div class="rule-card" style="margin-top:12px">
+          <strong>🏅 Team ranks</strong>
+          <span id="teamBioRanks" style="margin-top:7px"></span>
+        </div>
       </div>
     </section>
 
@@ -818,6 +845,63 @@ const db = getDatabase(firebaseApp);
     };
     return (names[team]||names.unassigned)[level];
   }
+
+  const COMMUNITY_TEAM_BIOS={
+    rock:{
+      title:"🪨 Team Rock",
+      tagline:"The Steady Ones",
+      style:"Play style: Defense & consistency",
+      description:"Strong, dependable, and hard to shake. Rock players like sticking with what works and protecting their points.",
+      power:"🪨 Barricade — protects you from negative points and point-loss effects for the round.",
+      solo:"🥤 Cup Crusher — crush an unwanted cup during Cup Shuffle.",
+      ranks:"Grain of Sand → Progressing Pebble → Rock Solid"
+    },
+    paper:{
+      title:"📄 Team Paper",
+      tagline:"The Clever Ones",
+      style:"Play style: Adaptation & opportunity",
+      description:"Observant, adaptable, and ready to turn a good opportunity into an advantage. Paper players pay attention to what is happening around them.",
+      power:"📄 Reprint — copies the highest positive net points another player earns that round.",
+      solo:"👀 Quick Peek — slows Quick Draw so you have more time to react.",
+      ranks:"Noteworthy Newcomer → Page Pupil → Paper Prodigy"
+    },
+    scissors:{
+      title:"✂️ Team Scissors",
+      tagline:"The Risk Takers",
+      style:"Play style: Disruption & timing",
+      description:"Sharp, competitive, and ready to interfere at just the right moment. Scissors players can disrupt an opponent's strong round.",
+      power:"✂️ Cut in Half — cuts another player's positive net round points in half, rounded down.",
+      solo:"✂️ Selective Slicer — slices an unwanted matching pair out of Match the Cards.",
+      ranks:"Cutting Cadet → Sharper Student → Scissor Whiz"
+    },
+    unassigned:{
+      title:"🎲 Team Unpredictable",
+      tagline:"The Wild Cards",
+      style:"Play style: Versatility & unpredictability",
+      description:"Why choose one style when you can keep everyone guessing? Team Unpredictable belongs to players whose winning-move totals are tied, making variety part of the team's identity.",
+      power:"🎲 Random Team Power — receives Barricade, Reprint, or Cut in Half for the game.",
+      solo:"🎲 Random Solo Team Power — receives Cup Crusher, Quick Peek, or Selective Slicer for the Solo challenge.",
+      ranks:"Random Rookie → Erratic Enthusiast → Jack of All Trades"
+    }
+  };
+
+  function openCommunityTeamBio(team){
+    const bio=COMMUNITY_TEAM_BIOS[team];
+    if(!bio) return;
+    $("teamBioTitle").textContent=bio.title;
+    $("teamBioTagline").textContent=bio.tagline;
+    $("teamBioStyle").textContent=bio.style;
+    $("teamBioDescription").textContent=bio.description;
+    $("teamBioPower").textContent=bio.power;
+    $("teamBioSoloPower").textContent=bio.solo;
+    $("teamBioRanks").textContent=bio.ranks;
+    show("teamBio");
+  }
+
+  document.querySelectorAll("[data-team-bio]").forEach(card=>{
+    card.onclick=()=>openCommunityTeamBio(card.dataset.teamBio);
+  });
+  if($("teamBioBack")) $("teamBioBack").onclick=()=>show("home");
 
   async function loadCommunityTeams() {
     try {
@@ -2880,16 +2964,9 @@ async function refreshTeamPowerUI() {
       submittedAt:Date.now()
     };
 
-    if(canUseTeamPower && submissionPower?.key==="scissors"){
-      // Save the locked submission and provisional USED state atomically.
-      // Resolution changes USED back to false only for BLOCKED/NO EFFECT.
-      const atomicUpdates={};
-      atomicUpdates[`${roundPath()}/submissions/${uid}`]=submissionData;
-      atomicUpdates[`teamPowerUsed/${uid}`]=true;
-      await update(ref(db,`rooms/${room}`),atomicUpdates);
-    }else{
-      await set(ref(db, `${roundPath()}/submissions/${uid}`), submissionData);
-    }
+    // Cut in Half must not change room-level power state while players are
+    // still locking in. Submit it with the move; resolution decides consumption.
+    await set(ref(db, `${roundPath()}/submissions/${uid}`), submissionData);
     if(canUseTeamPower){
       // Reversed powers cost Chaos Points only when actually used.
       if(String(submissionPower?.key||"").startsWith("reverse")){
@@ -3266,18 +3343,18 @@ async function refreshTeamPowerUI() {
       }
     });
     const restoreScissorsPower=[];
-    players.forEach(p=>{
-      if(submissions[p.uid]?.teamPower!=="scissors") return;
+    for(const p of players){
+      if(submissions[p.uid]?.teamPower!=="scissors") continue;
       const target=players.find(o=>o.uid===submissions[p.uid]?.teamPowerTarget && o.uid!==p.uid);
       if(!target){
         details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half. ♻️ POWER NOT USED UP — there was no valid target, so it is still available for a later round.`);
         restoreScissorsPower.push(p.uid);
-        return;
+        continue;
       }
       if(submissions[target.uid]?.teamPower==="rock"){
         details.push(`⚡ POWER CLASH — ${p.name} tried ✂️ Cut in Half on ${target.name}. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`);
         restoreScissorsPower.push(p.uid);
-        return;
+        continue;
       }
       // CHAOS BOT RULE: when a computer rival uses normal Cut in Half during
       // the Chaos Bot Mode, it attacks the target's TOTAL game score.
@@ -3287,6 +3364,7 @@ async function refreshTeamPowerUI() {
         if(total>0){
           const reduced=Math.floor(total/2);
           scores[target.uid]=reduced;
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
           details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. 🔥 CHAOS HIT: ${target.name}'s TOTAL game score was cut from ${total} to ${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
         } else {
           details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
@@ -3299,13 +3377,14 @@ async function refreshTeamPowerUI() {
         if(gain>0){
           const reduced=Math.floor(gain/2);
           scores[target.uid]-=(gain-reduced);
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
           details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's current positive round points in half. SUCCESS: +${gain} became +${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
         } else {
           details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no positive points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
           restoreScissorsPower.push(p.uid);
         }
       }
-        });
+        }
     for(const uid of restoreScissorsPower){
       await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),false);
     }
