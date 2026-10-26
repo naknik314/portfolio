@@ -673,7 +673,7 @@ const db = getDatabase(firebaseApp);
 
 (() => {
   const $ = id => document.getElementById(id);
-  const screens = ["reconnecting","home","newGameGuide","openRoomsScreen","lobby","chaosPoints","game","stats","end"];
+  const screens = ["reconnecting","home","newGameGuide","openRoomsScreen","lobby","chaosPoints","game","stats","end","teamBio"];
   const hands = {rock:"✊",paper:"✋",scissors:"✌️"};
   const moves = Object.keys(hands);
 
@@ -898,10 +898,18 @@ const db = getDatabase(firebaseApp);
     show("teamBio");
   }
 
-  document.querySelectorAll("[data-team-bio]").forEach(card=>{
-    card.onclick=()=>openCommunityTeamBio(card.dataset.teamBio);
+  document.addEventListener("click",event=>{
+    const card=event.target.closest("[data-team-bio]");
+    if(card){
+      event.preventDefault();
+      openCommunityTeamBio(card.dataset.teamBio);
+      return;
+    }
+    if(event.target.closest("#teamBioBack")){
+      event.preventDefault();
+      show("home");
+    }
   });
-  if($("teamBioBack")) $("teamBioBack").onclick=()=>show("home");
 
   async function loadCommunityTeams() {
     try {
