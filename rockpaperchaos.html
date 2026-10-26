@@ -3715,11 +3715,11 @@ async function refreshTeamPowerUI() {
     ];
 
     function playerNameFromNotice(line){
-      const s=String(line);
-      let m=s.match(/^⚡ POWER (?:USED|ATTEMPT) — (.+?) used /);
-      if(m) return m[1];
-      m=s.match(/^⚡ POWER CLASH — (.+?)'s /);
-      if(m) return m[1];
+      const s=String(line||"").trim();
+      let m=s.match(/⚡\s*POWER\s+(?:USED|ATTEMPT)\s*[—-]\s*(.+?)\s+used\s+/i);
+      if(m) return m[1].trim();
+      m=s.match(/⚡\s*POWER\s+CLASH\s*[—-]\s*(.+?)'s\s+/i);
+      if(m) return m[1].trim();
       return "";
     }
 
@@ -3773,15 +3773,21 @@ async function refreshTeamPowerUI() {
       if(indexes.length<2) return;
 
       const notices=indexes.map(index=>String(powerNotices[index]));
-      const names=notices.map(playerNameFromNotice).filter(Boolean);
-      if(names.length<2) return;
+      const noticePlayers=notices.map(line=>{
+        const parsed=playerNameFromNotice(line);
+        if(parsed) return parsed;
+        const matchedPlayer=players.find(p=>String(line).includes(p.name));
+        return matchedPlayer?.name||"";
+      });
+      const names=noticePlayers.filter(Boolean);
+      if(indexes.length<2) return;
 
       const outcomes=[];
       const usedNames=[];
       const notUsedNames=[];
 
       notices.forEach((line,i)=>{
-        const playerName=playerNameFromNotice(line)||names[i]||"Player";
+        const playerName=noticePlayers[i]||`Player ${i+1}`;
         const outcome=outcomeFromNotice(line,playerName,power);
         if(outcome) outcomes.push(outcome);
 
@@ -3793,6 +3799,10 @@ async function refreshTeamPowerUI() {
       const heading=`⚡ POWER USED — ${joinPlayerNames(names)} used ${power.icon} ${power.name}, ${power.description}.`;
       const outcomeLines=outcomes.map(o=>`${o.marker} ${o.text}`);
       const statusLines=[];
+      if(power.name==="Reprint"){
+        // Reprint is consumed whenever it is submitted, including NO EFFECT.
+        names.forEach(name=>{ if(name && !usedNames.includes(name)) usedNames.push(name); });
+      }
       if(usedNames.length){
         statusLines.push(`🔒 ${power.icon} ${power.name} USED UP — unavailable for the rest of this game for ${joinPlayerNames(usedNames)}.`);
       }
