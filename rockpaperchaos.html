@@ -1036,13 +1036,29 @@ const db = getDatabase(firebaseApp);
     const statsStoreBtn=$("statsChaosStoreBtn");
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
       chaosPointsReturnScreen="stats";
+
+      // The Stats store is browse-only because it is not a game lobby.
+      // Do not let a stale completed-room reference make Solo Mode (or any
+      // other lobby extra) look active or become activatable here.
+      const previousRoom=room;
+      room="";
+      soloModeActive=false;
+      doubleAgentModeActive=false;
+      activeTeamPower=null;
+      teamPowerArmed=false;
+
       show("chaosPoints");
       updateChaosPointsLobbyAvailability();
       await refreshChaosPointsPageBalance();
+      await refreshSoloModeLobby();
       await refreshChaosBotLobby();
       await refreshDoubleAgentLobby();
       await refreshPowerReversalLobby();
       await refreshRollDiceLobby();
+
+      // Keep the old value out of the active state intentionally. Returning
+      // from Stats goes back to Stats, not to an old/finished lobby.
+      void previousRoom;
     };
     show("stats");
   }
@@ -3036,6 +3052,28 @@ async function refreshTeamPowerUI() {
   }
 
   function watchSubmissions() {
+    const watchedRound=round;
+    const watchedResultsRef=ref(db, `rooms/${room}/rounds/${watchedRound}/results`);
+
+    // Direct reveal fallback: submissions and results are separate Firebase
+    // writes. Listen to results itself so a client cannot remain on Locked In
+    // just because the broader room listener missed/delayed the reveal change.
+    onValue(watchedResultsRef, snap=>{
+      if(!snap.exists() || round!==watchedRound) return;
+      const r=snap.val()||{};
+      applyScores(r.scores||{});
+      renderReveal(
+        r.details||[],
+        !!r.reverse,
+        r.basePoints||1,
+        true,
+        r.moves||{},
+        r.revealWinner||"Draw!",
+        r.roundPoints||{},
+        r.scores||{}
+      );
+    }, {onlyOnce:true});
+
     // Keep this listener on every client because reveal/final-results
     // navigation depends on live round updates. Only the host resolves/writes.
     onValue(ref(db, `${roundPath()}/submissions`), async snap => {
@@ -3501,8 +3539,16 @@ async function refreshTeamPowerUI() {
       roundPoints[p.uid]=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
     });
     const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner,rockSolidActive,roundPoints};
-    await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
-    await update(ref(db, `rooms/${room}`), {scores,moveWinPoints:moveLedger,updatedAt:Date.now()});
+
+    // Publish the reveal and authoritative scores together. This avoids a
+    // window where clients can see results but still have stale room scores.
+    await update(ref(db, `rooms/${room}`), {
+      [`rounds/${round}/phase`]:"reveal",
+      [`rounds/${round}/results`]:results,
+      scores,
+      moveWinPoints:moveLedger,
+      updatedAt:Date.now()
+    });
     resolvingRounds.delete(resolvingKey);
   }
 
