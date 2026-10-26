@@ -826,11 +826,38 @@ const db = getDatabase(firebaseApp);
     // the player to finish another game first.
     const recalculatedTeam=chooseTeam(p.moveWinPoints||{},p.team||"unassigned");
     const savedTeam=String(p.team||"unassigned");
-    p.team=recalculatedTeam;
-    if(currentUser && recalculatedTeam!==savedTeam){
-      update(ref(db,`profiles/${currentUser.uid}`),{team:recalculatedTeam}).catch(error=>{
-        console.warn("Could not save recalculated team",error);
-      });
+    if(recalculatedTeam!==savedTeam){
+      // A move-stat tie/lead change is a real team switch. Finish the old
+      // team's streak, then begin the new team's rank progression at zero.
+      const oldTeamGames=Math.max(0,Number(p.teamGames||0));
+      const savedLongest=Math.max(0,Number(p.longestTeamGames||0));
+      const oldLongestTeam=String(p.longestTeam||"unassigned");
+
+      if(oldTeamGames>savedLongest){
+        p.longestTeamGames=oldTeamGames;
+        p.longestTeam=savedTeam;
+      }else{
+        p.longestTeamGames=savedLongest;
+        p.longestTeam=oldLongestTeam;
+      }
+
+      p.team=recalculatedTeam;
+      p.teamGames=0;
+      p.teamSwaps=Math.max(0,Number(p.teamSwaps||0))+1;
+
+      if(currentUser){
+        update(ref(db,`profiles/${currentUser.uid}`),{
+          team:p.team,
+          teamGames:p.teamGames,
+          teamSwaps:p.teamSwaps,
+          longestTeamGames:p.longestTeamGames,
+          longestTeam:p.longestTeam
+        }).catch(error=>{
+          console.warn("Could not save recalculated team streak",error);
+        });
+      }
+    }else{
+      p.team=recalculatedTeam;
     }
     const team=teamMeta[p.team]||teamMeta.unassigned;
     const rate=p.gamesPlayed?Math.round((Number(p.wins||0)/Number(p.gamesPlayed))*100):0;
@@ -1439,7 +1466,7 @@ const db = getDatabase(firebaseApp);
     if(balance<SOLO_MODE_COST) return toast("Not enough Chaos Points.");
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
-    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false;
+    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false; soloSelectiveSlicerChoice=null; soloCupCrusherChoice=null;
     await set(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`),false);
     activeTeamPower=null; teamPowerArmed=false;
     toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
@@ -1525,6 +1552,8 @@ let soloCupShuffling=false;
   let soloPowerFamily=null;
   let soloPowerUsed=false;
   let soloPowerActive=false;
+let soloSelectiveSlicerChoice=null;
+let soloCupCrusherChoice=null;
   let soloPowerUpgraded=false;
   const SOLO_POWER_X2_COST=10;
   let soloQuickDrawDelay=220;
@@ -2172,6 +2201,52 @@ async function refreshTeamPowerUI() {
           powerBtn.textContent=soloPowerUsed?"⚡ Solo Power Already Used":soloPowerActive?`⚡ ${actionName} Active`:`⚡ Use ${actionName}`;
           powerBtn.onclick=async()=>{
             if(soloPowerUsed || soloPowerActive || !available) return;
+
+            // Team Unpredictable regular Cup Crusher also uses in-game buttons.
+            if(family==="rock" && !soloPowerUpgraded && team==="unassigned" && !soloCupCrusherChoice){
+              if(powerDesc){
+                powerDesc.innerHTML=`
+                  <b>Which move do you want to avoid?</b>
+                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px">
+                    <button type="button" class="btn secondary" data-cup-choice="rock">🪨 Rock</button>
+                    <button type="button" class="btn secondary" data-cup-choice="paper">📄 Paper</button>
+                    <button type="button" class="btn secondary" data-cup-choice="scissors">✂️ Scissors</button>
+                    <button type="button" class="btn secondary" data-cup-choice="random">🎲 Random</button>
+                  </div>`;
+                powerDesc.querySelectorAll("[data-cup-choice]").forEach(choiceBtn=>{
+                  choiceBtn.onclick=()=>{
+                    soloCupCrusherChoice=choiceBtn.dataset.cupChoice;
+                    powerBtn.click();
+                  };
+                });
+              }
+              if(powerHint) powerHint.textContent="Choose a move above. Your Solo power is not used until you choose.";
+              return;
+            }
+
+            // Team Unpredictable regular Selective Slicer uses in-game buttons,
+            // not a browser JavaScript prompt.
+            if(family==="scissors" && !soloPowerUpgraded && team==="unassigned" && !soloSelectiveSlicerChoice){
+              if(powerDesc){
+                powerDesc.innerHTML=`
+                  <b>Which pair do you want to avoid?</b>
+                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px">
+                    <button type="button" class="btn secondary" data-slicer-choice="rock">🪨 Rock</button>
+                    <button type="button" class="btn secondary" data-slicer-choice="paper">📄 Paper</button>
+                    <button type="button" class="btn secondary" data-slicer-choice="scissors">✂️ Scissors</button>
+                    <button type="button" class="btn secondary" data-slicer-choice="random">🎲 Random</button>
+                  </div>`;
+                powerDesc.querySelectorAll("[data-slicer-choice]").forEach(choiceBtn=>{
+                  choiceBtn.onclick=()=>{
+                    soloSelectiveSlicerChoice=choiceBtn.dataset.slicerChoice;
+                    powerBtn.click();
+                  };
+                });
+              }
+              if(powerHint) powerHint.textContent="Choose a pair above. Your Solo power is not used until you choose.";
+              return;
+            }
+
             soloPowerActive=true;
             soloPowerUsed=true;
             await set(ref(db,`rooms/${room}/soloPowerUsed/${currentUser.uid}`),true);
@@ -2205,8 +2280,9 @@ async function refreshTeamPowerUI() {
               if(!soloCupMoves.length) soloCupMoves=["rock","paper","scissors"];
               let avoidMove=null;
               if(team==="unassigned"){
-                const answer=String(prompt("Cup Crusher: which move do you want to avoid? Type Rock, Paper, Scissors, or Random.")||"random").trim().toLowerCase();
+                const answer=soloCupCrusherChoice||"random";
                 avoidMove=moves.includes(answer)?answer:null;
+                soloCupCrusherChoice=null;
               }
               let crushCandidates;
               if(team==="unassigned"){
@@ -2300,8 +2376,9 @@ async function refreshTeamPowerUI() {
               }
               let pairToCut=null;
               if(team==="unassigned"){
-                const answer=String(prompt("Selective Slicer: which pair do you want to avoid? Type Rock, Paper, Scissors, or Random.")||"random").trim().toLowerCase();
+                const answer=soloSelectiveSlicerChoice||"random";
                 pairToCut=moves.includes(answer)?answer:moves[Math.floor(Math.random()*moves.length)];
+                soloSelectiveSlicerChoice=null;
               }else{
                 const candidates=moves.filter(m=>m!==team);
                 pairToCut=candidates[Math.floor(Math.random()*candidates.length)];
@@ -2438,41 +2515,61 @@ async function refreshTeamPowerUI() {
 
       const runCupShuffle=()=>{
         if(soloCupShuffling || selectedMove || !grid) return;
-        soloCupShuffling=true;
         const buttons=[...grid.querySelectorAll("[data-solo-cup]")];
-        buttons.forEach(b=>b.disabled=true);
+        if(buttons.length!==3){
+          if(status) status.textContent="Cup Shuffle could not start. Try the round again.";
+          return;
+        }
+
+        soloCupShuffling=true;
+        buttons.forEach(b=>{
+          b.disabled=true;
+          b.style.transform="";
+          b.style.transition="transform .24s ease";
+        });
         if(status) status.textContent="Track the cups while they shuffle…";
 
         let swaps=0;
         const doSwap=()=>{
           if(swaps>=6){
+            buttons.forEach(b=>{
+              b.style.transform="";
+              b.disabled=false;
+            });
             soloCupShuffling=false;
-            buttons.forEach(b=>b.disabled=false);
-            buttons.forEach(b=>b.style.transform="");
             if(status) status.textContent="Shuffle complete — pick the cup you tracked.";
             return;
           }
+
           let a=Math.floor(Math.random()*3), b=Math.floor(Math.random()*3);
           while(b===a) b=Math.floor(Math.random()*3);
+
           const rectA=buttons[a].getBoundingClientRect();
           const rectB=buttons[b].getBoundingClientRect();
-          const dx=rectB.left-rectA.left;
-          buttons[a].style.transform=`translateX(${dx}px)`;
-          buttons[b].style.transform=`translateX(${-dx}px)`;
+          const dx=(rectB.left+rectB.width/2)-(rectA.left+rectA.width/2);
+          const dy=(rectB.top+rectB.height/2)-(rectA.top+rectA.height/2);
+
+          buttons[a].style.transform=`translate(${dx}px, ${dy}px)`;
+          buttons[b].style.transform=`translate(${-dx}px, ${-dy}px)`;
+
           setTimeout(()=>{
             [soloCupMoves[a],soloCupMoves[b]]=[soloCupMoves[b],soloCupMoves[a]];
+
             buttons[a].style.transition="none";
             buttons[b].style.transition="none";
             buttons[a].style.transform="";
             buttons[b].style.transform="";
             void buttons[a].offsetWidth;
-            buttons[a].style.transition="transform .22s ease";
-            buttons[b].style.transition="transform .22s ease";
+            void buttons[b].offsetWidth;
+            buttons[a].style.transition="transform .24s ease";
+            buttons[b].style.transition="transform .24s ease";
+
             swaps++;
-            setTimeout(doSwap,90);
-          },230);
+            setTimeout(doSwap,110);
+          },260);
         };
-        doSwap();
+
+        requestAnimationFrame(()=>requestAnimationFrame(doSwap));
       };
 
       if(!selectedMove && !soloCupPreviewDone){
