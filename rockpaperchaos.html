@@ -1069,8 +1069,23 @@ const db = getDatabase(firebaseApp);
       listenToRoom(room);
       show("lobby");
     } catch (error) {
-      console.error(error);
-      toast("Couldn't create the room. Check Firebase Auth and Database rules.");
+      console.error("Create room failed:", error);
+      if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+      forgetRoom();
+      onlineRoom=false;
+      isHost=false;
+      room="";
+      players=[];
+      show("home");
+      const code=String(error?.code||"");
+      if(code.includes("app-check")){
+        toast("Couldn't create the room because Firebase App Check rejected the request.");
+      }else if(code.includes("permission-denied")){
+        toast("Couldn't create the room because Firebase Database denied the request.");
+      }else{
+        toast("Couldn't create the room. Please try again.");
+      }
+      throw error;
     }
   }
   async function refreshLobbyTeamCard(){
@@ -3531,6 +3546,38 @@ async function refreshTeamPowerUI() {
   }
 
   let gameGuideOpenedFromLobby=false;
+  let creatingNewRoom=false;
+  async function startFreshRoom(){
+    if(creatingNewRoom) return;
+    creatingNewRoom=true;
+    const createButton=$("createBtn");
+    const continueButton=$("continueToGame");
+    const skipButton=$("skipGameGuide");
+    if(createButton) createButton.disabled=true;
+    if(continueButton) continueButton.disabled=true;
+    if(skipButton) skipButton.disabled=true;
+    try{
+      gameGuideOpenedFromLobby=false;
+      if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+      forgetRoom();
+      onlineRoom=false;
+      isHost=false;
+      room="";
+      players=[];
+      predictionMode="optional";
+      try{
+        await createRoom();
+      }catch(error){
+        // createRoom already reset the UI and displayed the specific failure.
+      }
+    }finally{
+      creatingNewRoom=false;
+      if(createButton) createButton.disabled=false;
+      if(continueButton) continueButton.disabled=false;
+      if(skipButton) skipButton.disabled=false;
+    }
+  }
+
   $("createBtn").onclick = ()=>{
     gameGuideOpenedFromLobby=false;
     if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
@@ -3540,11 +3587,11 @@ async function refreshTeamPowerUI() {
     room="";
     players=[];
     predictionMode="optional";
-    if(localStorage.getItem("rpcHideGameGuide")==="1") createRoom();
+    if(localStorage.getItem("rpcHideGameGuide")==="1") startFreshRoom();
     else show("newGameGuide");
   };
-  $("skipGameGuide").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):createRoom();
-  $("continueToGame").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):createRoom();
+  $("skipGameGuide").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):startFreshRoom();
+  $("continueToGame").onclick = ()=>gameGuideOpenedFromLobby?show("lobby"):startFreshRoom();
   $("dontShowGameGuide").onclick = ()=>{
     localStorage.setItem("rpcHideGameGuide","1");
     toast("Game rules will be skipped when you create future games. You can still open the guide from the Game Lobby.");
