@@ -3694,9 +3694,11 @@ async function refreshTeamPowerUI() {
       .replace(/ (SUCCESS:|NO EFFECT:|BLOCKED:)/g,"<br><strong>$1</strong>")
       .replace(/ (BLOCKED by)/g,"<br><strong>$1</strong>")
       .replace(/ (🔒|♻️)/g,"<br>$1");
-    safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
-    // Bold the named used-up / not-used-up power status on the final line.
-    safe=safe.replace(/(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)( USED UP| was NOT USED UP| NOT USED UP)/g,"<strong>$1$2</strong>");
+    // If USED UP / NOT USED UP is bold, bold the complete named status too:
+    // e.g. "📄 Reprint USED UP" and "✂️ Cut in Half NOT USED UP".
+    safe=safe.replace(/(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)\s+(?:was\s+)?(USED UP|NOT USED UP)/g,"<strong>$1 $2</strong>");
+    safe=safe.replace(/(POWER NOT USED UP)/g,"<strong>$1</strong>");
+    safe=safe.replace(/(?<!>)\b(USED UP|NOT USED UP)\b(?!<)/g,"<strong>$1</strong>");
     safe=safe.replace(/(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
     return safe;
   }
