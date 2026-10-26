@@ -466,7 +466,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <option value="optional">Casual — predictions optional; scores never go below 0</option>
                 <option value="required">Competitive — predictions required; scores can go below 0</option>
               </select>
-              <span id="predictionModeHelp" class="muted" style="margin-top:7px">Competitive: predict every round except Round 4. Wrong predictions can push your score below zero.</span>
+              <span id="predictionModeHelp" class="muted" style="margin-top:7px">Casual: predictions are optional. Scores have a 0-point floor and cannot go negative.</span>
             </div>
             <div class="rule-card">
               <strong>💠 Chaos Points Extras</strong>
@@ -981,7 +981,7 @@ const db = getDatabase(firebaseApp);
         players.some(p => p.uid === currentUser?.uid && p.host === true);
       onlineRoom = true;
       quickDrawRound = Number(data.quickDrawRound || 0) || null;
-      predictionMode = data.predictionMode === "optional" ? "optional" : "required";
+      predictionMode = data.predictionMode === "required" ? "required" : "optional";
       const roomMarksSolo = data.soloMode?.[currentUser?.uid] === true;
       const soloPlayingFallback = data.status==="playing" &&
         players.length===1 &&
@@ -1062,8 +1062,9 @@ const db = getDatabase(firebaseApp);
       const user = await ensureSignedIn();
       room = await makeUniqueRoomCode();
       const now = Date.now();
+      predictionMode="optional";
       await set(ref(db, `rooms/${room}`), {
-        hostUid:user.uid, status:"lobby", round:1, createdAt:now, updatedAt:now,
+        hostUid:user.uid, status:"lobby", round:1, predictionMode:"optional", createdAt:now, updatedAt:now,
         players:{[user.uid]:{name:selectedUsername,host:true,bot:false,score:0,joinedAt:now}}
       });
       isHost = true;
@@ -3536,6 +3537,13 @@ async function refreshTeamPowerUI() {
   let gameGuideOpenedFromLobby=false;
   $("createBtn").onclick = ()=>{
     gameGuideOpenedFromLobby=false;
+    if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+    forgetRoom();
+    onlineRoom=false;
+    isHost=false;
+    room="";
+    players=[];
+    predictionMode="optional";
     if(localStorage.getItem("rpcHideGameGuide")==="1") createRoom();
     else show("newGameGuide");
   };
