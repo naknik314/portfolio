@@ -3192,6 +3192,12 @@ async function refreshTeamPowerUI() {
     const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
     const scores=scoresSnap.val() || {};
     players.forEach(p=>{ if(scores[p.uid]==null) scores[p.uid]=0; });
+
+    // Keep a complete power-used snapshot for this resolution. Cut in Half
+    // updates this local object and publishes it with the reveal instead of
+    // mixing whole-object writes with dynamic child paths.
+    const teamPowerUsedSnap=await get(ref(db, `rooms/${room}/teamPowerUsed`));
+    const resolvedTeamPowerUsed=teamPowerUsedSnap.exists()?{...(teamPowerUsedSnap.val()||{})}:{};
     const scoresBefore={...scores};
     const moveLedgerSnap=await get(ref(db, `rooms/${room}/moveWinPoints`));
     const moveLedger=moveLedgerSnap.val() || {};
@@ -3559,17 +3565,26 @@ async function refreshTeamPowerUI() {
     };
 
     // Cut in Half is consumed only on SUCCESS. NO EFFECT / BLOCKED remains
-    // available. Save that decision atomically with the reveal so the UI can
-    // never see a half-finished power state.
+    // available. Build the complete state first, then publish it as one normal
+    // room field with the reveal. This avoids the intermittent resolution
+    // failure seen when successful Cut in Half also changed nested used-state.
     successfulScissorsPower.forEach(uid=>{
-      finalRoomUpdate[`teamPowerUsed/${uid}`]=true;
+      resolvedTeamPowerUsed[uid]=true;
     });
     restoreScissorsPower.forEach(uid=>{
-      finalRoomUpdate[`teamPowerUsed/${uid}`]=false;
+      resolvedTeamPowerUsed[uid]=false;
     });
+    if(successfulScissorsPower.length || restoreScissorsPower.length){
+      finalRoomUpdate.teamPowerUsed=resolvedTeamPowerUsed;
+    }
 
-    await update(ref(db, `rooms/${room}`), finalRoomUpdate);
-    resolvingRounds.delete(resolvingKey);
+    try{
+      await update(ref(db, `rooms/${room}`), finalRoomUpdate);
+    }finally{
+      // Never leave this round permanently marked as "resolving" if Firebase
+      // rejects or interrupts a write; the submissions listener can retry.
+      resolvingRounds.delete(resolvingKey);
+    }
   }
 
   function celebrateWinningMove(revealWinner){
@@ -3626,6 +3641,17 @@ async function refreshTeamPowerUI() {
   const moveItems={rock:"🪨",paper:"📄",scissors:"✂️"};
 
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
+    // Round 7 has no later round. Clean power availability wording here as
+    // well as during resolution so reconnecting to an older stored result
+    // cannot bring the outdated phrase back.
+    if(round===7){
+      details=(details||[]).map(line=>String(line)
+        .replace(/\s*[—-]\s*it is still available for a later round\.?/gi,".")
+        .replace(/\s+and can be used later\.?/gi,".")
+        .replace(/\s*[—-]\s*available for a later round\.?/gi,".")
+        .replace(/\s+still available for a later round\.?/gi,".")
+      );
+    }
     $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
     $("progressFill").style.width=`${round/7*100}%`;
@@ -3644,6 +3670,34 @@ async function refreshTeamPowerUI() {
         powerNotices=[`⚡ SOLO POWER USED — ${hands[soloPowerFamily]||"🎯"} ${soloPowerName}. 🔒 SOLO POWER USED UP — unavailable for the rest of this Solo challenge.`];
       }
     }
+    // If multiple players use the same power in one round, keep the full
+    // explanation on the first notice and shorten later notices for that same
+    // power. The later notices still show each player's own result/status.
+    const powerExplanationPatterns=[
+      ["Barricade", /, which protects against negative points[^.]*\./i],
+      ["Reprint", /, which copies the highest positive points[^.]*\./i],
+      ["Cut in Half", /, which automatically targets[^.]*\./i],
+      ["Stonewall", /, which blocks[^.]*\./i],
+      ["Misprint", /, which copies[^.]*\./i],
+      ["Cut Your Losses", /, which (?:halves|cancels)[^.]*\./i],
+      ["Cup Crusher", /, which [^.]*\./i],
+      ["Quick Peek", /, which [^.]*\./i],
+      ["Selective Slicer", /, which [^.]*\./i]
+    ];
+    const explainedPowers=new Set();
+    powerNotices=powerNotices.map(line=>{
+      let output=String(line);
+      const found=powerExplanationPatterns.find(([name])=>output.includes(name));
+      if(!found) return output;
+      const [powerName, explanationPattern]=found;
+      if(explainedPowers.has(powerName)){
+        output=output.replace(explanationPattern,".");
+      }else{
+        explainedPowers.add(powerName);
+      }
+      return output.replace(/\.\s*\./g,".");
+    });
+
     // Big animations are reserved for team-power moments so they stay special.
     // A clash can animate both powers in sequence.
     const animatedPowers=[];
