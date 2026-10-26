@@ -1548,6 +1548,7 @@ const db = getDatabase(firebaseApp);
   let soloCupRevealed=false;
   let soloCupPreviewDone=false;
 let soloCupShuffling=false;
+let soloCupRoundInitialized=0;
   let soloSpinnerRunning=false;
   let soloPowerFamily=null;
   let soloPowerUsed=false;
@@ -1992,7 +1993,7 @@ async function refreshTeamPowerUI() {
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
-      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloSpinnerRunning=false;
+      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloCupRoundInitialized=0; soloSpinnerRunning=false;
       soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
       showRoundIntro(round);
@@ -2497,6 +2498,16 @@ async function refreshTeamPowerUI() {
     }
 
     if(soloModeActive && (round===3 || round===5)){
+      // Each Cup Shuffle round needs completely fresh state. Without this,
+      // round 5 can inherit round 3's "preview already done" flag and skip
+      // the preview/shuffle sequence.
+      if(!selectedMove && soloCupRoundInitialized!==round){
+        soloCupRoundInitialized=round;
+        soloCupMoves=["rock","paper","scissors"];
+        soloCupRevealed=false;
+        soloCupPreviewDone=false;
+        soloCupShuffling=false;
+      }
       const preview=$("soloCupPreview"), grid=$("soloCupGrid"), status=$("soloCupStatus");
       if(!soloCupMoves.length){
         soloCupMoves=["rock","paper","scissors"];
