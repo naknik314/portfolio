@@ -1466,7 +1466,7 @@ const db = getDatabase(firebaseApp);
     if(balance<SOLO_MODE_COST) return toast("Not enough Chaos Points.");
     await update(profileRef,{chaosPoints:balance-SOLO_MODE_COST,updatedAt:Date.now()});
     await set(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`),true);
-    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false; soloSelectiveSlicerChoice=null; soloCupCrusherChoice=null;
+    soloModeActive=true; soloPowerFamily=null; soloPowerUsed=false; soloPowerActive=false; soloPowerUpgraded=false; soloSelectiveSlicerChoice=null; soloSelectiveSlicerX2Choice=null; soloCupCrusherChoice=null;
     await set(ref(db,`rooms/${room}/soloPowerUpgraded/${currentUser.uid}`),false);
     activeTeamPower=null; teamPowerArmed=false;
     toast("🎯 Solo Mode active — 7 Solo minigame rounds are ready.");
@@ -1555,6 +1555,7 @@ let soloCupPreviewTimer=null;
   let soloPowerUsed=false;
   let soloPowerActive=false;
 let soloSelectiveSlicerChoice=null;
+let soloSelectiveSlicerX2Choice=null;
 let soloCupCrusherChoice=null;
   let soloPowerUpgraded=false;
   const SOLO_POWER_X2_COST=10;
@@ -1585,21 +1586,14 @@ let soloCupCrusherChoice=null;
 
   function chooseSelectiveSlicerX2Pairs(team="unassigned"){
     if(team!=="unassigned"){
-      // Established challenge teams keep their own move-pair safe.
       return moves.filter(m=>m!==team).slice(0,2);
     }
-    const mode=String(prompt("Selective Slicer ×2: type Keep to protect the pair you want, Avoid to name 2 pairs to slice, or Random.")||"random").trim().toLowerCase();
-    if(mode==="keep"){
-      const keep=String(prompt("Which pair should stay? Rock, Paper, or Scissors.")||"").trim().toLowerCase();
-      if(moves.includes(keep)) return moves.filter(m=>m!==keep);
-    }
-    if(mode==="avoid"){
-      const first=String(prompt("First pair to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
-      const second=String(prompt("Second pair to avoid: Rock, Paper, or Scissors.")||"").trim().toLowerCase();
-      if(moves.includes(first) && moves.includes(second) && first!==second) return [first,second];
-    }
-    // Random fallback leaves one random pair.
-    return moves.slice().sort(()=>Math.random()-.5).slice(0,2);
+    const choice=soloSelectiveSlicerX2Choice;
+    if(!choice) return null;
+    if(choice==="random") return moves.slice().sort(()=>Math.random()-.5).slice(0,2);
+    // For ×2, the clicked move is the pair to KEEP. The other two are sliced.
+    if(moves.includes(choice)) return moves.filter(m=>m!==choice);
+    return null;
   }
 
   const SOLO_POWER_LEVELS={
@@ -2226,6 +2220,30 @@ async function refreshTeamPowerUI() {
               return;
             }
 
+            // Team Unpredictable Selective Slicer ×2 also stays inside
+            // the Solo power box. Pick the pair to KEEP, or choose Random.
+            if(family==="scissors" && soloPowerUpgraded && team==="unassigned" && !soloSelectiveSlicerX2Choice){
+              if(powerDesc){
+                powerDesc.innerHTML=`
+                  <b>Selective Slicer ×2 — which pair should stay?</b>
+                  <div class="muted" style="margin-top:5px">The other two pairs will be sliced away.</div>
+                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px">
+                    <button type="button" class="btn secondary" data-slicer-x2-choice="rock">🪨 Keep Rock</button>
+                    <button type="button" class="btn secondary" data-slicer-x2-choice="paper">📄 Keep Paper</button>
+                    <button type="button" class="btn secondary" data-slicer-x2-choice="scissors">✂️ Keep Scissors</button>
+                    <button type="button" class="btn secondary" data-slicer-x2-choice="random">🎲 Random</button>
+                  </div>`;
+                powerDesc.querySelectorAll("[data-slicer-x2-choice]").forEach(choiceBtn=>{
+                  choiceBtn.onclick=()=>{
+                    soloSelectiveSlicerX2Choice=choiceBtn.dataset.slicerX2Choice;
+                    powerBtn.click();
+                  };
+                });
+              }
+              if(powerHint) powerHint.textContent="Choose the pair to keep. Your Solo power is not used until you choose.";
+              return;
+            }
+
             // Team Unpredictable regular Selective Slicer uses in-game buttons,
             // not a browser JavaScript prompt.
             if(family==="scissors" && !soloPowerUpgraded && team==="unassigned" && !soloSelectiveSlicerChoice){
@@ -2319,6 +2337,12 @@ async function refreshTeamPowerUI() {
                   }
                 }
                 const pairsToCut=chooseSelectiveSlicerX2Pairs(team);
+                if(!pairsToCut || pairsToCut.length!==2){
+                  soloPowerUsed=false;
+                  soloPowerActive=false;
+                  return;
+                }
+                soloSelectiveSlicerX2Choice=null;
                 const grid=$("soloCardGrid");
                 if(grid){
                   [...grid.querySelectorAll("[data-solo-card]")].forEach((button,i)=>{
@@ -2587,16 +2611,26 @@ async function refreshTeamPowerUI() {
 
       if(!selectedMove && !soloCupPreviewDone){
         if(status) status.textContent="Memorize the three moves before they hide…";
-        if(soloCupPreviewTimer) clearTimeout(soloCupPreviewTimer);
-        const cupRoundAtStart=round;
-        soloCupPreviewTimer=setTimeout(()=>{
-          soloCupPreviewTimer=null;
-          // Ignore a stale callback if the UI/round changed before the preview ended.
-          if(!soloModeActive || round!==cupRoundAtStart || soloCupRoundInitialized!==cupRoundAtStart || selectedMove) return;
-          soloCupPreviewDone=true;
-          if(preview) preview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — track the cups!</div>";
-          runCupShuffle();
-        },1000);
+
+        // IMPORTANT: renderMovePicker can run repeatedly from Firebase room
+        // updates during the same round. Do not restart this 1-second timer
+        // on every render, or Cup Shuffle can remain stuck until a refresh.
+        if(!soloCupPreviewTimer){
+          const cupRoundAtStart=round;
+          soloCupPreviewTimer=setTimeout(()=>{
+            soloCupPreviewTimer=null;
+            if(!soloModeActive || round!==cupRoundAtStart || soloCupRoundInitialized!==cupRoundAtStart || selectedMove) return;
+
+            soloCupPreviewDone=true;
+
+            // Re-query the live elements because the move picker may have
+            // re-rendered while the preview timer was running.
+            const livePreview=$("soloCupPreview");
+            if(livePreview) livePreview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — track the cups!</div>";
+
+            runCupShuffle();
+          },1000);
+        }
       }else if(!selectedMove && !soloCupShuffling && status){
         status.textContent="Pick a cup to reveal the move underneath.";
       }
