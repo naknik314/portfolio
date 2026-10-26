@@ -3167,6 +3167,10 @@ async function refreshTeamPowerUI() {
     }, {onlyOnce:false});
   }
 
+  function powerNotUsedUpText(laterText=" — it is still available for a later round.") {
+    return round===7 ? "♻️ POWER NOT USED UP." : `♻️ POWER NOT USED UP${laterText}`;
+  }
+
   function beatsRound(a,b) {
     const reverse = round === 6;
     return beats(a,b,reverse);
@@ -3372,7 +3376,7 @@ async function refreshTeamPowerUI() {
       const highestGain=gains.length?Math.max(...gains.map(x=>x.gain)):0;
 
       if(highestGain<=0){
-        details.push(`⚡ POWER ATTEMPT — ${p.name} used ✂️ Cut in Half. NO EFFECT: no opponent earned positive points this round. ♻️ POWER NOT USED UP — it is still available for a later round.`);
+        details.push(`⚡ POWER ATTEMPT — ${p.name} used ✂️ Cut in Half. NO EFFECT: no opponent earned positive points this round. ${powerNotUsedUpText()}`);
         restoreScissorsPower.push(p.uid);
         continue;
       }
@@ -3388,7 +3392,7 @@ async function refreshTeamPowerUI() {
       const target=chosen.player;
 
       if(submissions[target.uid]?.teamPower==="rock"){
-        details.push(`⚡ POWER CLASH — ${p.name}'s ✂️ Cut in Half automatically targeted ${target.name}, who had the most positive round points. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`);
+        details.push(`⚡ POWER CLASH — ${p.name}'s ✂️ Cut in Half automatically targeted ${target.name}, who had the most positive round points. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ${round===7?`♻️ ${p.name}'s Cut in Half was NOT USED UP.`:`♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`}`);
         restoreScissorsPower.push(p.uid);
         continue;
       }
@@ -3403,7 +3407,7 @@ async function refreshTeamPowerUI() {
           successfulScissorsPower.push(p.uid);
           details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half. AUTO-TARGET: ${target.name} had the most positive round points. 🔥 CHAOS HIT: ${target.name}'s TOTAL game score was cut from ${total} to ${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
         }else{
-          details.push(`⚡ POWER ATTEMPT — ${p.name}'s ✂️ Cut in Half targeted ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
+          details.push(`⚡ POWER ATTEMPT — ${p.name}'s ✂️ Cut in Half targeted ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ${powerNotUsedUpText()}`);
           restoreScissorsPower.push(p.uid);
         }
       }else{
@@ -3420,17 +3424,10 @@ async function refreshTeamPowerUI() {
       }
     }
 
-    // Save power state without pausing the resolver. The earlier Cut in Half
-    // bug happened only on this mid-resolution Firebase path; resolution can
-    // now finish and write the reveal even if this status write is delayed.
-    successfulScissorsPower.forEach(uid=>{
-      set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true)
-        .catch(error=>console.warn("Could not save Cut in Half usage",error));
-    });
-    restoreScissorsPower.forEach(uid=>{
-      set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),false)
-        .catch(error=>console.warn("Could not restore Cut in Half availability",error));
-    });
+    // Do not write Cut in Half's used-state here. Mid-resolution Firebase
+    // writes can race the submissions listener and the next round. Instead,
+    // include the final power-used state in the same atomic room update that
+    // publishes this round's reveal.
 
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="rock") return;
@@ -3538,17 +3535,40 @@ async function refreshTeamPowerUI() {
     players.forEach(p=>{
       roundPoints[p.uid]=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
     });
+    // Round 7 is the final round. Any power that remains unconsumed should
+    // say only NOT USED UP, never that it can be used in a later round.
+    if(round===7){
+      for(let i=0;i<details.length;i++){
+        details[i]=String(details[i])
+          .replace(/\s*[—-]\s*it is still available for a later round\.?/gi,".")
+          .replace(/\s+and can be used later\.?/gi,".")
+          .replace(/\s*[—-]\s*available for a later round\.?/gi,".");
+      }
+    }
+
     const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner,rockSolidActive,roundPoints};
 
     // Publish the reveal and authoritative scores together. This avoids a
     // window where clients can see results but still have stale room scores.
-    await update(ref(db, `rooms/${room}`), {
+    const finalRoomUpdate={
       [`rounds/${round}/phase`]:"reveal",
       [`rounds/${round}/results`]:results,
       scores,
       moveWinPoints:moveLedger,
       updatedAt:Date.now()
+    };
+
+    // Cut in Half is consumed only on SUCCESS. NO EFFECT / BLOCKED remains
+    // available. Save that decision atomically with the reveal so the UI can
+    // never see a half-finished power state.
+    successfulScissorsPower.forEach(uid=>{
+      finalRoomUpdate[`teamPowerUsed/${uid}`]=true;
     });
+    restoreScissorsPower.forEach(uid=>{
+      finalRoomUpdate[`teamPowerUsed/${uid}`]=false;
+    });
+
+    await update(ref(db, `rooms/${room}`), finalRoomUpdate);
     resolvingRounds.delete(resolvingKey);
   }
 
@@ -3611,7 +3631,19 @@ async function refreshTeamPowerUI() {
     $("progressFill").style.width=`${round/7*100}%`;
     const icon=soloModeActive?"🎯":round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
     const title=soloModeActive?"Solo move revealed!":round===2?"Double Trouble!":round===4?"No Predictions!":round===6?"Reverse Rules!":"The moves are revealed!";
-    const powerNotices=(details||[]).filter(line=>line.includes("POWER USED")||line.includes("POWER CLASH")||line.includes("POWER ATTEMPT"));
+    let powerNotices=(details||[]).filter(line=>line.includes("POWER USED")||line.includes("POWER CLASH")||line.includes("POWER ATTEMPT"));
+
+    // Solo powers are tracked separately from multiplayer Team Powers, so they
+    // do not naturally create a multiplayer POWER USED detail line. When a
+    // Solo power has been consumed, show the actual Solo power instead of the
+    // misleading "No team power was used" message.
+    if(soloModeActive && soloPowerUsed && powerNotices.length===0){
+      const level=SOLO_POWER_LEVELS[soloPowerFamily];
+      if(level){
+        const soloPowerName=soloPowerUpgraded?level.swapped:level.regular;
+        powerNotices=[`⚡ SOLO POWER USED — ${hands[soloPowerFamily]||"🎯"} ${soloPowerName}. 🔒 SOLO POWER USED UP — unavailable for the rest of this Solo challenge.`];
+      }
+    }
     // Big animations are reserved for team-power moments so they stay special.
     // A clash can animate both powers in sequence.
     const animatedPowers=[];
@@ -3628,7 +3660,7 @@ async function refreshTeamPowerUI() {
       ${powerNotices.length?`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
         ${powerNotices.map(line=>`<span style="display:block;line-height:1.7;margin:9px 0;padding:11px 13px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.035)">${formatPowerNotice(line)}</span>`).join("")}
       </div>`:`<div style="margin:0 0 16px;padding:4px 2px;text-align:left">
-        <span>⚡ No team power was used this round.</span>
+        <span>${soloModeActive?"⚡ No Solo power was used this round.":"⚡ No team power was used this round."}</span>
       </div>`}
       <div class="choices reveal-player-cards ${players.length>3?"reveal-many":""}" style="align-items:stretch">${players.map(p=>{
         const move=playedMoves[p.uid]||"rock";
