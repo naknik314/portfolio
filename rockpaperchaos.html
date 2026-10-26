@@ -3723,6 +3723,20 @@ async function refreshTeamPowerUI() {
     setTimeout(()=>{layer.classList.remove("active");layer.innerHTML="";},cls==="paper-fall"?2300:2500);
   }
 
+  function underlinePowerPlayerNames(html){
+    let out=String(html||"");
+    // Longest names first prevents a shorter name from partially matching a
+    // longer one. Names are escaped because this runs after escapeHtml().
+    const names=[...new Set((players||[]).map(p=>String(p.name||"")).filter(Boolean))]
+      .sort((a,b)=>b.length-a.length);
+    names.forEach(name=>{
+      const escapedName=escapeHtml(name);
+      const regexSafe=escapedName.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      out=out.replace(new RegExp(`(?<![\\w>])${regexSafe}(?![\\w<])`,"g"),`<u>${escapedName}</u>`);
+    });
+    return out;
+  }
+
   function formatPowerNotice(line){
     line=String(line||"");
     // Power outcomes are public. USED UP is personal to reduce clutter,
@@ -3744,6 +3758,7 @@ async function refreshTeamPowerUI() {
     safe=safe.replace(/(POWER NOT USED UP)/g,"<strong>$1</strong>");
     safe=safe.replace(/(?<!>)\b(USED UP|NOT USED UP)\b(?!<)/g,"<strong>$1</strong>");
     safe=safe.replace(/(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses)(?![^<]*<\/strong>)/g,"<i>$1</i>");
+    safe=underlinePowerPlayerNames(safe);
     return safe;
   }
 
