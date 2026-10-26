@@ -3728,7 +3728,12 @@ async function refreshTeamPowerUI() {
     if(!currentUser) return false;
     if(!code){ show("home"); return false; }
     try{
-      const snap=await get(ref(db,`rooms/${code}`));
+      // Never leave the app trapped on "Reconnecting" if Firebase does not
+      // answer (offline, App Check delay, stale connection, etc.).
+      const snap=await Promise.race([
+        get(ref(db,`rooms/${code}`)),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("Reconnect timed out")),6000))
+      ]);
       if(!snap.exists()){ forgetRoom(); show("home"); return false; }
       const data=snap.val()||{};
       const membership=data.players?.[currentUser.uid];
@@ -3782,6 +3787,9 @@ async function refreshTeamPowerUI() {
       room="";
       players=[];
       show("home");
+      toast(error?.message==="Reconnect timed out"
+        ?"Couldn’t reconnect to that game. You can start or join a game from Home."
+        :"Couldn’t restore the previous game. Returned to Home.");
       return false;
     }
   }
