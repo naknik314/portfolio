@@ -3317,16 +3317,22 @@ async function refreshTeamPowerUI() {
 
       // If move totals tie, the tied move with a counter bonus wins the round tiebreak.
       const totals={};
-      moves.forEach(m=>totals[m]=count[m]+counterMoves[m]);
+      moves.forEach(m=>{
+        const baseMovePoints=count[m]*multiplier;
+        const counterBonusPoints=counterMoves[m]*multiplier;
+        totals[m]=baseMovePoints+counterBonusPoints;
+      });
       const top=Math.max(...Object.values(totals));
       const tied=moves.filter(m=>totals[m]===top);
       if(tied.length===1) {
         revealWinner=`${tied[0][0].toUpperCase()+tied[0].slice(1)} wins!`;
         const totalSummary=moves.filter(m=>totals[m]>0).map(m=>{
           const label=m[0].toUpperCase()+m.slice(1);
-          return counterMoves[m]>0
-            ? `${label} ${count[m]||0} + counter bonus = ${totals[m]}`
-            : `${label} ${totals[m]}`;
+          if(counterMoves[m]>0){
+            const counterBonusPoints=counterMoves[m]*multiplier;
+            return `${label} ${count[m]||0} + ${counterBonusPoints} counter bonus ${counterBonusPoints===1?"point":"points"} = ${totals[m]}`;
+          }
+          return `${label} ${totals[m]}`;
         }).join(" | ");
         const counterWasNotEnough=moves.some(m=>counterMoves[m]>0 && m!==tied[0]);
         details.unshift(`${counterWasNotEnough?"COUNTER BONUS — ":""}${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison${counterWasNotEnough?" — the minority counter bonus was not enough":""}. (${totalSummary})`);
@@ -3340,9 +3346,11 @@ async function refreshTeamPowerUI() {
           {
             const counterMove=withCounter[0];
             const otherMove=tied.find(m=>m!==counterMove);
-            const counterBonus=counterMoves[counterMove]||0;
-            const counterEffective=(count[counterMove]||0)+counterBonus;
-            details.unshift(`COUNTER BONUS — ${counterMove[0].toUpperCase()+counterMove.slice(1)} wins the tied move totals. (${counterMove[0].toUpperCase()+counterMove.slice(1)} ${count[counterMove]||0} + ${counterBonus} counter bonus = ${counterEffective} | ${otherMove[0].toUpperCase()+otherMove.slice(1)} ${count[otherMove]||0})`);
+            const counterBonus=(counterMoves[counterMove]||0)*multiplier;
+            const baseCounterPoints=(count[counterMove]||0)*multiplier;
+            const counterEffective=baseCounterPoints+counterBonus;
+            const otherPoints=(count[otherMove]||0)*multiplier;
+            details.unshift(`COUNTER BONUS — ${counterMove[0].toUpperCase()+counterMove.slice(1)} wins the tied move totals. (${counterMove[0].toUpperCase()+counterMove.slice(1)} ${baseCounterPoints} + ${counterBonus} counter bonus ${counterBonus===1?"point":"points"} = ${counterEffective} | ${otherMove[0].toUpperCase()+otherMove.slice(1)} ${otherPoints})`);
           }
         } else if(tied.length===2){
           // Two tied move groups still resolve by Rock-Paper-Scissors rather than becoming a draw.
