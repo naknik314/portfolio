@@ -803,7 +803,7 @@ const db = getDatabase(firebaseApp);
     return (available.length ? available : themedNames)[Math.floor(Math.random()*(available.length || themedNames.length))];
   }
   function theme(name) {
-    const faces=["😄","😂","😁","😆","😊","🤪","😎","🥳","😺"];
+    const faces=["😄","😂","😁","😆","😊","🤪","😎","🥳","🤓","😜","🤩"];
     let hash=0;
     for(const ch of String(name||"")) hash=(hash*31+ch.charCodeAt(0))>>>0;
     return {icon:faces[hash%faces.length],label:"Random game username"};
