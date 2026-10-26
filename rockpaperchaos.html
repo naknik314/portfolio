@@ -1840,8 +1840,8 @@ let soloCupCrusherX2Choice=null;
       power.displayName=power.name;
     }
     if(isUnpredictable && power){
-      power.displayName=`🎲 Jack of All Trades → ${power.name.replace(/^[^ ]+ /,"")}`;
-      power.desc=`Jack of All Trades randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
+      power.displayName=`🎲 Team Unpredictable → ${power.name.replace(/^[^ ]+ /,"")}`;
+      power.desc=`Team Unpredictable randomly gave you ${power.name.replace(/^[^ ]+ /,"")} for this game. ${power.desc}`;
     } else if(reversalActive && power){
       power.displayName=power.name;
     }
@@ -1912,7 +1912,7 @@ async function refreshTeamPowerUI() {
     }
     const shownPowerName=activeTeamPower.displayName||activeTeamPower.name;
     // Regular teams get a clear "Your team power" label.
-    // Team Unpredictable keeps the Jack of All Trades wording so its random-power identity is clear.
+    // Team Unpredictable uses the team name here; Jack of All Trades is reserved for the final team rank.
     // renderExactMovePower() already rendered the current power description.
     const targetWrap=$("scissorsTargetWrap");
     const targetChoices=$("scissorsTargetChoices");
@@ -2160,7 +2160,7 @@ async function refreshTeamPowerUI() {
           paper:{name:"📄 Quick Peek",desc:"Slow Quick Draw to 350 ms per move.",rounds:[1,4]},
           scissors:{name:"✂️ Selective Slicer",desc:"Slice away 1 unwanted pair, leaving 4 cards.",rounds:[2,6]}
         }[family];
-        const teamPrefix=team==="unassigned"?"🎲 Jack of All Trades → ":"";
+        const teamPrefix=team==="unassigned"?"🎲 Team Unpredictable → ":"";
         const level=SOLO_POWER_LEVELS[family];
         const shownName=soloPowerUpgraded?level.swapped:level.regular;
         const shownEffect=soloPowerUpgraded?level.swappedEffect:level.regularEffect;
