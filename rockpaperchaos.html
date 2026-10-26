@@ -3051,7 +3051,13 @@ async function refreshTeamPowerUI() {
             submittedAt:Date.now()
           };
         }
-        await resolveSharedRound(completed);
+        try{
+          await resolveSharedRound(completed);
+        }catch(error){
+          console.error("Round resolution failed",error);
+          resolvingRounds.delete(`${room}:${round}`);
+          toast("Round resolution hit an error. Please try locking in again.");
+        }
       }
     }, {onlyOnce:false});
   }
@@ -3061,9 +3067,17 @@ async function refreshTeamPowerUI() {
     return beats(a,b,reverse);
   }
 
+  const resolvingRounds=new Set();
+
   async function resolveSharedRound(submissions) {
+    const resolvingKey=`${room}:${round}`;
+    if(resolvingRounds.has(resolvingKey)) return;
+    resolvingRounds.add(resolvingKey);
     const resultSnap=await get(ref(db, `${roundPath()}/results`));
-    if (resultSnap.exists()) return;
+    if (resultSnap.exists()){
+      resolvingRounds.delete(resolvingKey);
+      return;
+    }
     const reverse=round===6;
     const multiplier=round===2?2:1;
     const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
@@ -3405,6 +3419,7 @@ async function refreshTeamPowerUI() {
     const results={scores,details,reverse,basePoints:multiplier,moves:played,revealWinner,rockSolidActive,roundPoints};
     await update(ref(db, `${roundPath()}`), {phase:"reveal",results});
     await update(ref(db, `rooms/${room}`), {scores,moveWinPoints:moveLedger,updatedAt:Date.now()});
+    resolvingRounds.delete(resolvingKey);
   }
 
   function celebrateWinningMove(revealWinner){
