@@ -3881,7 +3881,17 @@ async function refreshTeamPowerUI() {
       });
 
       const heading=`⚡ POWER USED — ${joinPlayerNames(names)} used ${power.icon} ${power.name}, ${power.description}.`;
-      const outcomeLines=outcomes.map(o=>`${o.marker} ${o.text}`);
+      // In large games, combine players with the same outcome label into a
+      // single line instead of repeating SUCCESS / NO EFFECT / BLOCKED.
+      const outcomeLines=[];
+      ["SUCCESS:","NO EFFECT:","BLOCKED:"].forEach(marker=>{
+        const matching=outcomes.filter(o=>o.marker===marker);
+        if(!matching.length) return;
+        const combined=matching
+          .map(o=>String(o.text||"").trim().replace(/\.$/,""))
+          .join(", ");
+        outcomeLines.push(`${marker} ${combined}.`);
+      });
       const statusLines=[];
       if(power.name==="Reprint"){
         // Reprint is consumed whenever it is submitted, including NO EFFECT.
