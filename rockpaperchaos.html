@@ -3872,27 +3872,68 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
   // Calling signInAnonymously immediately on page load can race Firebase's
   // persisted-auth restoration in some browsers.
   let startupAuthHandled=false;
+
+  // Startup watchdog: the previous reconnect timeout only started AFTER
+  // Firebase Auth finished. If Auth/persistence itself stalled, the page could
+  // remain on "Reconnecting" forever. This watchdog covers the whole startup.
+  const startupWatchdog=setTimeout(()=>{
+    if(startupAuthHandled) return;
+    startupAuthHandled=true;
+    console.warn("Firebase startup timed out; releasing reconnect screen.");
+    if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+    forgetRoom();
+    onlineRoom=false;
+    isHost=false;
+    room="";
+    players=[];
+    show("home");
+    toast("Connection took too long. Returned to Home so the game doesn't get stuck.");
+  },7000);
+
+  const handleStartupUser=async user=>{
+    if(startupAuthHandled) return;
+    startupAuthHandled=true;
+    clearTimeout(startupWatchdog);
+    try{
+      if(!user){
+        const credential=await Promise.race([
+          signInAnonymously(auth),
+          new Promise((_,reject)=>setTimeout(()=>reject(new Error("Firebase sign-in timed out")),6000))
+        ]);
+        user=credential.user;
+      }
+      currentUser=user;
+      await recoverAfterRefresh();
+      loadCommunityTeams();
+    }catch(error){
+      console.error(error);
+      if(roomUnsubscribe){ roomUnsubscribe(); roomUnsubscribe=null; }
+      forgetRoom();
+      onlineRoom=false;
+      isHost=false;
+      room="";
+      players=[];
+      show("home");
+      toast(error?.message==="Firebase sign-in timed out"
+        ?"Firebase sign-in took too long. Returned to Home."
+        :"Firebase sign-in failed. Returned to Home.");
+    }
+  };
+
+  // Do not wait indefinitely for setPersistence before installing the auth
+  // listener. Install it immediately; persistence is still requested.
+  onAuthStateChanged(auth, handleStartupUser, error=>{
+    console.error("Firebase auth-state error",error);
+    if(startupAuthHandled) return;
+    startupAuthHandled=true;
+    clearTimeout(startupWatchdog);
+    forgetRoom();
+    show("home");
+    toast("Couldn’t restore Firebase sign-in. Returned to Home.");
+  });
+
   setPersistence(auth, browserLocalPersistence)
-    .catch(error=>console.warn("Could not force local Firebase Auth persistence:",error))
-    .finally(()=>{
-      onAuthStateChanged(auth, async user => {
-        if(startupAuthHandled) return;
-        startupAuthHandled=true;
-        try{
-          if(!user){
-            const credential=await signInAnonymously(auth);
-            user=credential.user;
-          }
-          currentUser=user;
-          await recoverAfterRefresh();
-          loadCommunityTeams();
-        }catch(error){
-          console.error(error);
-          show("home");
-          toast("Firebase sign-in failed. Make sure Anonymous Authentication is enabled.");
-        }
-      });
-    });
+    .catch(error=>console.warn("Could not force local Firebase Auth persistence:",error));
   $("statsBtn").onclick = async () => {
     try {
       await renderMyStats();
