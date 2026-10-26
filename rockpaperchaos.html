@@ -2923,6 +2923,19 @@ async function refreshTeamPowerUI() {
       toast("Competitive mode requires a rival and prediction before locking in.");
       return;
     }
+    // Refresh the exact active power at lock-in so Team Unpredictable,
+    // Double Agent, and Power Swap all submit the power currently shown.
+    const uid=currentUser.uid;
+    let submissionPower=activeTeamPower;
+    if(teamPowerArmed && !soloModeActive && !noPrediction){
+      try{
+        submissionPower=await loadActiveTeamPower() || activeTeamPower;
+        activeTeamPower=submissionPower;
+      }catch(error){
+        console.warn("Could not refresh team power before submission",error);
+      }
+    }
+
     // Cut in Half chooses its target automatically during round resolution,
     // after everyone's positive round points are known.
     // Each player writes only under their own UID. The UI never displays submissions before reveal.
