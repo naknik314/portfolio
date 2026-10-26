@@ -3108,6 +3108,7 @@ async function refreshTeamPowerUI() {
         }
         const completed={...submissions};
         const chaosBotMode=await isChaosBotChallengeActive();
+        chaosBotModeActive=!!chaosBotMode;
         for (const p of players.filter(p=>p.bot)) {
           let prediction=null;
           if(round!==4 && Math.random()<(chaosBotMode?0.88:0.70)){
@@ -3131,8 +3132,9 @@ async function refreshTeamPowerUI() {
             await set(botPowerRef,botPower);
           }
 
-          // Chaos Bot Mode: each bot gets a stable 50/50 chance of
-          // using the swapped counterpart of its normal power this game.
+          // Chaos Bot Mode: each bot gets a stable 50/50 normal/swapped
+          // power variant for the game. Unlike normal bots, Chaos Bots may
+          // activate that power again in later rounds.
           if(chaosBotMode){
             const variantRef=ref(db,`rooms/${room}/chaosBotPowerVariants/${p.uid}`);
             const variantSnap=await get(variantRef);
@@ -3151,10 +3153,17 @@ async function refreshTeamPowerUI() {
 
           const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`));
           const alreadyUsed=usedSnap.exists() && usedSnap.val()===true;
+
+          // Normal computer rivals follow the same once-per-game Team Power
+          // rule as human players. Chaos Bot Mode is the deliberate exception:
+          // Chaos Bots may activate a Team Power again in later rounds.
+          // They still use at most one power in a single round and Round 4
+          // remains power-free.
+          const botPowerAvailable=chaosBotMode || !alreadyUsed;
           const useChance=chaosBotMode?(round>=7?1:round>=6?.92:round>=5?.72:round>=3?.50:.30):(round>=7?1:round>=6?.80:round>=5?.55:round>=3?.32:.18);
           let teamPower=null, teamPowerTarget=null;
 
-          if(round!==4 && !alreadyUsed && Math.random()<useChance){
+          if(round!==4 && botPowerAvailable && Math.random()<useChance){
             teamPower=botPower;
             if(teamPower==="scissors"){
               const targets=players.filter(other=>other.uid!==p.uid);
@@ -3203,6 +3212,7 @@ async function refreshTeamPowerUI() {
   }
 
   const resolvingRounds=new Set();
+  let chaosBotModeActive=false;
 
   async function resolveSharedRound(submissions) {
     const resolvingKey=`${room}:${round}`;
@@ -3228,6 +3238,7 @@ async function refreshTeamPowerUI() {
     let resolverChaosBotMode=false;
     try{
       resolverChaosBotMode=await isChaosBotChallengeActive();
+      chaosBotModeActive=!!resolverChaosBotMode;
     }catch(error){
       console.warn("Could not read Chaos Bot mode during resolution; using normal Cut in Half rules.",error);
     }
@@ -3765,6 +3776,22 @@ async function refreshTeamPowerUI() {
   const moveItems={rock:"🪨",paper:"📄",scissors:"✂️"};
 
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
+    // Chaos Bots can reuse Team Powers in later rounds, so their power is
+    // never described as USED UP. Keep the success/no-effect result, but
+    // replace any consumed-power status with a Chaos Bot reusable status.
+    if(chaosBotModeActive){
+      const chaosBotNames=new Set(players.filter(p=>p.bot).map(p=>p.name));
+      details=(details||[]).map(line=>{
+        let text=String(line||"");
+        chaosBotNames.forEach(name=>{
+          if(!text.includes(name)) return;
+          text=text.replace(/\s*🔒\s*(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses) USED UP[^.]*\.?/g,
+            ` ♻️ $1 AVAILABLE AGAIN${round===7?".":" in a later round."}`);
+        });
+        return text;
+      });
+    }
+
     // Round 7 has no later round. Clean power availability wording here as
     // well as during resolution so reconnecting to an older stored result
     // cannot bring the outdated phrase back.
