@@ -3285,8 +3285,8 @@ async function refreshTeamPowerUI() {
       if (majority.length===1) {
         players.filter(p=>played[p.uid]===majority[0]).forEach(p=>{scores[p.uid]+=1*multiplier;addMoveWin(p.uid,played[p.uid],1*multiplier);});
         details.push(`${majority[0][0].toUpperCase()+majority[0].slice(1)} has the majority: +${1*multiplier} to each matching player.`);
-      } else {
-        details.push("Majority is tied: no majority points.");
+      } else if(majority.length===3) {
+        details.push("All three moves are tied: no majority points.");
       }
 
       // Counter bonus: only a minority move that beats the single majority move can earn it.
@@ -3367,7 +3367,12 @@ async function refreshTeamPowerUI() {
           const noCounterNote=tiedAtOriginalLead
             ? " No counter bonus because there was no single majority move."
             : "";
-          details.unshift(`⚖️ TIED LEADERS — ${tied[0][0].toUpperCase()+tied[0].slice(1)} and ${tied[1][0].toUpperCase()+tied[1].slice(1)} tied with ${count[tied[0]]} players each. ${winningMove[0].toUpperCase()+winningMove.slice(1)} beats ${tied.find(m=>m!==winningMove)[0].toUpperCase()+tied.find(m=>m!==winningMove).slice(1)} in the ${reverse?"reverse ":""}Rock-Paper-Scissors matchup, so ${winningMove[0].toUpperCase()+winningMove.slice(1)} wins: +${1*multiplier} to each ${winningMove} player.${noCounterNote}`);
+          const losingTiedMove=tied.find(m=>m!==winningMove);
+          // Keep the fact of the tie separate from the explanation of who won.
+          // On the reveal screen these become separate Round Highlight bullets,
+          // making the RPS tiebreak result much easier to scan.
+          details.unshift(`${winningMove[0].toUpperCase()+winningMove.slice(1)} beats ${losingTiedMove[0].toUpperCase()+losingTiedMove.slice(1)} in the ${reverse?"reverse ":""}Rock-Paper-Scissors matchup, so ${winningMove[0].toUpperCase()+winningMove.slice(1)} wins: +${1*multiplier} to each ${winningMove} player.${noCounterNote}`);
+          details.unshift(`⚖️ TIED MAJORITY — ${tied[0][0].toUpperCase()+tied[0].slice(1)} and ${tied[1][0].toUpperCase()+tied[1].slice(1)} tied with ${count[tied[0]]} players each, so there are no majority points.`);
         } else {
           revealWinner="Draw!";
           details.unshift("Move totals remain tied.");
