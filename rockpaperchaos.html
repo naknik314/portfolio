@@ -3328,7 +3328,12 @@ async function refreshTeamPowerUI() {
             scores[p.uid]+=1*multiplier;
             addMoveWin(p.uid,winningMove,1*multiplier);
           });
-          details.unshift(`${winningMove[0].toUpperCase()+winningMove.slice(1)} wins the tied move groups by the ${reverse?"reverse ":""}Rock-Paper-Scissors matchup: +${1*multiplier} to each ${winningMove} player.`);
+          const tiedLeaderCounts=tied.map(m=>count[m]||0);
+          const tiedAtOriginalLead=tiedLeaderCounts.every(n=>n===maxCount) && majority.length>1;
+          const noCounterNote=tiedAtOriginalLead
+            ? " No counter bonus because there was no single majority move."
+            : "";
+          details.unshift(`⚖️ TIED LEADERS — ${tied[0][0].toUpperCase()+tied[0].slice(1)} and ${tied[1][0].toUpperCase()+tied[1].slice(1)} tied with ${count[tied[0]]} players each. ${winningMove[0].toUpperCase()+winningMove.slice(1)} beats ${tied.find(m=>m!==winningMove)[0].toUpperCase()+tied.find(m=>m!==winningMove).slice(1)} in the ${reverse?"reverse ":""}Rock-Paper-Scissors matchup, so ${winningMove[0].toUpperCase()+winningMove.slice(1)} wins: +${1*multiplier} to each ${winningMove} player.${noCounterNote}`);
         } else {
           revealWinner="Draw!";
           details.unshift("Move totals remain tied.");
@@ -3464,14 +3469,26 @@ async function refreshTeamPowerUI() {
       }
     });
 
-    // Team Paper: copy the highest positive net points another player earned this round.
-    players.forEach(p=>{
-      if(submissions[p.uid]?.teamPower!=="paper") return;
-      const gains=players.filter(o=>o.uid!==p.uid).map(o=>Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0)));
-      const highestGain=gains.length?Math.max(...gains):0;
-      const copied=highestGain;
+    // Team Paper: Reprint. Freeze each player's pre-Reprint round gain first.
+    // This is important when several players use Reprint in a large room:
+    // one Reprint must not inflate what a later Reprint sees/copies.
+    const preReprintGains={};
+    players.forEach(o=>{
+      preReprintGains[o.uid]=Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0));
+    });
+    const reprintAwards=[];
+    for(const p of players){
+      if(submissions[p.uid]?.teamPower!=="paper") continue;
+      const gains=players
+        .filter(o=>o.uid!==p.uid)
+        .map(o=>Number(preReprintGains[o.uid]||0));
+      const copied=gains.length?Math.max(...gains):0;
+      reprintAwards.push({player:p,copied});
+    }
+    // Apply only after every Reprint has chosen its copied value.
+    reprintAwards.forEach(({player:p,copied})=>{
       if(copied>0){
-        scores[p.uid]+=copied;
+        scores[p.uid]=Number(scores[p.uid]||0)+copied;
         details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 📄 Reprint USED UP — unavailable for the rest of this game.`);
       } else {
         details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. NO EFFECT: nobody else earned positive points to copy. 🔒 📄 Reprint USED UP — unavailable for the rest of this game.`);
