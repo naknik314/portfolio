@@ -3221,6 +3221,17 @@ async function refreshTeamPowerUI() {
     }
     const reverse=round===6;
     const multiplier=round===2?2:1;
+
+    // Resolver-local mode state. Cut in Half must never rely on the
+    // watchSubmissions() local `chaosBotMode` variable; doing so caused a
+    // ReferenceError on the SUCCESS path.
+    let resolverChaosBotMode=false;
+    try{
+      resolverChaosBotMode=await isChaosBotChallengeActive();
+    }catch(error){
+      console.warn("Could not read Chaos Bot mode during resolution; using normal Cut in Half rules.",error);
+    }
+
     const scoresSnap=await get(ref(db, `rooms/${room}/scores`));
     const scores=scoresSnap.val() || {};
     players.forEach(p=>{ if(scores[p.uid]==null) scores[p.uid]=0; });
@@ -3442,7 +3453,7 @@ async function refreshTeamPowerUI() {
 
       // CHAOS BOT RULE: a Chaos Bot still attacks TOTAL score, but the target
       // is selected from the strongest positive round earners.
-      if(chaosBotMode && p.bot){
+      if(resolverChaosBotMode && p.bot){
         const total=Math.max(0,Number(scores[target.uid]||0));
         if(total>0){
           const reduced=Math.floor(total/2);
