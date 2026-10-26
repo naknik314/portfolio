@@ -2966,7 +2966,11 @@ async function refreshTeamPowerUI() {
       prediction:(!noPrediction && targetId && predictedMove)?{targetUid:targetId,move:predictedMove}:null,
       teamPower:canUseTeamPower?submissionPower.key:null,
       teamPowerTarget:null,
-      locked:true,
+      // IMPORTANT: do not publish locked:true until all power bookkeeping is
+      // finished. The host resolves as soon as every human is locked, so the
+      // old order could resolve a half-finished submission and intermittently
+      // lose the power notice or throw a resolution error.
+      locked:false,
       submittedAt:Date.now()
     };
 
@@ -2999,6 +3003,15 @@ async function refreshTeamPowerUI() {
         teamPowerArmed=false;
       }
     }
+
+    // Publish readiness LAST. This is the single signal the host uses to begin
+    // resolution, so by the time it becomes true the submitted power and any
+    // required bookkeeping are already final.
+    await update(ref(db, `${roundPath()}/submissions/${uid}`), {
+      locked:true,
+      submittedAt:Date.now()
+    });
+
     if(soloModeActive){
       $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🎯</div><h2>Solo move locked!</h2><p class="muted">Revealing your Solo round…</p></div>`;
       $("phaseLabel").textContent="Revealing Solo round";
@@ -3144,7 +3157,9 @@ async function refreshTeamPowerUI() {
               }
               else teamPower=null;
             }
-            if(teamPower) set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true).catch(error=>console.warn("Could not save Cut in Half usage",error));
+            // Do not mark bot powers used here. Resolution is authoritative
+            // about whether a power was actually consumed (especially Cut in
+            // Half, which stays available on NO EFFECT / BLOCKED).
           }
 
           completed[p.uid]={
@@ -3182,7 +3197,13 @@ async function refreshTeamPowerUI() {
     const resolvingKey=`${room}:${round}`;
     if(resolvingRounds.has(resolvingKey)) return;
     resolvingRounds.add(resolvingKey);
-    const resultSnap=await get(ref(db, `${roundPath()}/results`));
+    let resultSnap;
+    try{
+      resultSnap=await get(ref(db, `${roundPath()}/results`));
+    }catch(error){
+      resolvingRounds.delete(resolvingKey);
+      throw error;
+    }
     if (resultSnap.exists()){
       resolvingRounds.delete(resolvingKey);
       return;
