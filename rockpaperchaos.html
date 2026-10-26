@@ -1549,6 +1549,7 @@ const db = getDatabase(firebaseApp);
   let soloCupPreviewDone=false;
 let soloCupShuffling=false;
 let soloCupRoundInitialized=0;
+let soloCupPreviewTimer=null;
   let soloSpinnerRunning=false;
   let soloPowerFamily=null;
   let soloPowerUsed=false;
@@ -1993,7 +1994,7 @@ async function refreshTeamPowerUI() {
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
       selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
-      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloCupRoundInitialized=0; soloSpinnerRunning=false;
+      soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; if(soloCupPreviewTimer){ clearTimeout(soloCupPreviewTimer); soloCupPreviewTimer=null; } soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloCupRoundInitialized=0; soloSpinnerRunning=false;
       soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
       showRoundIntro(round);
@@ -2502,6 +2503,7 @@ async function refreshTeamPowerUI() {
       // round 5 can inherit round 3's "preview already done" flag and skip
       // the preview/shuffle sequence.
       if(!selectedMove && soloCupRoundInitialized!==round){
+        if(soloCupPreviewTimer){ clearTimeout(soloCupPreviewTimer); soloCupPreviewTimer=null; }
         soloCupRoundInitialized=round;
         soloCupMoves=["rock","paper","scissors"];
         soloCupRevealed=false;
@@ -2585,7 +2587,12 @@ async function refreshTeamPowerUI() {
 
       if(!selectedMove && !soloCupPreviewDone){
         if(status) status.textContent="Memorize the three moves before they hide…";
-        setTimeout(()=>{
+        if(soloCupPreviewTimer) clearTimeout(soloCupPreviewTimer);
+        const cupRoundAtStart=round;
+        soloCupPreviewTimer=setTimeout(()=>{
+          soloCupPreviewTimer=null;
+          // Ignore a stale callback if the UI/round changed before the preview ended.
+          if(!soloModeActive || round!==cupRoundAtStart || soloCupRoundInitialized!==cupRoundAtStart || selectedMove) return;
           soloCupPreviewDone=true;
           if(preview) preview.innerHTML="<div style=\"font-size:18px;font-weight:900\">🥤 Moves hidden — track the cups!</div>";
           runCupShuffle();
