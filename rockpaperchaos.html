@@ -1188,8 +1188,8 @@ const db = getDatabase(firebaseApp);
     $("addPlayer").disabled = players.length >= 8 || !isHost;
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     const canStart = isHost && (players.length >= 2 || (soloModeActive && players.length === 1));
-    $("startBtn").disabled = !canStart;
-    $("startBtn").style.opacity = canStart ? "1" : ".5";
+    $("startBtn").disabled = !isHost;
+    $("startBtn").style.opacity = isHost ? "1" : ".5";
     $("startBtn").textContent = soloModeActive && players.length===1 ? "Start Solo Mode →" : "Start 7-round game →";
     const modeSelect=$("predictionModeSelect");
     const modeHelp=$("predictionModeHelp");
@@ -1211,42 +1211,46 @@ const db = getDatabase(firebaseApp);
     refreshSoloModeLobby();
   }
   async function removeComputerPlayer(uid) {
-    if (!isHost) return toast("Only the host can remove computer players.");
-    const target = players.find(p => p.uid === uid);
-    if (!target || !target.bot) return toast("That player isn’t a computer.");
-    try {
-      await remove(ref(db, `rooms/${room}/players/${uid}`));
-      toast(`${target.name} removed.`);
-    } catch (error) {
-      console.error(error);
+    if(!isHost) return toast("Only the host can remove computer players.");
+    if(!room) return toast("This game room is no longer active.");
+    const bot=players.find(p=>p.uid===uid && p.bot);
+    if(!bot) return toast("That computer player is no longer in the room.");
+    try{
+      await remove(ref(db,`rooms/${room}/players/${uid}`));
+      players=players.filter(p=>p.uid!==uid);
+      renderLobby();
+      toast(`${bot.name} removed.`);
+    }catch(error){
+      console.error("Remove computer failed:",error);
       toast("Couldn’t remove that computer player.");
     }
   }
 
   async function addDemoPlayer() {
-    if (!isHost) return toast("Only the host can add computer rivals.");
-    if(soloModeActive) return toast("Computer rivals are unavailable while Solo Mode is active. Cancel Solo Mode first if you want to add one.");
-    if (players.length >= 8) return toast("Room is full — 8 players max.");
-    const roomSnap = await get(ref(db, `rooms/${room}`));
-    const roomData = roomSnap.val() || {};
-    const existingNames = new Set(Object.values(roomData.players || {}).map(p => String(p.name || "").toLowerCase()));
-    const availableBotNames = botNames.filter(n => !existingNames.has(n.toLowerCase()));
-    let name;
-    if (availableBotNames.length) {
-      name = availableBotNames[Math.floor(Math.random() * availableBotNames.length)];
-    } else {
-      const baseBotName = botNames[Math.floor(Math.random() * botNames.length)];
-      let suffix = 2;
-      name = `${baseBotName} ${suffix}`;
-      while (existingNames.has(name.toLowerCase())) {
-        suffix++;
-        name = `${baseBotName} ${suffix}`;
+    if(!isHost) return toast("Only the host can add computer rivals.");
+    if(!room) return toast("This game room is no longer active.");
+    if(soloModeActive) return toast("Computer rivals are unavailable while Solo Mode is active.");
+    if(players.length>=8) return toast("Room is full — 8 players max.");
+
+    const existingNames=new Set(players.map(p=>String(p.name||"").toLowerCase()));
+    const available=botNames.filter(n=>!existingNames.has(n.toLowerCase()));
+    let name=available.length
+      ? available[Math.floor(Math.random()*available.length)]
+      : `Rival Bot ${Math.floor(Math.random()*900+100)}`;
+    const botId=`bot_${Date.now()}_${Math.floor(Math.random()*10000)}`;
+    const botData={name,bot:true,host:false,score:0,joinedAt:Date.now()};
+
+    try{
+      await set(ref(db,`rooms/${room}/players/${botId}`),botData);
+      if(!players.some(p=>p.uid===botId)){
+        players.push(playerFromFirebase(botId,botData));
+        renderLobby();
       }
+      toast(`${name} joined as a computer rival.`);
+    }catch(error){
+      console.error("Add computer failed:",error);
+      toast("Couldn’t add the computer rival.");
     }
-    const botId = `bot_${Date.now()}_${Math.floor(Math.random()*10000)}`;
-    await set(ref(db, `rooms/${room}/players/${botId}`), {
-      name, bot:true, host:false, score:0, joinedAt:Date.now()
-    });
   }
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g,c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1257,7 +1261,8 @@ const db = getDatabase(firebaseApp);
     return reverse ? (wins ? -1 : 1) : (wins ? 1 : -1);
   }
   async function startGame() {
-    if (!isHost) return toast("Only the host can start the match.");
+    if(!isHost) return toast("Only the host can start the match.");
+    if(!room) return toast("This game room is no longer active.");
     const soloSnap=currentUser?await get(ref(db,`rooms/${room}/soloMode/${currentUser.uid}`)):null;
     soloModeActive=Boolean(soloSnap?.exists() && soloSnap.val()===true);
     if(soloModeActive && players.length!==1) return toast("Solo Mode can only start when you are the only player.");
