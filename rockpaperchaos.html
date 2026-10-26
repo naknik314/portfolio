@@ -1232,14 +1232,20 @@ const db = getDatabase(firebaseApp);
   let addingComputerPlayer=false;
 
   async function addDemoPlayer() {
-    if(addingComputerPlayer) return;
+    const visibleAddButton=$("addPlayer");
+    if(addingComputerPlayer){
+      // A Firebase lobby refresh may have replaced/reset the visible state after
+      // the previous add/remove cycle. Don't let a stale guard make the button dead.
+      if(visibleAddButton && !visibleAddButton.disabled) addingComputerPlayer=false;
+      else return;
+    }
     if(!isHost) return toast("Only the host can add computer rivals.");
     if(!room) return toast("This game room is no longer active.");
     if(soloModeActive) return toast("Computer rivals are unavailable while Solo Mode is active.");
     if(players.length>=8) return toast("Room is full — 8 players max.");
 
     addingComputerPlayer=true;
-    const addButton=$("addDemo");
+    const addButton=$("addPlayer");
     if(addButton) addButton.disabled=true;
 
     const existingNames=new Set(players.map(p=>String(p.name||"").toLowerCase()));
@@ -1262,7 +1268,7 @@ const db = getDatabase(firebaseApp);
       toast("Couldn’t add the computer rival.");
     }finally{
       addingComputerPlayer=false;
-      const currentAddButton=$("addDemo");
+      const currentAddButton=$("addPlayer");
       if(currentAddButton){
         currentAddButton.disabled=soloModeActive || players.length>=8 || !isHost;
         currentAddButton.style.opacity=currentAddButton.disabled?".5":"1";
