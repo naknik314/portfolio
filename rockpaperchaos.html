@@ -2190,6 +2190,14 @@ async function refreshTeamPowerUI() {
           powerBtn.onclick=async()=>{
             if(soloPowerUsed || soloPowerActive || !available) return;
 
+            // Quick Peek only helps while Quick Draw is still actively cycling.
+            // Clicking it after STOP/lock must not consume the one-use Solo power.
+            if(family==="paper" && selectedMove){
+              if(powerHint) powerHint.textContent="Quick Draw is already stopped. Quick Peek was NOT used.";
+              toast("📄 Quick Peek was not used — save it for the next Quick Draw round.");
+              return;
+            }
+
             // Team Unpredictable regular Cup Crusher also uses in-game buttons.
             if(family==="rock" && soloPowerUpgraded && team==="unassigned" && !soloCupCrusherX2Choice){
         if(soloCupShuffling || soloCupShuffleCompletedRound!==round){
