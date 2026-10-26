@@ -445,7 +445,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <button class="btn secondary wide" id="dontShowGameGuide" style="margin-top:10px">Don’t show game rules again</button>
             </div>
           </div>
-          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> cuts another player’s positive round points in half.</li><li><b>❓ Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul>
+          <div class="tutorial-step"><strong>⚡ Team Powers</strong><span>Your assigned team is based on your previous winning-move point totals. Whichever move has earned you the most winning-move points determines your team; if you do not have a clear leader yet, you are Team Unpredictable. Your team gives you one power to use once per game.</span><ul style="margin:9px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5"><li><b>🪨 Team Rock — Barricade:</b> protects you from negative points and point-loss effects that round.</li><li><b>📄 Team Paper — Reprint:</b> copies the highest positive points another player earns that round.</li><li><b>✂️ Team Scissors — Cut in Half:</b> automatically cuts the opponent with the most positive round points in half.</li><li><b>❓ Team Unpredictable:</b> gets one random Rock, Paper, or Scissors team power after the game starts.</li></ul>
 <div style="height:14px"></div>
 <span class="muted" style="display:block;font-size:13px">🎯 <b>Solo Mode:</b> Solo Mode has its own Solo-specific team powers.</span>
 </div>
@@ -880,7 +880,7 @@ const db = getDatabase(firebaseApp);
       tagline:"The Risk Takers",
       style:"Play style: Disruption & timing",
       description:"Sharp, competitive, and ready to interfere at just the right moment. Scissors players can disrupt an opponent's strong round.",
-      power:"✂️ Cut in Half — cuts another player's positive net round points in half, rounded down.",
+      power:"✂️ Cut in Half — automatically cuts the opponent with the most positive net round points in half, rounded down.",
       swapped:"✂️ Cut Your Losses — cancels all negative points you earn that round.",
       solo:"✂️ Selective Slicer — slices an unwanted matching pair out of Match the Cards.",
       ranks:"Cutting Cadet → Sharper Student → Scissor Whiz"
@@ -1282,7 +1282,7 @@ const db = getDatabase(firebaseApp);
         basePowerDesc="Copies the highest positive points another player earns that round.";
       }else if(team==="scissors"){
         heading.textContent="✂️ Team Scissors"; basePowerName="✂️ Cut in Half";
-        basePowerDesc="Cuts another player’s positive round points in half.";
+        basePowerDesc="Automatically cuts the opponent with the most positive round points in half.";
       }else{
         heading.textContent="❓ Team Unpredictable";
         basePowerDesc="Get a random Rock, Paper, or Scissors team power once the game begins.";
@@ -1469,7 +1469,7 @@ const db = getDatabase(firebaseApp);
   function powerForTeam(team) {
     if(team==="rock") return {key:"rock",name:"🪨 Barricade",desc:"Protect yourself this round from negative points and point-loss effects. Reprint still works normally because it does not take your points away."};
     if(team==="paper") return {key:"paper",name:"📄 Reprint",desc:"Copy the highest positive net points another player earns this round. You do not take their points away."};
-    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Choose another player and cut their positive net points earned this round in half, rounded down. Barricade can block it."};
+    if(team==="scissors") return {key:"scissors",name:"✂️ Cut in Half",desc:"Automatically target an opponent with the most positive net points earned this round and cut those points in half, rounded down. If multiple opponents tie, it targets the tied player with the highest total game score; if those totals are also tied, one is chosen at random. Barricade can block it."};
     return null;
   }
 
@@ -2052,24 +2052,8 @@ async function refreshTeamPowerUI() {
     // Team Unpredictable uses the team name here; Jack of All Trades is reserved for the final team rank.
     // renderExactMovePower() already rendered the current power description.
     const targetWrap=$("scissorsTargetWrap");
-    const targetChoices=$("scissorsTargetChoices");
-    if(activeTeamPower.key==="scissors"){
-      if(targetWrap) targetWrap.style.display="";
-      if(targetChoices){
-        const cutCandidates=players.filter(p=>p.uid!==currentUser.uid);
-        if(cutCandidates.length===1) scissorsTargetUid=cutCandidates[0].uid;
-        targetChoices.innerHTML=cutCandidates.map(p=>
-          `<button type="button" class="predict ${scissorsTargetUid===p.uid?"selected":""}" data-cut-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`
-        ).join("");
-        targetChoices.querySelectorAll("[data-cut-target]").forEach(b=>b.onclick=()=>{
-          scissorsTargetUid=b.dataset.cutTarget||null;
-          targetChoices.querySelectorAll("[data-cut-target]").forEach(x=>x.classList.toggle("selected",x.dataset.cutTarget===scissorsTargetUid));
-        });
-      }
-    } else {
-      if(targetWrap) targetWrap.style.display="none";
-      scissorsTargetUid=null;
-    }
+    if(targetWrap) targetWrap.style.display="none";
+    scissorsTargetUid=null;
     const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${currentUser.uid}`));
     const used=usedSnap.exists() && usedSnap.val()===true;
 
@@ -2915,7 +2899,6 @@ async function refreshTeamPowerUI() {
         await refreshTeamPowerUI();
         return toast("Your team power is already used up for this game.");
       }
-      if(activeTeamPower?.key==="scissors" && !scissorsTargetUid) return toast("Choose a player for Cut in Half first.");
       teamPowerArmed=!teamPowerArmed;
       await refreshTeamPowerUI();
     };
@@ -2940,35 +2923,8 @@ async function refreshTeamPowerUI() {
       toast("Competitive mode requires a rival and prediction before locking in.");
       return;
     }
-    if(teamPowerArmed && activeTeamPower?.key==="scissors" && !scissorsTargetUid){
-      toast("Choose a Cut in Half target before locking in. Your prediction target is a separate choice.");
-      return;
-    }
-    const uid=currentUser.uid;
-    // Re-read the exact power at lock-in instead of relying on an older UI
-    // object. This prevents an armed Cut in Half from disappearing between
-    // clicking the power button and submitting the turn.
-    let submissionPower=activeTeamPower;
-    if(teamPowerArmed && !soloModeActive && !noPrediction){
-      try{
-        submissionPower=await loadActiveTeamPower() || activeTeamPower;
-        activeTeamPower=submissionPower;
-      }catch(error){
-        console.warn("Could not refresh team power before submission",error);
-      }
-    }
-
-    // In a 2-player game Cut in Half always targets the only opponent, even if
-    // a UI refresh happened after the target was auto-selected.
-    if(teamPowerArmed && submissionPower?.key==="scissors" && !scissorsTargetUid){
-      const cutCandidates=players.filter(p=>p.uid!==uid);
-      if(cutCandidates.length===1) scissorsTargetUid=cutCandidates[0].uid;
-    }
-    if(teamPowerArmed && submissionPower?.key==="scissors" && !scissorsTargetUid){
-      toast("Choose a player for Cut in Half before locking in.");
-      return;
-    }
-
+    // Cut in Half chooses its target automatically during round resolution,
+    // after everyone's positive round points are known.
     // Each player writes only under their own UID. The UI never displays submissions before reveal.
     const powerUsedCheck=await get(ref(db,`rooms/${room}/teamPowerUsed/${uid}`));
     const canUseTeamPower=!soloModeActive && !noPrediction && teamPowerArmed && submissionPower && !(powerUsedCheck.exists() && powerUsedCheck.val()===true);
@@ -2980,7 +2936,7 @@ async function refreshTeamPowerUI() {
       move:selectedMove,
       prediction:(!noPrediction && targetId && predictedMove)?{targetUid:targetId,move:predictedMove}:null,
       teamPower:canUseTeamPower?submissionPower.key:null,
-      teamPowerTarget:(canUseTeamPower && submissionPower?.key==="scissors")?scissorsTargetUid:null,
+      teamPowerTarget:null,
       locked:true,
       submittedAt:Date.now()
     };
@@ -3347,68 +3303,83 @@ async function refreshTeamPowerUI() {
       }
     });
 
-    // Team Scissors: Cut in Half. Barricade can block it.
-    // Multiple attacks resolve in player order and each one cuts whatever
-    // positive round gain remains after the previous attack.
-    const cutTargets={};
-    players.forEach(p=>{
-      if(submissions[p.uid]?.teamPower==="scissors" && submissions[p.uid]?.teamPowerTarget){
-        const targetUid=submissions[p.uid].teamPowerTarget;
-        cutTargets[targetUid]=(cutTargets[targetUid]||0)+1;
-      }
-    });
-    Object.entries(cutTargets).forEach(([uid,n])=>{
-      if(n>1){
-        const target=players.find(p=>p.uid===uid);
-        if(target) details.push(`✂️ ${n} Cut in Half powers targeted ${target.name}. They resolve one at a time, each cutting the positive points that remain.`);
-      }
-    });
+    // Team Scissors: Cut in Half.
+    // The target is automatic: an opponent with the highest positive net gain
+    // this round. Ties are broken randomly. Barricade can block the hit.
+    // Keeping target selection inside resolution means the power always uses
+    // the final round scoring state rather than stale UI target data.
     const restoreScissorsPower=[];
+    const successfulScissorsPower=[];
     for(const p of players){
       if(submissions[p.uid]?.teamPower!=="scissors") continue;
-      const target=players.find(o=>o.uid===submissions[p.uid]?.teamPowerTarget && o.uid!==p.uid);
-      if(!target){
-        details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half. ♻️ POWER NOT USED UP — there was no valid target, so it is still available for a later round.`);
+
+      const opponents=players.filter(o=>o.uid!==p.uid);
+      const gains=opponents.map(o=>({
+        player:o,
+        gain:Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0))
+      }));
+      const highestGain=gains.length?Math.max(...gains.map(x=>x.gain)):0;
+
+      if(highestGain<=0){
+        details.push(`⚡ POWER ATTEMPT — ${p.name} used ✂️ Cut in Half. NO EFFECT: no opponent earned positive points this round. ♻️ POWER NOT USED UP — it is still available for a later round.`);
         restoreScissorsPower.push(p.uid);
         continue;
       }
+
+      const tiedTargets=gains.filter(x=>x.gain===highestGain);
+
+      // If several opponents tie for the strongest positive round, target the
+      // tied player who is leading in TOTAL game points. Only use randomness
+      // if they are tied in both round gain and total score.
+      const highestTotal=Math.max(...tiedTargets.map(x=>Number(scores[x.player.uid]||0)));
+      const totalLeaders=tiedTargets.filter(x=>Number(scores[x.player.uid]||0)===highestTotal);
+      const chosen=totalLeaders[Math.floor(Math.random()*totalLeaders.length)];
+      const target=chosen.player;
+
       if(submissions[target.uid]?.teamPower==="rock"){
-        details.push(`⚡ POWER CLASH — ${p.name} tried ✂️ Cut in Half on ${target.name}. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`);
+        details.push(`⚡ POWER CLASH — ${p.name}'s ✂️ Cut in Half automatically targeted ${target.name}, who had the most positive round points. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`);
         restoreScissorsPower.push(p.uid);
         continue;
       }
-      // CHAOS BOT RULE: when a computer rival uses normal Cut in Half during
-      // the Chaos Bot Mode, it attacks the target's TOTAL game score.
-      // Everywhere else, Cut in Half keeps its normal round-points behavior.
+
+      // CHAOS BOT RULE: a Chaos Bot still attacks TOTAL score, but the target
+      // is selected from the strongest positive round earners.
       if(chaosBotMode && p.bot){
         const total=Math.max(0,Number(scores[target.uid]||0));
         if(total>0){
           const reduced=Math.floor(total/2);
           scores[target.uid]=reduced;
-          await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
-          details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}. 🔥 CHAOS HIT: ${target.name}'s TOTAL game score was cut from ${total} to ${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
-        } else {
-          details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
+          successfulScissorsPower.push(p.uid);
+          details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half. AUTO-TARGET: ${target.name} had the most positive round points. 🔥 CHAOS HIT: ${target.name}'s TOTAL game score was cut from ${total} to ${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
+        }else{
+          details.push(`⚡ POWER ATTEMPT — ${p.name}'s ✂️ Cut in Half targeted ${target.name}. NO EFFECT: ${target.name} had no total points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
           restoreScissorsPower.push(p.uid);
         }
-      } else {
-        // Normal Cut in Half: use the target's CURRENT positive net gain.
-        // Multiple powers on the same player resolve one after another.
+      }else{
         const gain=Math.max(0,Number(scores[target.uid]||0)-Number(scoresBefore[target.uid]||0));
-        if(gain>0){
-          const reduced=Math.floor(gain/2);
-          scores[target.uid]-=(gain-reduced);
-          await set(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`),true);
-          details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half on ${target.name}, which cuts the target's current positive round points in half. SUCCESS: +${gain} became +${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
-        } else {
-          details.push(`⚡ POWER ATTEMPT — ${p.name} tried ✂️ Cut in Half on ${target.name}. NO EFFECT: ${target.name} had no positive points to cut. ♻️ POWER NOT USED UP — it is still available for a later round.`);
-          restoreScissorsPower.push(p.uid);
-        }
+        const reduced=Math.floor(gain/2);
+        scores[target.uid]-=(gain-reduced);
+        successfulScissorsPower.push(p.uid);
+        const tieNote=tiedTargets.length>1
+          ? (totalLeaders.length>1
+              ? " (tied for most round points and total score; target chosen randomly)"
+              : " (tied for most round points; highest total score targeted)")
+          : "";
+        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut in Half. AUTO-TARGET: ${target.name} had the most positive round points${tieNote}. SUCCESS: +${gain} became +${reduced}. 🔒 ✂️ Cut in Half USED UP — unavailable for the rest of this game.`);
       }
-        }
-    for(const uid of restoreScissorsPower){
-      await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),false);
     }
+
+    // Save power state without pausing the resolver. The earlier Cut in Half
+    // bug happened only on this mid-resolution Firebase path; resolution can
+    // now finish and write the reveal even if this status write is delayed.
+    successfulScissorsPower.forEach(uid=>{
+      set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true)
+        .catch(error=>console.warn("Could not save Cut in Half usage",error));
+    });
+    restoreScissorsPower.forEach(uid=>{
+      set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),false)
+        .catch(error=>console.warn("Could not restore Cut in Half availability",error));
+    });
 
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="rock") return;
