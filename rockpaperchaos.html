@@ -1433,6 +1433,18 @@ const db = getDatabase(firebaseApp);
       start.disabled=!isHost; start.style.opacity=isHost?"1":".5";
       start.textContent=soloModeActive?"Start Solo Mode →":"Start 7-round game →";
     }
+
+    // Solo Mode conflicts with Chaos Bot Mode too. The activation logic already
+    // blocks it; mirror that rule visually so every incompatible option is
+    // clearly disabled while Solo Mode is active.
+    const chaosBotBtn=$("chaosBotBtn");
+    if(chaosBotBtn && soloModeActive){
+      chaosBotBtn.disabled=true;
+      chaosBotBtn.setAttribute("aria-disabled","true");
+      chaosBotBtn.style.opacity=".5";
+      chaosBotBtn.style.cursor="not-allowed";
+      chaosBotBtn.title="Chaos Bot Mode is unavailable while Solo Mode is active.";
+    }
   }
 
   async function cancelSoloMode(){
