@@ -3214,11 +3214,6 @@ async function refreshTeamPowerUI() {
     const scores=scoresSnap.val() || {};
     players.forEach(p=>{ if(scores[p.uid]==null) scores[p.uid]=0; });
 
-    // Keep a complete power-used snapshot for this resolution. Cut in Half
-    // updates this local object and publishes it with the reveal instead of
-    // mixing whole-object writes with dynamic child paths.
-    const teamPowerUsedSnap=await get(ref(db, `rooms/${room}/teamPowerUsed`));
-    const resolvedTeamPowerUsed=teamPowerUsedSnap.exists()?{...(teamPowerUsedSnap.val()||{})}:{};
     const scoresBefore={...scores};
     const moveLedgerSnap=await get(ref(db, `rooms/${room}/moveWinPoints`));
     const moveLedger=moveLedgerSnap.val() || {};
@@ -3403,7 +3398,7 @@ async function refreshTeamPowerUI() {
       const highestGain=gains.length?Math.max(...gains.map(x=>x.gain)):0;
 
       if(highestGain<=0){
-        details.push(`⚡ POWER ATTEMPT — ${p.name} used ✂️ Cut in Half. NO EFFECT: no opponent earned positive points this round. ${powerNotUsedUpText()}`);
+        details.push(`⚡ POWER ATTEMPT — ${p.name} used ✂️ Cut in Half, which automatically targets the opponent who earned the most positive points this round. NO EFFECT: no opponent earned positive points this round, so there was nothing to cut in half. ${powerNotUsedUpText()}`);
         restoreScissorsPower.push(p.uid);
         continue;
       }
@@ -3416,7 +3411,12 @@ async function refreshTeamPowerUI() {
       const highestTotal=Math.max(...tiedTargets.map(x=>Number(scores[x.player.uid]||0)));
       const totalLeaders=tiedTargets.filter(x=>Number(scores[x.player.uid]||0)===highestTotal);
       const chosen=totalLeaders[Math.floor(Math.random()*totalLeaders.length)];
-      const target=chosen.player;
+      const target=chosen?.player;
+      if(!target){
+        details.push(`⚡ POWER ATTEMPT — ${p.name} used ✂️ Cut in Half. NO EFFECT: a valid automatic target could not be found. ${powerNotUsedUpText()}`);
+        restoreScissorsPower.push(p.uid);
+        continue;
+      }
 
       if(submissions[target.uid]?.teamPower==="rock"){
         details.push(`⚡ POWER CLASH — ${p.name}'s ✂️ Cut in Half automatically targeted ${target.name}, who had the most positive round points. BLOCKED by 🪨 Barricade. 🔒 ${target.name}'s Barricade is USED UP. ${round===7?`♻️ ${p.name}'s Cut in Half was NOT USED UP.`:`♻️ ${p.name}'s Cut in Half was NOT USED UP and can be used later.`}`);
@@ -3585,25 +3585,29 @@ async function refreshTeamPowerUI() {
       updatedAt:Date.now()
     };
 
-    // Cut in Half is consumed only on SUCCESS. NO EFFECT / BLOCKED remains
-    // available. Build the complete state first, then publish it as one normal
-    // room field with the reveal. This avoids the intermittent resolution
-    // failure seen when successful Cut in Half also changed nested used-state.
-    successfulScissorsPower.forEach(uid=>{
-      resolvedTeamPowerUsed[uid]=true;
-    });
-    restoreScissorsPower.forEach(uid=>{
-      resolvedTeamPowerUsed[uid]=false;
-    });
-    if(successfulScissorsPower.length || restoreScissorsPower.length){
-      finalRoomUpdate.teamPowerUsed=resolvedTeamPowerUsed;
-    }
-
     try{
+      // Reveal/results are authoritative and must not be blocked by secondary
+      // Cut in Half bookkeeping.
       await update(ref(db, `rooms/${room}`), finalRoomUpdate);
+
+      // Persist only the Cut in Half users that changed. Do these after the
+      // reveal so a bookkeeping failure can never turn a valid round into a
+      // "Round resolution error".
+      const powerStateUpdates={};
+      successfulScissorsPower.forEach(uid=>{
+        powerStateUpdates[`teamPowerUsed/${uid}`]=true;
+      });
+      restoreScissorsPower.forEach(uid=>{
+        powerStateUpdates[`teamPowerUsed/${uid}`]=false;
+      });
+      if(Object.keys(powerStateUpdates).length){
+        try{
+          await update(ref(db, `rooms/${room}`), powerStateUpdates);
+        }catch(error){
+          console.warn("Round resolved, but Cut in Half used-state could not be saved",error);
+        }
+      }
     }finally{
-      // Never leave this round permanently marked as "resolving" if Firebase
-      // rejects or interrupts a write; the submissions listener can retry.
       resolvingRounds.delete(resolvingKey);
     }
   }
@@ -3649,7 +3653,7 @@ async function refreshTeamPowerUI() {
     let safe=escapeHtml(line);
     safe=safe
       .replace(/^(⚡ POWER USED|⚡ POWER ATTEMPT|⚡ POWER CLASH)/,"<strong>$1</strong>")
-      .replace(/ (SUCCESS:|NO EFFECT:)/g,"<br><strong>$1</strong>")
+      .replace(/ (SUCCESS:|NO EFFECT:|BLOCKED:)/g,"<br><strong>$1</strong>")
       .replace(/ (BLOCKED by)/g,"<br><strong>$1</strong>")
       .replace(/ (🔒|♻️)/g,"<br>$1");
     safe=safe.replace(/(POWER NOT USED UP|NOT USED UP)/g,"<strong>$1</strong>");
@@ -3691,32 +3695,118 @@ async function refreshTeamPowerUI() {
         powerNotices=[`⚡ SOLO POWER USED — ${hands[soloPowerFamily]||"🎯"} ${soloPowerName}. 🔒 SOLO POWER USED UP — unavailable for the rest of this Solo challenge.`];
       }
     }
-    // If multiple players use the same power in one round, keep the full
-    // explanation on the first notice and shorten later notices for that same
-    // power. The later notices still show each player's own result/status.
-    const powerExplanationPatterns=[
-      ["Barricade", /, which protects against negative points[^.]*\./i],
-      ["Reprint", /, which copies the highest positive points[^.]*\./i],
-      ["Cut in Half", /, which automatically targets[^.]*\./i],
-      ["Stonewall", /, which blocks[^.]*\./i],
-      ["Misprint", /, which copies[^.]*\./i],
-      ["Cut Your Losses", /, which (?:halves|cancels)[^.]*\./i],
-      ["Cup Crusher", /, which [^.]*\./i],
-      ["Quick Peek", /, which [^.]*\./i],
-      ["Selective Slicer", /, which [^.]*\./i]
+    // When 2+ players use the same power in one round, show one shared power
+    // heading/explanation, then keep each player's individual outcome, followed
+    // by grouped USED UP / NOT USED UP status lines.
+    function joinPlayerNames(names){
+      const clean=[...new Set(names.filter(Boolean))];
+      if(clean.length<=1) return clean[0]||"";
+      if(clean.length===2) return `${clean[0]} & ${clean[1]}`;
+      return `${clean.slice(0,-1).join(", ")} & ${clean[clean.length-1]}`;
+    }
+
+    const powerGroups=[
+      {name:"Barricade",icon:"🪨",description:"which protects against negative points"},
+      {name:"Reprint",icon:"📄",description:"which copies the highest positive points another player earns that round"},
+      {name:"Cut in Half",icon:"✂️",description:"which automatically targets the opponent who earned the most positive points this round"},
+      {name:"Stonewall",icon:"🪨",description:"which blocks everyone else's positive points that round"},
+      {name:"Misprint",icon:"📄",description:"which copies the highest negative result to everyone except the user"},
+      {name:"Cut Your Losses",icon:"✂️",description:"which protects the user from negative points that round"}
     ];
-    const explainedPowers=new Set();
-    powerNotices=powerNotices.map(line=>{
-      let output=String(line);
-      const found=powerExplanationPatterns.find(([name])=>output.includes(name));
-      if(!found) return output;
-      const [powerName, explanationPattern]=found;
-      if(explainedPowers.has(powerName)){
-        output=output.replace(explanationPattern,".");
+
+    function playerNameFromNotice(line){
+      const s=String(line);
+      let m=s.match(/^⚡ POWER (?:USED|ATTEMPT) — (.+?) used /);
+      if(m) return m[1];
+      m=s.match(/^⚡ POWER CLASH — (.+?)'s /);
+      if(m) return m[1];
+      return "";
+    }
+
+    function outcomeFromNotice(line,playerName,power){
+      const s=String(line);
+      const markers=["SUCCESS:","NO EFFECT:","BLOCKED:"];
+      let marker=markers.find(m=>s.includes(m));
+      if(!marker && s.includes("BLOCKED by")) marker="BLOCKED:";
+      if(!marker) return null;
+
+      let text="";
+      if(marker==="BLOCKED:" && s.includes("BLOCKED by")){
+        const pos=s.indexOf("BLOCKED by");
+        text=s.slice(pos).replace(/^BLOCKED by\s*/,"");
+        text=`was blocked by ${text}`;
       }else{
-        explainedPowers.add(powerName);
+        const pos=s.indexOf(marker);
+        text=s.slice(pos+marker.length).trim();
       }
-      return output.replace(/\.\s*\./g,".");
+
+      // Strip status sentences; those are rebuilt as grouped final lines.
+      text=text
+        .replace(/\s*🔒.*$/,"")
+        .replace(/\s*♻️.*$/,"")
+        .replace(/\s*POWER NOT USED UP.*$/i,"")
+        .trim()
+        .replace(/\s+/g," ");
+
+      // Make the player explicit on every outcome line.
+      if(marker==="SUCCESS:"){
+        if(!text.toLowerCase().includes(String(playerName).toLowerCase())){
+          text=`${text.replace(/\.$/,"")} for ${playerName}.`;
+        }
+      }else if(marker==="NO EFFECT:"){
+        if(!text.toLowerCase().includes(String(playerName).toLowerCase())){
+          text=`${text.replace(/\.$/,"")} for ${playerName}.`;
+        }
+      }else{
+        if(!text.toLowerCase().includes(String(playerName).toLowerCase())){
+          text=`${text.replace(/\.$/,"")} for ${playerName}.`;
+        }
+      }
+      return {marker,text};
+    }
+
+    powerGroups.forEach(power=>{
+      const indexes=[];
+      powerNotices.forEach((line,index)=>{
+        if(String(line).includes(power.name)) indexes.push(index);
+      });
+      if(indexes.length<2) return;
+
+      const notices=indexes.map(index=>String(powerNotices[index]));
+      const names=notices.map(playerNameFromNotice).filter(Boolean);
+      if(names.length<2) return;
+
+      const outcomes=[];
+      const usedNames=[];
+      const notUsedNames=[];
+
+      notices.forEach((line,i)=>{
+        const playerName=playerNameFromNotice(line)||names[i]||"Player";
+        const outcome=outcomeFromNotice(line,playerName,power);
+        if(outcome) outcomes.push(outcome);
+
+        const notUsed=/NOT USED UP|still available for a later round|can be used later/i.test(line);
+        if(notUsed) notUsedNames.push(playerName);
+        else if(/USED UP/i.test(line)) usedNames.push(playerName);
+      });
+
+      const heading=`⚡ POWER USED — ${joinPlayerNames(names)} used ${power.icon} ${power.name}, ${power.description}.`;
+      const outcomeLines=outcomes.map(o=>`${o.marker} ${o.text}`);
+      const statusLines=[];
+      if(usedNames.length){
+        statusLines.push(`🔒 ${power.icon} ${power.name} USED UP — unavailable for the rest of this game for ${joinPlayerNames(usedNames)}.`);
+      }
+      if(notUsedNames.length){
+        statusLines.push(round===7
+          ? `♻️ ${power.icon} ${power.name} NOT USED UP for ${joinPlayerNames(notUsedNames)}.`
+          : `♻️ ${power.icon} ${power.name} NOT USED UP — still available for a later round for ${joinPlayerNames(notUsedNames)}.`);
+      }
+
+      const grouped=[heading,...outcomeLines,...statusLines].join(" ");
+      const first=indexes[0];
+      const remove=new Set(indexes);
+      powerNotices=powerNotices.filter((_,index)=>!remove.has(index));
+      powerNotices.splice(first,0,grouped);
     });
 
     // Big animations are reserved for team-power moments so they stay special.
