@@ -3302,7 +3302,11 @@ async function refreshTeamPowerUI() {
         // Counter bonus only applies when a minority move beats the single majority move.
         // Normal: Paper > Rock, Rock > Scissors, Scissors > Paper.
         // Round 6 reverse: Rock > Paper, Paper > Scissors, Scissors > Rock.
-        const countersMajority=isMinority && beats(myMove,majorityMove,reverse)>0;
+        // `beats(a,b)` returns a positive result when b beats a in this game,
+        // so compare the majority against the minority move here. This awards
+        // the counter only to the minority move that actually beats the clear
+        // majority (e.g. Paper vs a Rock majority).
+        const countersMajority=isMinority && beats(majorityMove,myMove,reverse)>0;
         if(countersMajority){
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
