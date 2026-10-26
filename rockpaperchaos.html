@@ -3400,7 +3400,10 @@ async function refreshTeamPowerUI() {
             details.push(`⚡ POWER USED — ${p.name} used 🪨 Barricade, which protects against negative points. SUCCESS: a -${appliedPenalty} prediction penalty was blocked. 🔒 🪨 Barricade USED UP.`);
             appliedPenalty=0;
           } else {
-            details.push(`${p.name} predicted wrong: -${appliedPenalty}.`);
+            // Store the raw penalty for now. After all powers and the Casual
+            // score floor resolve, the highlight is rewritten to match the
+            // player's actual THIS ROUND loss.
+            details.push(`__PREDICTION_PENALTY__|${p.uid}|${p.name}|${appliedPenalty}`);
           }
           scores[p.uid]-=appliedPenalty;
         }
@@ -3578,6 +3581,30 @@ async function refreshTeamPowerUI() {
       players.forEach(p=>{
         if(Number(scores[p.uid]||0)<0) scores[p.uid]=0;
       });
+    }
+
+    // Keep each point-loss event at its raw value. In Casual mode, several
+    // different negative effects can happen in one round, so the shared
+    // Casual-mode note explains the zero floor without attributing the final
+    // floored loss to any one event.
+    for(let i=0;i<details.length;i++){
+      const raw=String(details[i]||"");
+      if(!raw.startsWith("__PREDICTION_PENALTY__|")) continue;
+      const parts=raw.split("|");
+      const playerName=parts[2]||"Player";
+      const rawPenalty=Math.max(0,Number(parts[3]||0));
+      details[i]=`${playerName} predicted wrong: -${rawPenalty} prediction penalty.`;
+    }
+
+    if(predictionMode==="optional"){
+      const hasPointLossEvent=details.some(line=>{
+        const s=String(line||"");
+        return /-\d+/.test(s) ||
+               /negative points|negative result|cut in half|cut from|Misprint|Cut Your Losses/i.test(s);
+      });
+      if(hasPointLossEvent){
+        details.push(`ℹ️ Casual mode: points can't go below 0.`);
+      }
     }
 
     // Round 7 — Winner Takes the Round. Normal scoring and powers resolve first.
