@@ -74,7 +74,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .rule-card { padding:14px; background:var(--panel2); border-radius:14px; margin-bottom:10px; }
 .rule-card strong { display:block; margin-bottom:4px; }
 .rule-card span { font-size:13px; color:var(--muted); line-height:1.45; display:block; }
-.game-top { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:18px; }
+.game-top { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center; margin-bottom:18px; }
+.game-top-player { text-align:center; min-width:0; }
+.game-top-player .playing-label { display:block; font-size:10px; letter-spacing:.08em; color:var(--muted); }
+.game-top-player .playing-name { display:block; font-weight:800; font-size:15px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.game-top .timer { justify-self:end; }
+@media (max-width:560px){
+  .game-top { grid-template-columns:1fr auto 1fr; gap:8px; }
+  .game-top-player .playing-label { font-size:9px; }
+  .game-top-player .playing-name { font-size:13px; max-width:120px; }
+}
 .round-label { font-size:12px; color:var(--muted); font-weight:850; text-transform:uppercase; letter-spacing:.1em; }
 .timer { font-weight:950; color:var(--pink); font-size:20px; }
 .progress { height:6px; background:var(--panel2); border-radius:999px; overflow:hidden; margin:12px 0 22px; }
@@ -617,7 +626,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 
 <section id="game" class="hidden">
       <div class="panel">
-        <div class="game-top"><div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div><div class="timer" id="timer">20s</div></div>
+        <div class="game-top">
+          <div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div>
+          <div class="game-top-player"><span class="playing-label">PLAYING AS</span><span class="playing-name" id="playingAsTop">Player</span></div>
+          <div class="timer" id="timer">20s</div>
+        </div>
         <div class="progress"><div id="progressFill"></div></div>
         <div class="modifier" id="modifier"><b>🔮 Read the room</b><span>Predict a rival, then choose your move.</span></div>
         <div id="playArea"></div>
@@ -2141,6 +2154,8 @@ async function refreshTeamPowerUI() {
     show("game");
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
+    const topPlayer=me();
+    if($("playingAsTop")) $("playingAsTop").textContent = topPlayer?.name || selectedUsername || "Player";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
     const isQuickDraw = !soloModeActive && round === quickDrawRound;
     const modifier = modifiers[round];
@@ -2179,11 +2194,8 @@ async function refreshTeamPowerUI() {
     const others = opponents();
     $("timer").textContent = "WAITING";
     const currentPlayer = me();
+    if($("playingAsTop")) $("playingAsTop").textContent = currentPlayer?.name || selectedUsername || "Player";
     $("playArea").innerHTML = `
-      <div style="background:var(--panel2);border-radius:14px;padding:10px 12px;margin-bottom:14px;text-align:center">
-        <span class="muted" style="font-size:12px">PLAYING AS</span><br>
-        <b style="font-size:18px">${escapeHtml(currentPlayer?.name || selectedUsername)}</b>
-      </div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
       ${soloModeActive ? ((round===1 || round===4) ? `
