@@ -78,6 +78,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .game-top-modifier { flex:1; margin:0; background:none; border:0; padding:0; }
 .game-top-modifier b { display:block; font-size:13px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
 .game-top-modifier span { display:block; margin-top:2px; font-size:14px; color:var(--muted); }
+.choose-move-line {
+  margin:0 0 10px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  font-size:14px;
+  white-space:nowrap;
+}
+.choose-move-line .muted { font-weight:500; }
+@media (max-width:560px){
+  .choose-move-line { font-size:12px; letter-spacing:-.025em; }
+}
 .header-player { text-align:center; min-width:0; flex:1; }
 .header-player .playing-label { display:block; font-size:10px; letter-spacing:.08em; color:var(--muted); }
 .header-player .playing-name { display:block; font-weight:800; font-size:14px; max-width:220px; margin:0 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2209,8 +2220,7 @@ async function refreshTeamPowerUI() {
     const currentPlayer = me();
     if($("headerPlayingName")) $("headerPlayingName").textContent = currentPlayer?.name || selectedUsername || "Player";
     $("playArea").innerHTML = `
-      <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
-      <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
+      <div class="choose-move-line">Choose your move <span class="muted">· Your move stays private until everyone locks in.</span></div>
       ${soloModeActive ? ((round===1 || round===4) ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🎯 Solo Quick Draw</strong>
@@ -3042,7 +3052,7 @@ async function refreshTeamPowerUI() {
 
     if(soloModeActive){
       $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🎯</div><h2>Solo move locked!</h2><p class="muted">Revealing your Solo round…</p></div>`;
-      $("phaseLabel").textContent="Revealing Solo round";
+      if($("phaseLabel")) $("phaseLabel").textContent="Revealing Solo round";
 
       // Solo has nobody else to wait for. Resolve immediately from this
       // submission instead of relying on another submissions-listener event.
@@ -3088,7 +3098,7 @@ async function refreshTeamPowerUI() {
     }
 
     $("playArea").innerHTML=`<div style="text-align:center;padding:34px 10px"><div style="font-size:48px">🔒</div><h2>Locked in!</h2><p class="muted">Waiting for everyone else…</p></div>`;
-    $("phaseLabel").textContent="Waiting for players";
+    if($("phaseLabel")) $("phaseLabel").textContent="Waiting for players";
     watchSubmissions();
   }
 
@@ -3928,7 +3938,7 @@ async function refreshTeamPowerUI() {
         .replace(/\s+still available for a later round\.?/gi,".")
       );
     }
-    $("phaseLabel").textContent="The reveal";
+    if($("phaseLabel")) $("phaseLabel").textContent="The reveal";
     $("timer").textContent="REVEAL";
     $("progressFill").style.width=`${round/7*100}%`;
     const icon=soloModeActive?"🎯":round===2?"⚡":round===4?"🚫":round===6?"🔄":"💥";
