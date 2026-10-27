@@ -3929,7 +3929,14 @@ async function refreshTeamPowerUI() {
         const combined=matching
           .map(o=>String(o.text||"").trim().replace(/\.$/,""))
           .join(", ");
-        outcomeLines.push(`${marker} ${combined}.`);
+        if(marker==="NO EFFECT:" && matching.length>1){
+    const prefix="there were no negative points or point-loss effects to block for ";
+    const texts=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
+    if(texts.every(text=>text.startsWith(prefix))){
+      combined=`${prefix}${joinPlayerNames(texts.map(text=>text.slice(prefix.length)))}`;
+    }
+  }
+  outcomeLines.push(`${marker} ${combined}.`);
       });
       const statusLines=[];
       if(power.name==="Reprint"){
