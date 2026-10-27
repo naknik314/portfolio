@@ -74,15 +74,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .rule-card { padding:14px; background:var(--panel2); border-radius:14px; margin-bottom:10px; }
 .rule-card strong { display:block; margin-bottom:4px; }
 .rule-card span { font-size:13px; color:var(--muted); line-height:1.45; display:block; }
-.game-top { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center; margin-bottom:18px; }
-.game-top-player { text-align:center; min-width:0; }
-.game-top-player .playing-label { display:block; font-size:10px; letter-spacing:.08em; color:var(--muted); }
-.game-top-player .playing-name { display:block; font-weight:800; font-size:15px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.game-top .timer { justify-self:end; }
-@media (max-width:560px){
-  .game-top { grid-template-columns:1fr auto 1fr; gap:8px; }
-  .game-top-player .playing-label { font-size:9px; }
-  .game-top-player .playing-name { font-size:13px; max-width:120px; }
+.game-top { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:18px; }
+.header-player { text-align:center; min-width:0; flex:1; }
+.header-player .playing-label { display:block; font-size:10px; letter-spacing:.08em; color:var(--muted); }
+.header-player .playing-name { display:block; font-weight:800; font-size:14px; max-width:220px; margin:0 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (max-width:640px){
+  .top { gap:8px; }
+  .header-player .playing-label { font-size:9px; }
+  .header-player .playing-name { font-size:12px; max-width:110px; }
 }
 .round-label { font-size:12px; color:var(--muted); font-weight:850; text-transform:uppercase; letter-spacing:.1em; }
 .timer { font-weight:950; color:var(--pink); font-size:20px; }
@@ -338,6 +337,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
   <div class="wrap">
     <header class="top">
       <div class="brand"><div class="logo" aria-label="Dice icon"><img id="rpsDieLogo" src="rock-paper-chaos-logo.png" alt="Rock Paper Scissors cube logo" style="width:35px;height:35px;object-fit:contain;display:block"></div><span>RPS WITH A TWIST</span></div>
+      <div class="header-player hidden" id="headerPlayingAs"><span class="playing-label">PLAYING AS</span><span class="playing-name" id="headerPlayingName">Player</span></div>
       <span class="pill">PARTY MODE · 2–8 PLAYERS</span>
     </header>
 
@@ -626,13 +626,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 
 <section id="game" class="hidden">
       <div class="panel">
-        <div class="game-top">
-          <div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div>
-          <div class="game-top-player"><span class="playing-label">PLAYING AS</span><span class="playing-name" id="playingAsTop">Player</span></div>
-          <div class="timer" id="timer">20s</div>
-        </div>
+        <div class="game-top"><div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div><div class="timer" id="timer">20s</div></div>
         <div class="progress"><div id="progressFill"></div></div>
-        <div class="modifier" id="modifier"><b>🔮 Read the room</b><span>Predict a rival, then choose your move.</span></div>
         <div id="playArea"></div>
       </div>
     </section>
@@ -808,7 +803,15 @@ const db = getDatabase(firebaseApp);
   function forgetRoom(){ try{ localStorage.removeItem(LAST_ROOM_KEY); }catch(e){} }
   function rememberedRoom(){ try{ return String(localStorage.getItem(LAST_ROOM_KEY)||"").trim().toUpperCase(); }catch(e){ return ""; } }
   // Player membership is removed only by the Leave action, not by temporary network disconnects.
-  function show(id) { screens.forEach(s => $(s).classList.toggle("hidden",s !== id)); }
+  function show(id) {
+    screens.forEach(s => $(s).classList.toggle("hidden",s !== id));
+    const headerPlayer=$("headerPlayingAs");
+    if(headerPlayer){
+      const currentPlayer=me();
+      if($("headerPlayingName")) $("headerPlayingName").textContent=currentPlayer?.name || selectedUsername || "Player";
+      headerPlayer.classList.toggle("hidden",id==="home");
+    }
+  }
   function toast(message) { $("toast").textContent = message; $("toast").classList.remove("hidden"); setTimeout(() => $("toast").classList.add("hidden"),2400); }
   function randomCode() { return Array.from({length:6},() => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join(""); }
   function randomName() {
@@ -2155,10 +2158,11 @@ async function refreshTeamPowerUI() {
     $("roundLabel").textContent = `ROUND ${round} OF 7`;
     $("phaseLabel").textContent = "Choose & predict";
     const topPlayer=me();
-    if($("playingAsTop")) $("playingAsTop").textContent = topPlayer?.name || selectedUsername || "Player";
+    if($("headerPlayingName")) $("headerPlayingName").textContent = topPlayer?.name || selectedUsername || "Player";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
     const isQuickDraw = !soloModeActive && round === quickDrawRound;
     const modifier = modifiers[round];
+    let roundModifierHtml="";
     if(soloModeActive){
       const soloRoundInfo = (round===1 || round===4)
         ? ["🎯 Quick Draw","Time your stop to land on Rock, Paper, or Scissors."]
@@ -2167,14 +2171,15 @@ async function refreshTeamPowerUI() {
           : (round===3 || round===5)
             ? ["🥤 Cup Shuffle","Track the hidden moves, then choose a cup. The move underneath becomes your move."]
             : ["🎡 Chaos Spinner","Spin the final wheel. Wherever it lands becomes your Round 7 move."];
-      $("modifier").innerHTML=`<b>Round ${round}: ${soloRoundInfo[0]}</b><span>${soloRoundInfo[1]}</span>`;
+      roundModifierHtml=`<b>Round ${round}: ${soloRoundInfo[0]}</b><span>${soloRoundInfo[1]}</span>`;
     }else if(isQuickDraw){
-      $("modifier").innerHTML = `<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
+      roundModifierHtml=`<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
     }else if(modifier){
-      $("modifier").innerHTML = `<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
+      roundModifierHtml=`<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
-      $("modifier").innerHTML = `<b>Round ${round}: 🔮 Read the Room</b><span>Standard round — pick your move and predict a rival's move.</span>`;
+      roundModifierHtml=`<b>Round ${round}: 🔮 Read the Room</b><span>Standard round — pick your move and predict a rival's move.</span>`;
     }
+    window.__roundModifierHtml=roundModifierHtml;
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
     renderMovePicker();
@@ -2194,8 +2199,9 @@ async function refreshTeamPowerUI() {
     const others = opponents();
     $("timer").textContent = "WAITING";
     const currentPlayer = me();
-    if($("playingAsTop")) $("playingAsTop").textContent = currentPlayer?.name || selectedUsername || "Player";
+    if($("headerPlayingName")) $("headerPlayingName").textContent = currentPlayer?.name || selectedUsername || "Player";
     $("playArea").innerHTML = `
+      <div class="modifier" style="margin-bottom:14px">${window.__roundModifierHtml||""}</div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
       ${soloModeActive ? ((round===1 || round===4) ? `
