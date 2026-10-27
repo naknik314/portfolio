@@ -2125,6 +2125,7 @@ async function refreshTeamPowerUI() {
 
   function beginRound(writeState=true) {
     stopLockedInRecovery();
+    try{ window.scrollTo({top:0,left:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
     clearInterval(timerInt);
     if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
     // Firebase room updates can fire several times during the same round
@@ -3874,6 +3875,7 @@ async function refreshTeamPowerUI() {
 
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
     stopLockedInRecovery();
+    try{ window.scrollTo({top:0,left:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
     // Chaos Bots can reuse Team Powers in later rounds, so their power is
     // never described as USED UP. Keep the success/no-effect result, but
     // replace any consumed-power status with a Chaos Bot reusable status.
