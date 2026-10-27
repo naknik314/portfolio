@@ -75,6 +75,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .rule-card strong { display:block; margin-bottom:4px; }
 .rule-card span { font-size:13px; color:var(--muted); line-height:1.45; display:block; }
 .game-top { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:18px; }
+.game-top-modifier { flex:1; margin:0; background:none; border:0; padding:0; }
+.game-top-modifier b { display:block; font-size:13px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+.game-top-modifier span { display:block; margin-top:2px; font-size:14px; color:var(--muted); }
 .header-player { text-align:center; min-width:0; flex:1; }
 .header-player .playing-label { display:block; font-size:10px; letter-spacing:.08em; color:var(--muted); }
 .header-player .playing-name { display:block; font-weight:800; font-size:14px; max-width:220px; margin:0 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -626,7 +629,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 
 <section id="game" class="hidden">
       <div class="panel">
-        <div class="game-top"><div><div class="round-label" id="roundLabel">ROUND 1 OF 7</div><div class="sub" id="phaseLabel">Choose & predict</div></div><div class="timer" id="timer">20s</div></div>
+        <div class="game-top">
+          <div class="game-top-modifier" id="topRoundModifier">
+            <b>Round 1 of 7: 🔮 Read the Room</b>
+            <span>Standard round — pick your move and predict a rival's move.</span>
+          </div>
+          <div class="timer" id="timer">20s</div>
+        </div>
         <div class="progress"><div id="progressFill"></div></div>
         <div id="playArea"></div>
       </div>
@@ -2155,8 +2164,6 @@ async function refreshTeamPowerUI() {
       showRoundIntro(round);
     }
     show("game");
-    $("roundLabel").textContent = `ROUND ${round} OF 7`;
-    $("phaseLabel").textContent = "Choose & predict";
     const topPlayer=me();
     if($("headerPlayingName")) $("headerPlayingName").textContent = topPlayer?.name || selectedUsername || "Player";
     $("progressFill").style.width = `${((round-1)/7)*100}%`;
@@ -2171,15 +2178,16 @@ async function refreshTeamPowerUI() {
           : (round===3 || round===5)
             ? ["🥤 Cup Shuffle","Track the hidden moves, then choose a cup. The move underneath becomes your move."]
             : ["🎡 Chaos Spinner","Spin the final wheel. Wherever it lands becomes your Round 7 move."];
-      roundModifierHtml=`<b>Round ${round}: ${soloRoundInfo[0]}</b><span>${soloRoundInfo[1]}</span>`;
+      roundModifierHtml=`<b>Round ${round} of 7: ${soloRoundInfo[0]}</b><span>${soloRoundInfo[1]}</span>`;
     }else if(isQuickDraw){
-      roundModifierHtml=`<b>Round ${round}: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
+      roundModifierHtml=`<b>Round ${round} of 7: 🎯 Quick Draw</b><span>Rock, Paper, and Scissors cycle rapidly. Time your lock-in to land the move you want!</span>`;
     }else if(modifier){
-      roundModifierHtml=`<b>Round ${round}: ${modifier.name}</b><span>${modifier.desc}</span>`;
+      roundModifierHtml=`<b>Round ${round} of 7: ${modifier.name}</b><span>${modifier.desc}</span>`;
     }else{
-      roundModifierHtml=`<b>Round ${round}: 🔮 Read the Room</b><span>Standard round — pick your move and predict a rival's move.</span>`;
+      roundModifierHtml=`<b>Round ${round} of 7: 🔮 Read the Room</b><span>Standard round — pick your move and predict a rival's move.</span>`;
     }
     window.__roundModifierHtml=roundModifierHtml;
+    if($("topRoundModifier")) $("topRoundModifier").innerHTML=roundModifierHtml;
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
     renderMovePicker();
@@ -2201,7 +2209,6 @@ async function refreshTeamPowerUI() {
     const currentPlayer = me();
     if($("headerPlayingName")) $("headerPlayingName").textContent = currentPlayer?.name || selectedUsername || "Player";
     $("playArea").innerHTML = `
-      <div class="modifier" style="margin-bottom:14px">${window.__roundModifierHtml||""}</div>
       <h2 style="margin:0 0 5px;letter-spacing:-.04em">Choose your move</h2>
       <p class="muted" style="margin-top:0">Your move stays private until everyone locks in.</p>
       ${soloModeActive ? ((round===1 || round===4) ? `
