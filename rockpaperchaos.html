@@ -3080,13 +3080,26 @@ async function refreshTeamPowerUI() {
     // Direct reveal fallback: submissions and results are separate Firebase
     // writes. Listen to results itself so a client cannot remain on Locked In
     // just because the broader room listener missed/delayed the reveal change.
-    onValue(watchedResultsRef, snap=>{
+    // Keep listening until results actually exist. `onlyOnce:true` is NOT
+    // correct here: Firebase immediately calls an onValue listener with an
+    // empty snapshot when /results has not been written yet, which would
+    // unsubscribe the fallback before the host publishes the reveal and can
+    // leave a player permanently on "Locked in!".
+    let unsubscribeResults=null;
+    unsubscribeResults=onValue(watchedResultsRef, snap=>{
       if(!snap.exists() || round!==watchedRound) return;
+
+      if(unsubscribeResults){
+        try{ unsubscribeResults(); }catch(_){}
+        unsubscribeResults=null;
+      }
+
       const activeWatcher=submissionWatchers.get(watcherKey);
       if(activeWatcher){
         try{ activeWatcher(); }catch(_){}
         submissionWatchers.delete(watcherKey);
       }
+
       const r=snap.val()||{};
       applyScores(r.scores||{});
       renderReveal(
@@ -3099,7 +3112,7 @@ async function refreshTeamPowerUI() {
         r.roundPoints||{},
         r.scores||{}
       );
-    }, {onlyOnce:true});
+    });
 
     // Keep this listener on every client because reveal/final-results
     // navigation depends on live round updates. Only the host resolves/writes.
