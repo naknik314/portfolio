@@ -3314,22 +3314,9 @@ async function refreshTeamPowerUI() {
         // Counter bonus only applies when a minority move beats the single majority move.
         // Normal: Paper > Rock, Rock > Scissors, Scissors > Paper.
         // Round 6 reverse: Rock > Paper, Paper > Scissors, Scissors > Rock.
-        // `beats(a,b)` returns a positive result when b beats a in this game,
-        // so compare the majority against the minority move here. This awards
-        // the counter only to the minority move that actually beats the clear
-        // majority (e.g. Paper vs a Rock majority).
-        const countersMajority=isMinority && (
-        (!reverse && (
-          (myMove==="rock" && majorityMove==="scissors") ||
-          (myMove==="paper" && majorityMove==="rock") ||
-          (myMove==="scissors" && majorityMove==="paper")
-        )) ||
-        (reverse && (
-          (myMove==="rock" && majorityMove==="paper") ||
-          (myMove==="paper" && majorityMove==="scissors") ||
-          (myMove==="scissors" && majorityMove==="rock")
-        ))
-      );
+        // `beats(a,b,reverse)` is the authoritative matchup check. A positive
+        // result means a beats b, including Round 6 reverse rules.
+        const countersMajority=isMinority && beats(myMove,majorityMove,reverse)>0;
         if(countersMajority){
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
@@ -3696,10 +3683,38 @@ async function refreshTeamPowerUI() {
       // reveal so a bookkeeping failure can never turn a valid round into a
       // "Round resolution error".
       const powerStateUpdates={};
+
+      // Normal computer rivals get only ONE Team Power per game, exactly like
+      // human players. Chaos Bot Mode is the only exception. Bot submissions
+      // are created by the host, so the resolver must persist their consumed
+      // state here rather than relying on the human submission UI.
+      if(!resolverChaosBotMode){
+        players.filter(p=>p.bot).forEach(p=>{
+          const submittedPower=submissions[p.uid]?.teamPower;
+          if(!submittedPower) return;
+
+          // Cut in Half is special: BLOCKED / NO EFFECT keeps the power.
+          if(submittedPower==="scissors"){
+            if(successfulScissorsPower.includes(p.uid)){
+              powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
+            }else if(restoreScissorsPower.includes(p.uid)){
+              powerStateUpdates[`teamPowerUsed/${p.uid}`]=false;
+            }
+          }else{
+            // Barricade, Reprint, and swapped bot powers are consumed when
+            // activated under the current normal-game rules.
+            powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
+          }
+        });
+      }
+
+      // Keep Cut in Half bookkeeping authoritative for human players too.
       successfulScissorsPower.forEach(uid=>{
+        if(resolverChaosBotMode && players.find(p=>p.uid===uid)?.bot) return;
         powerStateUpdates[`teamPowerUsed/${uid}`]=true;
       });
       restoreScissorsPower.forEach(uid=>{
+        if(resolverChaosBotMode && players.find(p=>p.uid===uid)?.bot) return;
         powerStateUpdates[`teamPowerUsed/${uid}`]=false;
       });
       if(Object.keys(powerStateUpdates).length){
