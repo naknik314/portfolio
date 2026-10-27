@@ -3318,7 +3318,18 @@ async function refreshTeamPowerUI() {
         // so compare the majority against the minority move here. This awards
         // the counter only to the minority move that actually beats the clear
         // majority (e.g. Paper vs a Rock majority).
-        const countersMajority=isMinority && beats(myMove,majorityMove,reverse)>0;
+        const countersMajority=isMinority && (
+        (!reverse && (
+          (myMove==="rock" && majorityMove==="scissors") ||
+          (myMove==="paper" && majorityMove==="rock") ||
+          (myMove==="scissors" && majorityMove==="paper")
+        )) ||
+        (reverse && (
+          (myMove==="rock" && majorityMove==="paper") ||
+          (myMove==="paper" && majorityMove==="scissors") ||
+          (myMove==="scissors" && majorityMove==="rock")
+        ))
+      );
         if(countersMajority){
           scores[p.uid]+=1*multiplier;
           addMoveWin(p.uid,myMove,1*multiplier);
