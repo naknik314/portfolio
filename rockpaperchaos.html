@@ -3082,6 +3082,11 @@ async function refreshTeamPowerUI() {
     // just because the broader room listener missed/delayed the reveal change.
     onValue(watchedResultsRef, snap=>{
       if(!snap.exists() || round!==watchedRound) return;
+      const activeWatcher=submissionWatchers.get(watcherKey);
+      if(activeWatcher){
+        try{ activeWatcher(); }catch(_){}
+        submissionWatchers.delete(watcherKey);
+      }
       const r=snap.val()||{};
       applyScores(r.scores||{});
       renderReveal(
@@ -3118,7 +3123,7 @@ async function refreshTeamPowerUI() {
               const target=targets[Math.floor(Math.random()*targets.length)];
               prediction={
                 targetUid:target.uid,
-                predictedMove:moves[Math.floor(Math.random()*3)]
+                move:moves[Math.floor(Math.random()*3)]
               };
             }
           }
@@ -4147,8 +4152,22 @@ async function refreshTeamPowerUI() {
         await update(ref(db, `rooms/${room}`), {status:"finished",scores:finalScores,updatedAt:Date.now()});
       }
     } else {
-      round++;
-      await update(ref(db, `rooms/${room}`), {round,updatedAt:Date.now()});
+      const completedRound=round;
+      const nextRound=completedRound+1;
+
+      // Fully retire the completed round listener before changing rounds.
+      // This is especially important after Round 6: a late Round 6 callback
+      // must not redraw Reverse Rules after the room has advanced to Round 7.
+      const oldWatcherKey=`${room}:${completedRound}`;
+      const oldWatcher=submissionWatchers.get(oldWatcherKey);
+      if(oldWatcher){
+        try{ oldWatcher(); }catch(_){}
+        submissionWatchers.delete(oldWatcherKey);
+      }
+
+      await update(ref(db, `rooms/${room}`), {round:nextRound,updatedAt:Date.now()});
+      round=nextRound;
+      preparedRound=null;
       beginRound(false);
     }
   }
