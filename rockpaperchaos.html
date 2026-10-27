@@ -2124,6 +2124,7 @@ async function refreshTeamPowerUI() {
   let preparedRound = null;
 
   function beginRound(writeState=true) {
+    stopLockedInRecovery();
     clearInterval(timerInt);
     if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
     // Firebase room updates can fire several times during the same round
@@ -3066,9 +3067,64 @@ async function refreshTeamPowerUI() {
   }
 
   const submissionWatchers=new Map();
+  let lockedInRecoveryTimer=null;
+
+  function stopLockedInRecovery(){
+    if(lockedInRecoveryTimer){
+      clearTimeout(lockedInRecoveryTimer);
+      lockedInRecoveryTimer=null;
+    }
+  }
+
+  function startLockedInRecovery(watchedRound){
+    stopLockedInRecovery();
+    const check=async()=>{
+      if(!onlineRoom || !room || round!==watchedRound) return;
+      try{
+        const snap=await get(ref(db,`rooms/${room}`));
+        if(!snap.exists()) return;
+        const data=snap.val()||{};
+
+        if(data.status==="finished"){
+          stopLockedInRecovery();
+          applyScores(data.scores||{});
+          finishGame(false);
+          return;
+        }
+
+        const sharedRound=Number(data.round||1);
+        if(sharedRound!==watchedRound){
+          stopLockedInRecovery();
+          round=sharedRound;
+          preparedRound=null;
+          selectedMove=null; targetId=null; predictedMove=null;
+          teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+          beginRound(false);
+          return;
+        }
+
+        const rr=data.rounds?.[watchedRound];
+        if(rr?.phase==="reveal" && rr.results){
+          stopLockedInRecovery();
+          const r=rr.results||{};
+          applyScores(r.scores||{});
+          renderReveal(
+            r.details||[], !!r.reverse, r.basePoints||1, isHost,
+            r.moves||{}, r.revealWinner||"Draw!", r.roundPoints||{}, r.scores||{}
+          );
+          return;
+        }
+      }catch(error){
+        console.warn("Locked-in recovery check failed",error);
+      }
+      lockedInRecoveryTimer=setTimeout(check,1500);
+    };
+    lockedInRecoveryTimer=setTimeout(check,1500);
+  }
 
   function watchSubmissions() {
     const watchedRound=round;
+    startLockedInRecovery(watchedRound);
     const watcherKey=`${room}:${watchedRound}`;
     const previousWatcher=submissionWatchers.get(watcherKey);
     if(previousWatcher){
@@ -3817,6 +3873,7 @@ async function refreshTeamPowerUI() {
   const moveItems={rock:"🪨",paper:"📄",scissors:"✂️"};
 
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
+    stopLockedInRecovery();
     // Chaos Bots can reuse Team Powers in later rounds, so their power is
     // never described as USED UP. Keep the success/no-effect result, but
     // replace any consumed-power status with a Chaos Bot reusable status.
