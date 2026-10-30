@@ -3721,10 +3721,9 @@ async function refreshTeamPowerUI() {
       details[i]=`${playerName} predicted wrong: -${rawPenalty} prediction penalty.`;
     }
 
-    if(predictionMode==="optional"){
-      // Always show the Casual-mode floor reminder in Round Highlights.
-      // This is a mode rule, not just a prediction note, so it remains visible
-      // even in rounds where no negative event happened to match the detector.
+    if(!soloModeActive && predictionMode==="optional"){
+      // Show the Casual-mode floor reminder only in multiplayer Casual mode.
+      // Solo Mode has no predictions and uses separate scoring rules.
       details.push(`ℹ️ Casual mode: points can't go below 0.`);
     }
 
@@ -4157,7 +4156,7 @@ async function refreshTeamPowerUI() {
           <b class="score" style="font-size:16px">${total} pts</b>`}
         </div>`;
       }).join("")}</div>
-      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d));return [...counterSummaries,...playerCounterCredits,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
+      <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const casualNotes=normal.filter(d=>String(d).startsWith("ℹ️ Casual mode:"));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d)&&!String(d).startsWith("ℹ️ Casual mode:"));return [...counterSummaries,...playerCounterCredits,...casualNotes,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
     if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
   }
