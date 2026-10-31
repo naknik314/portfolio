@@ -3996,7 +3996,12 @@ async function refreshTeamPowerUI() {
         .map(o=>Math.min(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0)));
       const worst=losses.length?Math.min(...losses):0;
       if(worst<0){
-        const targets=players.filter(o=>o.uid!==p.uid);
+        const sourceAlliance=vendettaModeActive?vendettaAllianceByPlayer[p.uid]:null;
+        const targets=players.filter(o=>{
+          if(o.uid===p.uid) return false;
+          if(!vendettaModeActive || !sourceAlliance) return true;
+          return vendettaAllianceByPlayer[o.uid]!==sourceAlliance;
+        });
         const protectedTargets=[];
         targets.forEach(o=>{
           if(submissions[o.uid]?.teamPower==="rock"){
@@ -4012,7 +4017,7 @@ async function refreshTeamPowerUI() {
         }
         const affected=targets.length-protectedTargets.length;
         const vendettaLabel=vendettaPlayerLabel(p,p.name);
-        details.push(`⚡ POWER USED — ${vendettaLabel} used 📄 Misprint. SUCCESS: ${vendettaLabel} copied ${worst} points to ${affected===targets.length?"everyone else":affected+" unprotected player"+(affected===1?"":"s")}. 🔒 📄 Misprint USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaLabel} used 📄 Misprint. SUCCESS: ${vendettaLabel} copied ${worst} points to ${vendettaModeActive?(affected+" rival player"+(affected===1?"":"s")):(affected===targets.length?"everyone else":affected+" unprotected player"+(affected===1?"":"s"))}. 🔒 📄 Misprint USED UP.`);
       } else {
         const vendettaLabel=vendettaPlayerLabel(p,p.name);
         details.push(`⚡ POWER USED — ${vendettaLabel} used 📄 Misprint. NO EFFECT: nobody else had negative round points to copy. 🔒 📄 Misprint USED UP.`);
@@ -4023,12 +4028,17 @@ async function refreshTeamPowerUI() {
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="reverseRock") return;
       let blocked=0;
-      players.filter(o=>o.uid!==p.uid).forEach(o=>{
+      const sourceAlliance=vendettaModeActive?vendettaAllianceByPlayer[p.uid]:null;
+      players.filter(o=>{
+        if(o.uid===p.uid) return false;
+        if(!vendettaModeActive || !sourceAlliance) return true;
+        return vendettaAllianceByPlayer[o.uid]!==sourceAlliance;
+      }).forEach(o=>{
         const gain=Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0));
         if(gain>0){ scores[o.uid]-=gain; blocked++; }
       });
       if(blocked>0){
-        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss. 🔒 🪨 Stonewall USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${vendettaModeActive?(blocked===1?"rival player":"rival players"):(blocked===1?"player":"players")}. Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss. 🔒 🪨 Stonewall USED UP.`);
       } else {
         details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP.`);
       }
@@ -4304,7 +4314,7 @@ async function refreshTeamPowerUI() {
       {name:"Reprint",icon:"📄",description:"which copies the highest positive points another player earns that round"},
       {name:"Cut in Half",icon:"✂️",description:"which automatically targets the opponent who earned the most positive points this round"},
       {name:"Stonewall",icon:"🪨",description:"which blocks everyone else's positive points that round"},
-      {name:"Misprint",icon:"📄",description:"which copies the highest negative result to everyone except the user"},
+      {name:"Misprint",icon:"📄",description:"which copies the highest negative result to rival alliances only"},
       {name:"Cut Your Losses",icon:"✂️",description:"which protects the user from negative points that round"}
     ];
 
