@@ -2202,8 +2202,20 @@ let soloCupCrusherX2Choice=null;
   const REVERSAL_COST=50;
 
   function reversedPowerForTeam(team){
-    if(team==="rock") return {key:"reverseRock",name:"🪨 Stonewall",desc:"Blocks everyone else's positive round points before they are awarded. Barricade cannot block Stonewall because it prevents a gain rather than causing a point loss."};
-    if(team==="paper") return {key:"reversePaper",name:"📄 Misprint",desc:"Copies the highest negative points another player earns that round to everyone except you. If nobody earns negative points, it has NO EFFECT."};
+    if(team==="rock") return {
+      key:"reverseRock",
+      name:"🪨 Stonewall",
+      desc:vendettaModeActive
+        ? "Blocks positive round points earned by rival alliances before they are awarded. Allies are not affected."
+        : "Blocks everyone else's positive round points before they are awarded. Barricade cannot block Stonewall because it prevents a gain rather than causing a point loss."
+    };
+    if(team==="paper") return {
+      key:"reversePaper",
+      name:"📄 Misprint",
+      desc:vendettaModeActive
+        ? "Copies the highest negative round result to rival alliances only. Allies are not affected. If no rival earns negative points, it has NO EFFECT."
+        : "Copies the highest negative points another player earns that round to everyone except you. If nobody earns negative points, it has NO EFFECT."
+    };
     if(team==="scissors") return {key:"reverseScissors",name:"✂️ Cut Your Losses",desc:"Cancels all of your negative points for that round, reducing your round loss to 0."};
     return null;
   }
