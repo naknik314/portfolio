@@ -2512,8 +2512,14 @@ async function refreshTeamPowerUI() {
     $("timer").textContent = "WAITING";
     const currentPlayer = me();
     if($("headerPlayingName")) $("headerPlayingName").textContent = currentPlayer?.name || selectedUsername || "Player";
+    const myVendettaAllianceId=vendettaModeActive?vendettaAllianceByPlayer[currentUser?.uid]:null;
+    const myVendettaAllianceName=myVendettaAllianceId?(vendettaAlliances?.[myVendettaAllianceId]?.name||"Your Alliance"):"";
     $("playArea").innerHTML = `
       <div class="choose-move-line">Choose your move <span class="muted">· Your move stays private until everyone locks in.</span></div>
+      ${vendettaModeActive && myVendettaAllianceName ? `
+      <div style="margin:0 0 12px;padding:10px 12px;border:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.10);border-radius:12px;text-align:center">
+        <strong style="color:#22c55e">⚔️ YOUR VENDETTA ALLIANCE: ${escapeHtml(myVendettaAllianceName)}</strong>
+      </div>` : ""}
       ${soloModeActive ? ((round===1 || round===4) ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <strong>🎯 Solo Quick Draw</strong>
@@ -2563,8 +2569,12 @@ async function refreshTeamPowerUI() {
         const myAlliance=vendettaAllianceByPlayer[currentUser?.uid];
         const theirAlliance=vendettaAllianceByPlayer[p.uid];
         const sameAlliance=Boolean(vendettaModeActive && myAlliance && theirAlliance && myAlliance===theirAlliance);
-        const allianceName=sameAlliance?(vendettaAlliances?.[theirAlliance]?.name||"Your Alliance"):"";
-        const helper=sameAlliance?`${allianceName} · ALLY`:(p.bot?"Computer":"Player");
+        const allianceName=vendettaModeActive && theirAlliance
+          ? (vendettaAlliances?.[theirAlliance]?.name||"Unknown Alliance")
+          : "";
+        const helper=vendettaModeActive
+          ? `${allianceName} · ${sameAlliance?"ALLY":"RIVAL"}`
+          : (p.bot?"Computer":"Player");
         return `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}"><b style="display:flex;align-items:center;gap:5px;justify-content:center">${p.bot?'<span aria-hidden="true" style="font-size:1em;line-height:1">🤖</span>':""}<span>${escapeHtml(p.name)}</span></b><small>${escapeHtml(helper)}</small></button>`;
       }).join("")}</div>
       <div id="predictedMovePicker"></div>`}
@@ -4837,6 +4847,11 @@ async function refreshTeamPowerUI() {
       onlineRoom=true;
       quickDrawRound=Number(data.quickDrawRound||0)||null;
       predictionMode=data.predictionMode==="required"?"required":"optional";
+      vendettaModeActive=Boolean(data.vendettaMode?.active);
+      vendettaLayout=vendettaModeActive?String(data.vendettaMode?.layout||""):"";
+      vendettaAlliances=data.vendettaAlliances||{};
+      vendettaAllianceByPlayer=data.vendettaAllianceByPlayer||{};
+      vendettaPlayerTeams=data.vendettaPlayerTeams||{};
 
       // A refresh creates fresh local UI state. Firebase decides whether the
       // player is waiting, revealing, in the lobby, or finished.
