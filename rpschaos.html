@@ -1218,11 +1218,13 @@ const db = getDatabase(firebaseApp);
       const longestTeam=teamGames>previousLongest?team:previousLongestTeam;
       const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
       let vendettaPlayed=0, vendettaWon=0, vendettaTie=0;
+      let vendettaAllianceScore=null;
       if(vendettaModeActive && vendettaAllianceByPlayer[uid]){
         const totals=vendettaTotals(finalScores);
         const top=Math.max(...Object.values(totals).map(Number));
         const allianceId=vendettaAllianceByPlayer[uid];
         const allianceScore=Number(totals[allianceId]||0);
+        vendettaAllianceScore=allianceScore;
         const topIds=Object.keys(totals).filter(id=>Number(totals[id])===top);
         vendettaPlayed=1;
         vendettaTie=topIds.length>1 && allianceScore===top ? 1 : 0;
@@ -1241,7 +1243,7 @@ const db = getDatabase(firebaseApp);
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
         totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
-        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(finalScores[uid]||0))+challengeBonus,
+        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(vendettaAllianceScore ?? finalScores[uid] ?? 0))+challengeBonus,
         moveWinPoints,
         previousTeam:old.team||"unassigned",
         team,
@@ -4692,7 +4694,17 @@ async function refreshTeamPowerUI() {
       const winners=entries.filter(x=>x.score===top);
       $("winnerTitle").textContent=winners.length>1?"⚔️ Vendetta ends in a tie!":`⚔️ ${winners[0].name} win the Vendetta!`;
       $("winnerSub").textContent=winners.length>1?`${winners.length} alliances tied at ${top} points.`:`${top} alliance points · ${vendettaLayout}`;
-      $("finalScores").innerHTML=entries.map((a,i)=>`<div class="result-row"><div><b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}</b><div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div></div><b class="score">${a.score} pts</b></div>`).join("");
+      const myAllianceId=vendettaAllianceByPlayer[currentUser?.uid];
+      $("finalScores").innerHTML=entries.map((a,i)=>{
+        const isMyAlliance=a.id===myAllianceId;
+        return `<div class="result-row" ${isMyAlliance?'style="border:2px solid #22c55e;background:rgba(34,197,94,.10);box-shadow:0 0 0 2px rgba(34,197,94,.08)"':""}>
+          <div>
+            <b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}${isMyAlliance?' <span style="display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;vertical-align:2px">YOUR ALLIANCE</span>':""}</b>
+            <div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div>
+          </div>
+          <b class="score">${a.score} pts</b>
+        </div>`;
+      }).join("");
       const box=$("teamEndMessage"); if(box) box.style.display="none";
       return;
     }
