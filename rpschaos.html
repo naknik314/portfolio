@@ -606,6 +606,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
 
             <div class="rule-card">
+              <strong>⚔️ Vendetta Mode <span class="muted">(TEST)</span></strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
+                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match.</span>
+                <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Cleavers</b>, ❓ <b>The Unknowns</b>.</span>
+                <span style="margin-top:8px"><b>Test cost: 0 CP.</b> Underdog balancing is not enabled in this first test build.</span>
+              </details>
+              <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
+                <option value="2v2">4 players — 2 vs 2</option>
+                <option value="3v3">6 players — 3 vs 3</option>
+                <option value="2v2v2">6 players — 2 vs 2 vs 2</option>
+                <option value="4v4">8 players — 4 vs 4</option>
+                <option value="2v3v3">8 players — 2 vs 3 vs 3</option>
+              </select>
+              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — TEST 0 CP</button>
+              <span id="vendettaModeStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <div class="rule-card">
               <strong>🕵️ Double Agent Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Double Agent Mode</summary>
@@ -807,6 +826,7 @@ const db = getDatabase(firebaseApp);
   let quickDrawRound = null, quickDrawTimer = null, quickDrawIndex = 0;
   let predictionMode = "optional"; // required = competitive, optional = casual with a 0-point score floor
   let soloModeActive = false;
+  let vendettaModeActive=false, vendettaLayout="", vendettaAlliances={}, vendettaAllianceByPlayer={}, vendettaPlayerTeams={};
   let lastRoundIntroShown=null, roundIntroTimer=null;
   function showRoundIntro(roundNumber){
     const n=Number(roundNumber||0);
@@ -921,7 +941,8 @@ const db = getDatabase(firebaseApp);
     return {
       gamesPlayed:0,wins:0,ties:0,totalPoints:0,chaosPoints:0,
       moveWinPoints:{rock:0,paper:0,scissors:0},
-      team:"unassigned",teamGames:0,teamSwaps:0,longestTeamGames:0,longestTeam:"unassigned",recentGames:{}
+      team:"unassigned",teamGames:0,teamSwaps:0,longestTeamGames:0,longestTeam:"unassigned",
+      vendettasPlayed:0,vendettasWon:0,vendettaTies:0,recentGames:{}
     };
   }
 
@@ -1090,6 +1111,10 @@ const db = getDatabase(firebaseApp);
           <div class="result-row"><b>Games played</b><b class="score">${Number(p.gamesPlayed||0)}</b></div>
           <div class="result-row"><b>Wins</b><b class="score">${Number(p.wins||0)}</b></div>
           <div class="result-row"><b>Ties</b><b class="score">${Number(p.ties||0)}</b></div>
+          ${Number(p.vendettasPlayed||0)>0?`
+          <div class="result-row"><b>⚔️ Vendettas played</b><b class="score">${Number(p.vendettasPlayed||0)}</b></div>
+          <div class="result-row"><b>⚔️ Vendettas won</b><b class="score">${Number(p.vendettasWon||0)}</b></div>
+          <div class="result-row"><b>⚔️ Vendetta win rate</b><b class="score">${Math.round((Number(p.vendettasWon||0)/Math.max(1,Number(p.vendettasPlayed||0)))*100)}%</b></div>`:""}
         </div>
         <div class="stats-team-side">
           <div class="rule-card">
@@ -1146,6 +1171,7 @@ const db = getDatabase(firebaseApp);
       await refreshChaosPointsPageBalance();
       await refreshSoloModeLobby();
       await refreshChaosBotLobby();
+      await refreshVendettaLobby();
       await refreshDoubleAgentLobby();
       await refreshPowerReversalLobby();
       await refreshRollDiceLobby();
@@ -1191,6 +1217,17 @@ const db = getDatabase(firebaseApp);
       const longestTeamGames=teamGames>previousLongest?teamGames:previousLongest;
       const longestTeam=teamGames>previousLongest?team:previousLongestTeam;
       const result=winners.includes(uid)?(isTie?"Tie":"Win"):"Loss";
+      let vendettaPlayed=0, vendettaWon=0, vendettaTie=0;
+      if(vendettaModeActive && vendettaAllianceByPlayer[uid]){
+        const totals=vendettaTotals(finalScores);
+        const top=Math.max(...Object.values(totals).map(Number));
+        const allianceId=vendettaAllianceByPlayer[uid];
+        const allianceScore=Number(totals[allianceId]||0);
+        const topIds=Object.keys(totals).filter(id=>Number(totals[id])===top);
+        vendettaPlayed=1;
+        vendettaTie=topIds.length>1 && allianceScore===top ? 1 : 0;
+        vendettaWon=topIds.length===1 && allianceScore===top ? 1 : 0;
+      }
       const challengeSnap=await get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`));
       const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
       const challengeBonus=(challengeActive && result==="Win" && players.some(x=>x.bot))?CHAOS_BOT_WIN_BONUS:0;
@@ -1212,6 +1249,9 @@ const db = getDatabase(firebaseApp);
         teamSwaps,
         longestTeamGames,
         longestTeam,
+        vendettasPlayed:Number(old.vendettasPlayed||0)+vendettaPlayed,
+        vendettasWon:Number(old.vendettasWon||0)+vendettaWon,
+        vendettaTies:Number(old.vendettaTies||0)+vendettaTie,
         recentGames:trimmedObj,
         updatedAt:Date.now()
       });
@@ -1255,6 +1295,11 @@ const db = getDatabase(firebaseApp);
       onlineRoom = true;
       quickDrawRound = Number(data.quickDrawRound || 0) || null;
       predictionMode = data.predictionMode === "required" ? "required" : "optional";
+      vendettaModeActive=Boolean(data.vendettaMode?.active);
+      vendettaLayout=vendettaModeActive?String(data.vendettaMode?.layout||""):"";
+      vendettaAlliances=data.vendettaAlliances||{};
+      vendettaAllianceByPlayer=data.vendettaAllianceByPlayer||{};
+      vendettaPlayerTeams=data.vendettaPlayerTeams||{};
       const roomMarksSolo = data.soloMode?.[currentUser?.uid] === true;
       const soloPlayingFallback = data.status==="playing" &&
         players.length===1 &&
@@ -1478,6 +1523,7 @@ const db = getDatabase(firebaseApp);
         :"Competitive: predictions are required every round except Round 4. Wrong predictions can push scores below zero.";
     }
     refreshChaosBotLobby();
+    refreshVendettaLobby();
     refreshSoloModeLobby();
   }
   async function removeComputerPlayer(uid) {
@@ -1553,6 +1599,171 @@ const db = getDatabase(firebaseApp);
     const wins = (a==="rock"&&b==="scissors") || (a==="paper"&&b==="rock") || (a==="scissors"&&b==="paper");
     return reverse ? (wins ? -1 : 1) : (wins ? 1 : -1);
   }
+  const VENDETTA_COST=0;
+  const VENDETTA_LAYOUTS={
+    "2v2":[2,2],
+    "3v3":[3,3],
+    "2v2v2":[2,2,2],
+    "4v4":[4,4],
+    "2v3v3":[2,3,3]
+  };
+  const VENDETTA_NAMES={
+    rock:"The Strikers",
+    paper:"The Mimics",
+    scissors:"The Cleavers",
+    unassigned:"The Unknowns"
+  };
+
+  async function refreshVendettaLobby(){
+    const btn=$("vendettaModeBtn"), status=$("vendettaModeStatus"), select=$("vendettaLayoutSelect");
+    if(!btn || !status) return;
+    if(!room || !currentUser){
+      btn.disabled=true; btn.style.opacity=".5";
+      status.textContent="Create or join a game first.";
+      return;
+    }
+    const snap=await get(ref(db,`rooms/${room}/vendettaMode`));
+    const v=snap.exists()?snap.val():null;
+    const active=Boolean(v?.active);
+    vendettaModeActive=active;
+    vendettaLayout=active?String(v.layout||""):"";
+    btn.disabled=active || !isHost;
+    btn.style.opacity=btn.disabled?".55":"1";
+    btn.textContent=active?"⚔️ Vendetta Mode Active":"⚔️ Enable Vendetta Mode — TEST 0 CP";
+    if(select){
+      if(active && vendettaLayout) select.value=vendettaLayout;
+      select.disabled=active || !isHost;
+    }
+    status.textContent=active
+      ? `Vendetta layout: ${vendettaLayout}. Swapped powers will be assigned when the match starts.`
+      : "Host chooses a supported 4-, 6-, or 8-player alliance layout.";
+  }
+
+  async function activateVendettaMode(){
+    if(!room || !currentUser) return toast("Create a game first.");
+    if(!isHost) return toast("Only the host can enable Vendetta Mode.");
+    const layout=$("vendettaLayoutSelect")?.value||"2v2";
+    const sizes=VENDETTA_LAYOUTS[layout];
+    if(!sizes) return toast("Choose a Vendetta layout.");
+    const needed=sizes.reduce((a,b)=>a+b,0);
+    if(players.length!==needed) return toast(`This Vendetta layout needs exactly ${needed} players.`);
+    const roomSnap=await get(ref(db,`rooms/${room}`));
+    const data=roomSnap.val()||{};
+    const soloActive=Object.values(data.soloMode||{}).some(Boolean);
+    const chaosBotActive=Object.values(data.chaosBotChallenge||{}).some(Boolean);
+    const doubleAgentActive=Object.values(data.doubleAgent||{}).some(v=>v&&v.power);
+    const powerSwapActive=Object.values(data.powerSwap||{}).some(Boolean) || Object.values(data.powerReversal||{}).some(Boolean);
+    if(soloActive || chaosBotActive || doubleAgentActive || powerSwapActive){
+      return toast("Vendetta test mode can't be combined with Solo, Chaos Bot, Double Agent, or Power Swap.");
+    }
+    await set(ref(db,`rooms/${room}/vendettaMode`),{active:true,layout,testing:true,cost:VENDETTA_COST});
+    toast("⚔️ Vendetta Mode enabled for testing!");
+    await refreshVendettaLobby();
+  }
+
+  function vendettaRankLevel(teamGames){
+    const n=Number(teamGames||0);
+    return n>=10?2:n>=5?1:0;
+  }
+
+  function chooseVendettaAllianceName(members){
+    const counts={rock:0,paper:0,scissors:0,unassigned:0};
+    members.forEach(m=>counts[m.team]=(counts[m.team]||0)+1);
+    const max=Math.max(...Object.values(counts));
+    let leaders=Object.keys(counts).filter(k=>counts[k]===max);
+    if(leaders.length===1) return VENDETTA_NAMES[leaders[0]];
+
+    // Tiebreak 1: highest current Team Rank among the tied team identities.
+    let bestRank=-1;
+    let rankLeaders=[];
+    leaders.forEach(team=>{
+      const rank=Math.max(-1,...members.filter(m=>m.team===team).map(m=>Number(m.rank||0)));
+      if(rank>bestRank){ bestRank=rank; rankLeaders=[team]; }
+      else if(rank===bestRank) rankLeaders.push(team);
+    });
+    if(rankLeaders.length===1) return VENDETTA_NAMES[rankLeaders[0]];
+    leaders=rankLeaders;
+
+    // Tiebreak 2: highest number of historical Vendetta wins among members
+    // belonging to each still-tied team identity.
+    let bestVendettaWins=-1;
+    let winLeaders=[];
+    leaders.forEach(team=>{
+      const wins=Math.max(0,...members.filter(m=>m.team===team).map(m=>Number(m.vendettaWins||0)));
+      if(wins>bestVendettaWins){ bestVendettaWins=wins; winLeaders=[team]; }
+      else if(wins===bestVendettaWins) winLeaders.push(team);
+    });
+
+    return winLeaders.length===1 ? VENDETTA_NAMES[winLeaders[0]] : VENDETTA_NAMES.unassigned;
+  }
+
+  async function setupVendettaAlliances(){
+    if(!vendettaModeActive) return;
+    const sizes=VENDETTA_LAYOUTS[vendettaLayout];
+    if(!sizes || sizes.reduce((a,b)=>a+b,0)!==players.length) throw new Error("Vendetta player count no longer matches the selected layout.");
+
+    const members=[];
+    for(const p of players){
+      if(p.bot){
+        const teams=["rock","paper","scissors","unassigned"];
+        const team=teams[Math.floor(Math.random()*teams.length)];
+        members.push({uid:p.uid,name:p.name,bot:true,team,rank:0,vendettaWins:0});
+      }else{
+        const snap=await get(ref(db,`profiles/${p.uid}`));
+        const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+        members.push({
+          uid:p.uid,
+          name:p.name,
+          bot:false,
+          team:profile.team||"unassigned",
+          rank:vendettaRankLevel(profile.teamGames),
+          vendettaWins:Number(profile.vendettasWon||0)
+        });
+      }
+    }
+
+    // Keep same-team players together where possible, then fill open alliance slots.
+    const buckets={rock:[],paper:[],scissors:[],unassigned:[]};
+    members.forEach(m=>(buckets[m.team]||buckets.unassigned).push(m));
+    const ordered=Object.values(buckets).sort((a,b)=>b.length-a.length);
+    const groups=sizes.map((size,i)=>({id:`a${i+1}`,size,members:[]}));
+    ordered.forEach(bucket=>{
+      bucket.forEach(m=>{
+        const candidates=groups.filter(g=>g.members.length<g.size);
+        candidates.sort((a,b)=>{
+          const asame=a.members.filter(x=>x.team===m.team).length;
+          const bsame=b.members.filter(x=>x.team===m.team).length;
+          return bsame-asame || (b.size-b.members.length)-(a.size-a.members.length);
+        });
+        candidates[0].members.push(m);
+      });
+    });
+
+    const allianceByPlayer={}, playerTeams={}, allianceData={};
+    groups.forEach(g=>{
+      const name=chooseVendettaAllianceName(g.members);
+      allianceData[g.id]={name,size:g.size,members:Object.fromEntries(g.members.map(m=>[m.uid,true]))};
+      g.members.forEach(m=>{ allianceByPlayer[m.uid]=g.id; playerTeams[m.uid]=m.team; });
+    });
+
+    vendettaAlliances=allianceData;
+    vendettaAllianceByPlayer=allianceByPlayer;
+    vendettaPlayerTeams=playerTeams;
+    await update(ref(db,`rooms/${room}`),{
+      vendettaAlliances:allianceData,
+      vendettaAllianceByPlayer:allianceByPlayer,
+      vendettaPlayerTeams:playerTeams
+    });
+  }
+
+  function vendettaTotals(finalScores){
+    const totals={};
+    Object.entries(vendettaAlliances||{}).forEach(([id,a])=>{
+      totals[id]=Object.keys(a.members||{}).reduce((sum,uid)=>sum+Number(finalScores?.[uid]||0),0);
+    });
+    return totals;
+  }
+
   async function startGame() {
     if(!isHost) return toast("Only the host can start the match.");
     if(!room) return toast("This game room is no longer active.");
@@ -1560,6 +1771,16 @@ const db = getDatabase(firebaseApp);
     soloModeActive=Boolean(soloSnap?.exists() && soloSnap.val()===true);
     if(soloModeActive && players.length!==1) return toast("Solo Mode can only start when you are the only player.");
     if(!soloModeActive && players.length<2) return toast("You need at least 2 players. Add a computer rival, have another player join, or enable Solo Mode.");
+    const vendettaSnap=await get(ref(db,`rooms/${room}/vendettaMode`));
+    const vendettaData=vendettaSnap.exists()?vendettaSnap.val():null;
+    vendettaModeActive=Boolean(vendettaData?.active);
+    vendettaLayout=vendettaModeActive?String(vendettaData.layout||""):"";
+    if(vendettaModeActive){
+      const sizes=VENDETTA_LAYOUTS[vendettaLayout];
+      const needed=sizes?sizes.reduce((a,b)=>a+b,0):0;
+      if(!sizes || players.length!==needed) return toast(`Vendetta ${vendettaLayout||"layout"} needs exactly ${needed||"the correct number of"} players.`);
+      await setupVendettaAlliances();
+    }
     const scores = {};
     players.forEach(p => scores[p.uid] = 0);
     const quickDrawChoices=[1,3,5];
@@ -1591,7 +1812,7 @@ const db = getDatabase(firebaseApp);
     const hasLobby=hasActiveGameLobby();
     const notice=$("chaosPointsLobbyNotice");
     if(notice) notice.style.display=hasLobby?"none":"block";
-    ["soloModeBtn","rollDiceBtn","chaosBotBtn","doubleAgentBtn","powerReversalBtn"].forEach(id=>{
+    ["soloModeBtn","rollDiceBtn","chaosBotBtn","vendettaModeBtn","doubleAgentBtn","powerReversalBtn"].forEach(id=>{
       const btn=$(id);
       if(!btn) return;
       if(!hasLobby){
@@ -2045,7 +2266,10 @@ let soloCupCrusherX2Choice=null;
       get(ref(db,`rooms/${room}/powerSwap/${currentUser.uid}`)),
       get(ref(db,`rooms/${room}/powerReversal/${currentUser.uid}`))
     ]);
-    const reversalActive=(swapSnap.exists() && swapSnap.val()===true) ||
+    const vendettaSnap=await get(ref(db,`rooms/${room}/vendettaMode`));
+    const vendettaActive=Boolean(vendettaSnap.exists() && vendettaSnap.val()?.active);
+    const reversalActive=vendettaActive ||
+                         (swapSnap.exists() && swapSnap.val()===true) ||
                          (legacySnap.exists() && legacySnap.val()===true);
     if(isUnpredictable){
       const roomSnap=await get(ref(db,`rooms/${room}`));
@@ -2122,7 +2346,7 @@ let soloCupCrusherX2Choice=null;
     const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
     const prefix=(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power");
-    const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
+    const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta Mode gives every player their swapped power for this game.":"⚡ Power Swap is active for this game."}</span>` : "";
     const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
       activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
@@ -2206,7 +2430,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
-      const swapStatus=isSwap ? `<br><span class="muted">⚡ Power Swap is active for this game.</span>` : "";
+      const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta Mode gives every player their swapped power for this game.":"⚡ Power Swap is active for this game."}</span>` : "";
       $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
     }
 
@@ -3300,10 +3524,20 @@ async function refreshTeamPowerUI() {
             await set(botPowerRef,botPower);
           }
 
+          // Vendetta bots use the swapped power matching their temporary
+          // Vendetta team identity. Team Unpredictable gets a random swapped family.
+          if(vendettaModeActive){
+            let vTeam=vendettaPlayerTeams[p.uid]||"unassigned";
+            if(vTeam==="unassigned"){
+              const choices=["rock","paper","scissors"];
+              vTeam=choices[Math.floor(Math.random()*choices.length)];
+            }
+            botPower=vTeam==="rock"?"reverseRock":vTeam==="paper"?"reversePaper":"reverseScissors";
+          }
           // Chaos Bot Mode: each bot gets a stable 50/50 normal/swapped
           // power variant for the game. Unlike normal bots, Chaos Bots may
           // activate that power again in later rounds.
-          if(chaosBotMode){
+          else if(chaosBotMode){
             const variantRef=ref(db,`rooms/${room}/chaosBotPowerVariants/${p.uid}`);
             const variantSnap=await get(variantRef);
             let swapped;
@@ -4402,6 +4636,22 @@ async function refreshTeamPowerUI() {
         }
       }catch(e){ console.warn("Could not load Solo Mode result",e); }
     }
+    if(vendettaModeActive && Object.keys(vendettaAlliances||{}).length){
+      const finalScores=Object.fromEntries(players.map(p=>[p.uid,Number(p.score||0)]));
+      const totals=vendettaTotals(finalScores);
+      const entries=Object.entries(vendettaAlliances).map(([id,a])=>({
+        id,name:a.name||"Alliance",score:Number(totals[id]||0),
+        members:Object.keys(a.members||{}).map(uid=>players.find(p=>p.uid===uid)?.name||"Player")
+      })).sort((a,b)=>b.score-a.score);
+      const top=entries[0]?.score??0;
+      const winners=entries.filter(x=>x.score===top);
+      $("winnerTitle").textContent=winners.length>1?"⚔️ Vendetta ends in a tie!":`⚔️ ${winners[0].name} win the Vendetta!`;
+      $("winnerSub").textContent=winners.length>1?`${winners.length} alliances tied at ${top} points.`:`${top} alliance points · ${vendettaLayout}`;
+      $("finalScores").innerHTML=entries.map((a,i)=>`<div class="result-row"><div><b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}</b><div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div></div><b class="score">${a.score} pts</b></div>`).join("");
+      const box=$("teamEndMessage"); if(box) box.style.display="none";
+      return;
+    }
+
     const sorted=[...players].sort((a,b)=>b.score-a.score);
     if(!sorted.length) return;
     $("winnerTitle").textContent=sorted.length>1&&sorted[0].score===sorted[1].score?"It's a tie!":`${sorted[0].name} wins!`;
@@ -4658,7 +4908,7 @@ async function refreshTeamPowerUI() {
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,quickDrawRound:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null,soloPowerUpgraded:null,updatedAt:Date.now()
+        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,vendettaMode:null,vendettaAlliances:null,vendettaAllianceByPlayer:null,vendettaPlayerTeams:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null,soloPowerUpgraded:null,updatedAt:Date.now()
       });
       toast("Rematch ready!");
     } catch(error) {
@@ -4672,6 +4922,7 @@ $("soloModeBtn").onclick = activateSoloMode;
 $("cancelSoloModeBtn").onclick = cancelSoloMode;
 $("powerReversalBtn").onclick = async()=>{ await activatePowerReversal(); await refreshChaosPointsPageBalance(); };
 $("chaosBotBtn").onclick = async()=>{ await activateChaosBotChallenge(); await refreshChaosPointsPageBalance(); };
+$("vendettaModeBtn").onclick = activateVendettaMode;
 $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refreshChaosPointsPageBalance(); };
   selectedUsername = randomName();
   updateUsername();
@@ -4773,6 +5024,7 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
     updateChaosPointsLobbyAvailability();
     await refreshChaosPointsPageBalance();
     await refreshChaosBotLobby();
+    await refreshVendettaLobby();
     await refreshSoloModeLobby();
     await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
