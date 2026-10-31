@@ -1764,6 +1764,18 @@ const db = getDatabase(firebaseApp);
     return totals;
   }
 
+  function vendettaPlayerLabel(playerOrUid, fallbackName="Player"){
+    const uid=typeof playerOrUid==="string" ? playerOrUid : playerOrUid?.uid;
+    const name=typeof playerOrUid==="string"
+      ? (players.find(p=>p.uid===playerOrUid)?.name||fallbackName)
+      : (playerOrUid?.name||fallbackName);
+    if(!vendettaModeActive || !uid) return name;
+    const allianceId=vendettaAllianceByPlayer?.[uid];
+    const allianceName=allianceId ? vendettaAlliances?.[allianceId]?.name : "";
+    return allianceName ? `${name} (${allianceName})` : name;
+  }
+
+
   async function startGame() {
     if(!isHost) return toast("Only the host can start the match.");
     if(!room) return toast("This game room is no longer active.");
@@ -2553,7 +2565,7 @@ async function refreshTeamPowerUI() {
         const sameAlliance=Boolean(vendettaModeActive && myAlliance && theirAlliance && myAlliance===theirAlliance);
         const allianceName=sameAlliance?(vendettaAlliances?.[theirAlliance]?.name||"Your Alliance"):"";
         const helper=sameAlliance?`${allianceName} · ALLY`:(p.bot?"Computer":"Player");
-        return `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${escapeHtml(helper)}</small></button>`;
+        return `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}"><b style="display:flex;align-items:center;gap:5px;justify-content:center">${p.bot?'<span aria-hidden="true" style="font-size:1em;line-height:1">🤖</span>':""}<span>${escapeHtml(p.name)}</span></b><small>${escapeHtml(helper)}</small></button>`;
       }).join("")}</div>
       <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
@@ -3849,9 +3861,9 @@ async function refreshTeamPowerUI() {
       const delta=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
       if(delta<0){
         scores[p.uid]=Number(scoresBefore[p.uid]||0);
-        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. SUCCESS: canceled ${delta} negative points, reducing the round loss to 0. 🔒 ✂️ Cut Your Losses USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used ✂️ Cut Your Losses. SUCCESS: canceled ${delta} negative points, reducing the round loss to 0. 🔒 ✂️ Cut Your Losses USED UP.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used ✂️ Cut Your Losses. NO EFFECT: ${p.name} had no negative points to cut. 🔒 ✂️ Cut Your Losses USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used ✂️ Cut Your Losses. NO EFFECT: ${p.name} had no negative points to cut. 🔒 ✂️ Cut Your Losses USED UP.`);
       }
     });
 
@@ -3987,9 +3999,11 @@ async function refreshTeamPowerUI() {
           });
         }
         const affected=targets.length-protectedTargets.length;
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. SUCCESS: copied ${worst} points to ${affected===targets.length?"everyone else":affected+" unprotected player"+(affected===1?"":"s")}. 🔒 📄 Misprint USED UP.`);
+        const vendettaLabel=vendettaPlayerLabel(p,p.name);
+        details.push(`⚡ POWER USED — ${vendettaLabel} used 📄 Misprint. SUCCESS: ${vendettaLabel} copied ${worst} points to ${affected===targets.length?"everyone else":affected+" unprotected player"+(affected===1?"":"s")}. 🔒 📄 Misprint USED UP.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used 📄 Misprint. NO EFFECT: nobody else had negative round points to copy. 🔒 📄 Misprint USED UP.`);
+        const vendettaLabel=vendettaPlayerLabel(p,p.name);
+        details.push(`⚡ POWER USED — ${vendettaLabel} used 📄 Misprint. NO EFFECT: nobody else had negative round points to copy. 🔒 📄 Misprint USED UP.`);
       }
     });
 
@@ -4002,9 +4016,9 @@ async function refreshTeamPowerUI() {
         if(gain>0){ scores[o.uid]-=gain; blocked++; }
       });
       if(blocked>0){
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss. 🔒 🪨 Stonewall USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${blocked===1?"player":"players"}. Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss. 🔒 🪨 Stonewall USED UP.`);
       } else {
-        details.push(`⚡ POWER USED — ${p.name} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP.`);
       }
     });
 
@@ -4447,13 +4461,13 @@ async function refreshTeamPowerUI() {
         const myAlliance=vendettaAllianceByPlayer[currentUser?.uid];
         const theirAlliance=vendettaAllianceByPlayer[p.uid];
         const sameAlliance=Boolean(vendettaModeActive && myAlliance && theirAlliance && myAlliance===theirAlliance);
-        const relationLabel=isYou?"YOU":sameAlliance?"ALLY":"RIVAL";
+        const relationLabel=vendettaModeActive ? (isYou?"YOU":sameAlliance?"ALLY":"RIVAL") : (isYou?"YOU":"THEM");
         const winningMoveMatch=String(revealWinner||"").match(/^(Rock|Paper|Scissors) wins!/i);
         const winningMove=winningMoveMatch?winningMoveMatch[1].toLowerCase():null;
         const isRoundWinner=winningMove!==null && move===winningMove;
         return `<div class="choice ${isRoundWinner?"round-winning-card":""}" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
-          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${isYou?"You":sameAlliance?"Ally":"Rival"}"><span class="badge" style="font-size:11px;${!isYou&&!sameAlliance?"background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.55);color:#fca5a5;":""}">${relationLabel}</span></div>
-          <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
+          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${vendettaModeActive?(isYou?"You":sameAlliance?"Ally":"Rival"):(isYou?"You":"Other player")}"><span class="badge" style="font-size:11px;${vendettaModeActive&&!isYou&&!sameAlliance?"background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.55);color:#dc2626;":""}">${relationLabel}</span></div>
+          <b style="font-size:15px;line-height:1.25;display:flex;align-items:center;gap:5px;justify-content:center">${p.bot?'<span aria-hidden="true" style="font-size:1em;line-height:1">🤖</span>':""}<span>${escapeHtml(p.name)}</span></b>
           
           <div class="reveal-move-item" style="font-size:54px;line-height:1.05;margin:14px 0 5px" aria-label="${escapeHtml(moveLabel)}">${moveItems[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
