@@ -394,8 +394,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
         <div id="usernamePicker" class="rule-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div><div class="section-label" style="color:var(--muted)">Your username</div><div style="display:flex;align-items:center;gap:9px;font-weight:850;font-size:17px"><span id="chosenIcon" style="font-size:24px">🎲</span><span id="chosenUsername">Cosmic Otter</span></div></div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button type="button" class="btn secondary" id="refreshUsername">↻ Refresh username</button>
             <button type="button" class="btn secondary" id="cycleAdjective">↻ Cycle adjective</button>
+            <button type="button" class="btn secondary" id="cycleName">↻ Cycle name</button>
             <button type="button" class="btn secondary" id="statsBtn">My stats 📊</button>
           </div>
         </div>
@@ -842,6 +842,10 @@ const db = getDatabase(firebaseApp);
   }
 
   const usernameAdjectives=[...new Set(themedNames.map(name=>String(name).trim().split(/\s+/)[0]).filter(Boolean))];
+  const usernameFirstNames=[...new Set(themedNames.map(name=>{
+    const parts=String(name).trim().split(/\s+/);
+    return parts.slice(1).join(" ");
+  }).filter(Boolean))];
 
   function cycleUsernameAdjective(){
     const parts=String(selectedUsername||"").trim().split(/\s+/);
@@ -856,10 +860,34 @@ const db = getDatabase(firebaseApp);
     let index=usernameAdjectives.indexOf(currentAdjective);
     if(index<0) index=0;
 
-    // Cycle until we find a version not already used by someone in the room.
     const used=new Set(players.map(p=>String(p.name||"").toLowerCase()));
     for(let step=1;step<=usernameAdjectives.length;step++){
       const adjective=usernameAdjectives[(index+step)%usernameAdjectives.length];
+      const candidate=`${adjective} ${firstName}`;
+      if(!used.has(candidate.toLowerCase()) || candidate===selectedUsername){
+        selectedUsername=candidate;
+        updateUsername();
+        return;
+      }
+    }
+  }
+
+  function cycleUsernameFirstName(){
+    const parts=String(selectedUsername||"").trim().split(/\s+/);
+    if(parts.length<2 || !usernameFirstNames.length){
+      selectedUsername=randomName();
+      updateUsername();
+      return;
+    }
+
+    const adjective=parts[0];
+    const currentFirstName=parts.slice(1).join(" ");
+    let index=usernameFirstNames.indexOf(currentFirstName);
+    if(index<0) index=0;
+
+    const used=new Set(players.map(p=>String(p.name||"").toLowerCase()));
+    for(let step=1;step<=usernameFirstNames.length;step++){
+      const firstName=usernameFirstNames[(index+step)%usernameFirstNames.length];
       const candidate=`${adjective} ${firstName}`;
       if(!used.has(candidate.toLowerCase()) || candidate===selectedUsername){
         selectedUsername=candidate;
@@ -4612,8 +4640,8 @@ async function refreshTeamPowerUI() {
     gameGuideOpenedFromLobby=true;
     show("newGameGuide");
   };
-  $("refreshUsername").onclick = () => { const previous = selectedUsername; do { selectedUsername = randomName(); } while (selectedUsername===previous && themedNames.length>1); updateUsername(); };
   $("cycleAdjective").onclick = cycleUsernameAdjective;
+  $("cycleName").onclick = cycleUsernameFirstName;
   $("addPlayer").onclick = addDemoPlayer;
   $("startBtn").onclick = startGame;
   $("leaveLobby").onclick = leaveOnlineRoom;
