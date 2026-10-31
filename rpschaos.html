@@ -510,7 +510,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <span id="lobbyTeamInfo" style="margin-top:7px"></span>
 <div id="soloLobbyGoal" class="hidden" style="margin-top:8px"></div>
             </div>
-            <div id="vendettaLobbyAllianceCard"></div>
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div>
             <div class="player-list" id="lobbyPlayers"></div>
@@ -607,25 +606,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
 
             <div class="rule-card">
-              <strong>⚔️ Vendetta Mode <span class="muted">(TEST)</span></strong>
-              <details style="margin-top:8px">
-                <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
-                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match.</span>
-                <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Cleavers</b>, ❓ <b>The Unknowns</b>.</span>
-                <span style="margin-top:8px"><b>Test cost: 0 CP.</b> Underdog balancing is not enabled in this first test build.</span>
-              </details>
-              <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
-                <option value="2v2">4 players — 2 vs 2</option>
-                <option value="3v3">6 players — 3 vs 3</option>
-                <option value="2v2v2">6 players — 2 vs 2 vs 2</option>
-                <option value="4v4">8 players — 4 vs 4</option>
-                <option value="2v3v3">8 players — 2 vs 3 vs 3</option>
-              </select>
-              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — TEST 0 CP</button>
-              <span id="vendettaModeStatus" class="muted" style="margin-top:7px"></span>
-            </div>
-
-            <div class="rule-card">
               <strong>🕵️ Double Agent Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Double Agent Mode</summary>
@@ -653,6 +633,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               </details>
               <button class="btn secondary wide" id="powerReversalBtn" style="margin-top:10px">⚡ Activate Power Swap — 50 CP when used</button>
               <span id="powerReversalStatus" class="muted" style="margin-top:7px"></span>
+            </div>
+
+            <div class="rule-card">
+              <strong>⚔️ Vendetta Mode <span class="muted">(TEST)</span></strong>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
+                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match.</span>
+                <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Cleavers</b>, ❓ <b>The Unknowns</b>.</span>
+                <span style="margin-top:8px"><b>Test cost: 0 CP.</b> Underdog balancing is not enabled in this first test build.</span>
+              </details>
+              <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
+                <option value="2v2">4 players — 2 vs 2</option>
+                <option value="3v3">6 players — 3 vs 3</option>
+                <option value="2v2v2">6 players — 2 vs 2 vs 2</option>
+                <option value="4v4">8 players — 4 vs 4</option>
+                <option value="2v3v3">8 players — 2 vs 3 vs 3</option>
+              </select>
+              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — TEST 0 CP</button>
+              <span id="vendettaModeStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
             
@@ -1501,10 +1500,6 @@ const db = getDatabase(firebaseApp);
     $("lobbyPlayers").querySelectorAll(".remove-computer").forEach(btn => {
       btn.onclick = () => removeComputerPlayer(btn.dataset.uid);
     });
-    const vendettaLobbyCard=$("vendettaLobbyAllianceCard");
-    if(vendettaLobbyCard){
-      vendettaLobbyCard.innerHTML=vendettaStatusCardHtml();
-    }
     $("addPlayer").disabled = players.length >= 8 || !isHost;
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     const canStart = isHost && (players.length >= 2 || (soloModeActive && players.length === 1));
@@ -1767,37 +1762,6 @@ const db = getDatabase(firebaseApp);
       totals[id]=Object.keys(a.members||{}).reduce((sum,uid)=>sum+Number(finalScores?.[uid]||0),0);
     });
     return totals;
-  }
-
-  function currentVendettaAllianceInfo(){
-    if(!vendettaModeActive || !currentUser) return null;
-    const allianceId=vendettaAllianceByPlayer?.[currentUser.uid];
-    const alliance=allianceId?vendettaAlliances?.[allianceId]:null;
-    if(!alliance) return null;
-    const memberIds=Object.keys(alliance.members||{});
-    const memberNames=memberIds.map(uid=>players.find(p=>p.uid===uid)?.name||"Player");
-    const teammates=memberIds
-      .filter(uid=>uid!==currentUser.uid)
-      .map(uid=>players.find(p=>p.uid===uid)?.name||"Player");
-    return {
-      allianceId,
-      allianceName:alliance.name||"The Unknowns",
-      memberIds,
-      memberNames,
-      teammates
-    };
-  }
-
-  function vendettaStatusCardHtml(){
-    const info=currentVendettaAllianceInfo();
-    if(!info) return "";
-    const teammateText=info.teammates.length
-      ? `Teammate${info.teammates.length===1?"":"s"}: <b>${info.teammates.map(escapeHtml).join(" · ")}</b>`
-      : "No teammates assigned.";
-    return `<div class="rule-card" style="margin-bottom:12px;border:2px solid rgba(34,197,94,.55);background:rgba(34,197,94,.08)">
-      <strong>⚔️ Your Vendetta Alliance: ${escapeHtml(info.allianceName)}</strong>
-      <span style="margin-top:6px">${teammateText}</span>
-    </div>`;
   }
 
   async function startGame() {
@@ -2382,7 +2346,7 @@ let soloCupCrusherX2Choice=null;
     const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
     const prefix=(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power");
-    const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta Mode gives every player their swapped power for this game.":"⚡ Power Swap is active for this game."}</span>` : "";
+    const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta swapped power — included with Vendetta Mode. No separate Power Swap charge.":"⚡ Power Swap is active for this game."}</span>` : "";
     const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
       activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
@@ -2466,7 +2430,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
-      const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta Mode gives every player their swapped power for this game.":"⚡ Power Swap is active for this game."}</span>` : "";
+      const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta swapped power — included with Vendetta Mode. No separate Power Swap charge.":"⚡ Power Swap is active for this game."}</span>` : "";
       $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
     }
 
@@ -2519,12 +2483,6 @@ async function refreshTeamPowerUI() {
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
     renderMovePicker();
-    if(vendettaModeActive){
-      const area=$("playArea");
-      if(area && currentVendettaAllianceInfo()){
-        area.insertAdjacentHTML("afterbegin",vendettaStatusCardHtml());
-      }
-    }
     const diceModeBeforeRefresh=rollDiceModeActive;
     refreshRollDiceGameState()
       .then(()=>{
@@ -2589,7 +2547,14 @@ async function refreshTeamPowerUI() {
       <div class="divider"></div>
       <h3 style="margin-bottom:8px">🔮 Predict a rival's move ${predictionMode==="optional"?`<span class="muted">(optional)</span>`:""}</h3>
       <p class="muted" style="margin-top:0">${predictionMode==="optional"?"Casual mode: Correct = +2 points. Wrong = lose a random 0–3 points, but your total score never goes below zero. Skip for no prediction gain or loss.":"Competitive mode: Prediction required. Correct = +2 points. Wrong = lose a random 0–3 points, and your total score can go below zero."}</p>
-      <div class="prediction-grid">${others.map(p => `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${p.bot?"Computer":"Player"}</small></button>`).join("")}</div>
+      <div class="prediction-grid">${others.map(p => {
+        const myAlliance=vendettaAllianceByPlayer[currentUser?.uid];
+        const theirAlliance=vendettaAllianceByPlayer[p.uid];
+        const sameAlliance=Boolean(vendettaModeActive && myAlliance && theirAlliance && myAlliance===theirAlliance);
+        const allianceName=sameAlliance?(vendettaAlliances?.[theirAlliance]?.name||"Your Alliance"):"";
+        const helper=sameAlliance?`${allianceName} · ALLY`:(p.bot?"Computer":"Player");
+        return `<button class="predict ${targetId===p.uid?"selected":""}" data-target="${p.uid}">${escapeHtml(p.name)}<small>${escapeHtml(helper)}</small></button>`;
+      }).join("")}</div>
       <div id="predictedMovePicker"></div>`}
       <div class="divider"></div>
       ${soloModeActive ? `
@@ -3339,14 +3304,24 @@ async function refreshTeamPowerUI() {
     // still locking in. Submit it with the move; resolution decides consumption.
     await set(ref(db, `${roundPath()}/submissions/${uid}`), submissionData);
     if(canUseTeamPower){
-      // Reversed powers cost Chaos Points only when actually used.
-      if(String(submissionPower?.key||"").startsWith("reverse")){
+      const isReversedPower=String(submissionPower?.key||"").startsWith("reverse");
+
+      if(isReversedPower && vendettaModeActive){
+        // Vendetta Mode grants each player the swapped version of their own
+        // Team Power as part of the mode. It is NOT a separate 50 CP Power
+        // Swap purchase. Using it consumes only that player's one Vendetta
+        // Team Power use for the game.
+        await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+        teamPowerArmed=false;
+      } else if(isReversedPower){
+        // Outside Vendetta, reversed powers are the normal paid Power Swap.
+        // Charge the 50 CP only when the player actually uses it.
         const profileRef=ref(db,`profiles/${uid}`);
         const profileSnap=await get(profileRef);
         const raw=profileSnap.exists()?profileSnap.val():blankProfile();
         const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
         if(balance<REVERSAL_COST){
-          // Safety fallback: don't consume/submit a swapped power if the
+          // Safety fallback: don't consume/submit a paid swapped power if the
           // balance changed before lock-in.
           await update(ref(db,`${roundPath()}/submissions/${uid}`),{teamPower:null,teamPowerTarget:null});
           teamPowerArmed=false;
@@ -4469,11 +4444,15 @@ async function refreshTeamPowerUI() {
         const total=Number(resultScores[p.uid] ?? p.score ?? 0);
         const roundTotal=Number(roundPoints[p.uid]||0);
         const isYou=p.uid===currentUser?.uid;
+        const myAlliance=vendettaAllianceByPlayer[currentUser?.uid];
+        const theirAlliance=vendettaAllianceByPlayer[p.uid];
+        const sameAlliance=Boolean(vendettaModeActive && myAlliance && theirAlliance && myAlliance===theirAlliance);
+        const relationLabel=isYou?"YOU":sameAlliance?"ALLY":"RIVAL";
         const winningMoveMatch=String(revealWinner||"").match(/^(Rock|Paper|Scissors) wins!/i);
         const winningMove=winningMoveMatch?winningMoveMatch[1].toLowerCase():null;
         const isRoundWinner=winningMove!==null && move===winningMove;
         return `<div class="choice ${isRoundWinner?"round-winning-card":""}" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
-          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${p.bot?"Computer player":isYou?"You":"Other player"}">${p.bot?"🤖":`<span class="badge" style="font-size:11px">${isYou?"YOU":"THEM"}</span>`}</div>
+          <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${isYou?"You":sameAlliance?"Ally":"Rival"}"><span class="badge" style="font-size:11px">${relationLabel}</span></div>
           <b style="font-size:15px;line-height:1.25">${escapeHtml(p.name)}</b>
           
           <div class="reveal-move-item" style="font-size:54px;line-height:1.05;margin:14px 0 5px" aria-label="${escapeHtml(moveLabel)}">${moveItems[move]}</div>
@@ -4488,16 +4467,6 @@ async function refreshTeamPowerUI() {
           <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">Total points</div>
           <b class="score" style="font-size:16px">${total} pts</b>`}
         </div>`;
-
-    if(vendettaModeActive && currentVendettaAllianceInfo()){
-      const area=$("playArea");
-      if(area){
-        const wrap=document.createElement("div");
-        wrap.className="vendetta-current-alliance";
-        wrap.innerHTML=vendettaStatusCardHtml();
-        area.prepend(wrap);
-      }
-    }
       }).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const casualNotes=normal.filter(d=>String(d).startsWith("ℹ️ Casual mode:"));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d)&&!String(d).startsWith("ℹ️ Casual mode:"));return [...counterSummaries,...playerCounterCredits,...casualNotes,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
@@ -4699,17 +4668,7 @@ async function refreshTeamPowerUI() {
       const winners=entries.filter(x=>x.score===top);
       $("winnerTitle").textContent=winners.length>1?"⚔️ Vendetta ends in a tie!":`⚔️ ${winners[0].name} win the Vendetta!`;
       $("winnerSub").textContent=winners.length>1?`${winners.length} alliances tied at ${top} points.`:`${top} alliance points · ${vendettaLayout}`;
-      const myAllianceId=vendettaAllianceByPlayer?.[currentUser?.uid]||"";
-      $("finalScores").innerHTML=entries.map((a,i)=>{
-        const isMine=a.id===myAllianceId;
-        return `<div class="result-row" ${isMine?'style="border:2px solid #22c55e;background:rgba(34,197,94,.10);box-shadow:0 0 0 2px rgba(34,197,94,.08)"':""}>
-          <div>
-            <b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}${isMine?' <span style="display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;vertical-align:2px">YOUR ALLIANCE</span>':""}</b>
-            <div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div>
-          </div>
-          <b class="score">${a.score} pts</b>
-        </div>`;
-      }).join("");
+      $("finalScores").innerHTML=entries.map((a,i)=>`<div class="result-row"><div><b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}</b><div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div></div><b class="score">${a.score} pts</b></div>`).join("");
       const box=$("teamEndMessage"); if(box) box.style.display="none";
       return;
     }
