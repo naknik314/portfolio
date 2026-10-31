@@ -510,6 +510,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <span id="lobbyTeamInfo" style="margin-top:7px"></span>
 <div id="soloLobbyGoal" class="hidden" style="margin-top:8px"></div>
             </div>
+            <div id="vendettaLobbyAllianceCard"></div>
             <div class="divider"></div>
             <div class="section-label">Players <span id="playerCount">1/8</span></div>
             <div class="player-list" id="lobbyPlayers"></div>
@@ -1500,6 +1501,10 @@ const db = getDatabase(firebaseApp);
     $("lobbyPlayers").querySelectorAll(".remove-computer").forEach(btn => {
       btn.onclick = () => removeComputerPlayer(btn.dataset.uid);
     });
+    const vendettaLobbyCard=$("vendettaLobbyAllianceCard");
+    if(vendettaLobbyCard){
+      vendettaLobbyCard.innerHTML=vendettaStatusCardHtml();
+    }
     $("addPlayer").disabled = players.length >= 8 || !isHost;
     $("addPlayer").style.opacity = (players.length >= 8 || !isHost) ? ".5" : "1";
     const canStart = isHost && (players.length >= 2 || (soloModeActive && players.length === 1));
@@ -1762,6 +1767,37 @@ const db = getDatabase(firebaseApp);
       totals[id]=Object.keys(a.members||{}).reduce((sum,uid)=>sum+Number(finalScores?.[uid]||0),0);
     });
     return totals;
+  }
+
+  function currentVendettaAllianceInfo(){
+    if(!vendettaModeActive || !currentUser) return null;
+    const allianceId=vendettaAllianceByPlayer?.[currentUser.uid];
+    const alliance=allianceId?vendettaAlliances?.[allianceId]:null;
+    if(!alliance) return null;
+    const memberIds=Object.keys(alliance.members||{});
+    const memberNames=memberIds.map(uid=>players.find(p=>p.uid===uid)?.name||"Player");
+    const teammates=memberIds
+      .filter(uid=>uid!==currentUser.uid)
+      .map(uid=>players.find(p=>p.uid===uid)?.name||"Player");
+    return {
+      allianceId,
+      allianceName:alliance.name||"The Unknowns",
+      memberIds,
+      memberNames,
+      teammates
+    };
+  }
+
+  function vendettaStatusCardHtml(){
+    const info=currentVendettaAllianceInfo();
+    if(!info) return "";
+    const teammateText=info.teammates.length
+      ? `Teammate${info.teammates.length===1?"":"s"}: <b>${info.teammates.map(escapeHtml).join(" · ")}</b>`
+      : "No teammates assigned.";
+    return `<div class="rule-card" style="margin-bottom:12px;border:2px solid rgba(34,197,94,.55);background:rgba(34,197,94,.08)">
+      <strong>⚔️ Your Vendetta Alliance: ${escapeHtml(info.allianceName)}</strong>
+      <span style="margin-top:6px">${teammateText}</span>
+    </div>`;
   }
 
   async function startGame() {
@@ -2483,6 +2519,12 @@ async function refreshTeamPowerUI() {
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
     renderMovePicker();
+    if(vendettaModeActive){
+      const area=$("playArea");
+      if(area && currentVendettaAllianceInfo()){
+        area.insertAdjacentHTML("afterbegin",vendettaStatusCardHtml());
+      }
+    }
     const diceModeBeforeRefresh=rollDiceModeActive;
     refreshRollDiceGameState()
       .then(()=>{
@@ -4446,6 +4488,16 @@ async function refreshTeamPowerUI() {
           <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:10px">Total points</div>
           <b class="score" style="font-size:16px">${total} pts</b>`}
         </div>`;
+
+    if(vendettaModeActive && currentVendettaAllianceInfo()){
+      const area=$("playArea");
+      if(area){
+        const wrap=document.createElement("div");
+        wrap.className="vendetta-current-alliance";
+        wrap.innerHTML=vendettaStatusCardHtml();
+        area.prepend(wrap);
+      }
+    }
       }).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const casualNotes=normal.filter(d=>String(d).startsWith("ℹ️ Casual mode:"));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d)&&!String(d).startsWith("ℹ️ Casual mode:"));return [...counterSummaries,...playerCounterCredits,...casualNotes,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
@@ -4647,7 +4699,17 @@ async function refreshTeamPowerUI() {
       const winners=entries.filter(x=>x.score===top);
       $("winnerTitle").textContent=winners.length>1?"⚔️ Vendetta ends in a tie!":`⚔️ ${winners[0].name} win the Vendetta!`;
       $("winnerSub").textContent=winners.length>1?`${winners.length} alliances tied at ${top} points.`:`${top} alliance points · ${vendettaLayout}`;
-      $("finalScores").innerHTML=entries.map((a,i)=>`<div class="result-row"><div><b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}</b><div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div></div><b class="score">${a.score} pts</b></div>`).join("");
+      const myAllianceId=vendettaAllianceByPlayer?.[currentUser?.uid]||"";
+      $("finalScores").innerHTML=entries.map((a,i)=>{
+        const isMine=a.id===myAllianceId;
+        return `<div class="result-row" ${isMine?'style="border:2px solid #22c55e;background:rgba(34,197,94,.10);box-shadow:0 0 0 2px rgba(34,197,94,.08)"':""}>
+          <div>
+            <b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}${isMine?' <span style="display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;vertical-align:2px">YOUR ALLIANCE</span>':""}</b>
+            <div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div>
+          </div>
+          <b class="score">${a.score} pts</b>
+        </div>`;
+      }).join("");
       const box=$("teamEndMessage"); if(box) box.style.display="none";
       return;
     }
