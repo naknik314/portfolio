@@ -1742,8 +1742,18 @@ const db = getDatabase(firebaseApp);
     });
 
     const allianceByPlayer={}, playerTeams={}, allianceData={};
-    groups.forEach(g=>{
-      const name=chooseVendettaAllianceName(g.members);
+    const rawAllianceNames=groups.map(g=>chooseVendettaAllianceName(g.members));
+    const unknownIds=rawAllianceNames
+      .map((name,index)=>name===VENDETTA_NAMES.unassigned?index:-1)
+      .filter(index=>index>=0);
+
+    groups.forEach((g,index)=>{
+      let name=rawAllianceNames[index];
+      if(name===VENDETTA_NAMES.unassigned && unknownIds.length>1){
+        const ordinal=unknownIds.indexOf(index)+1;
+        const roman=["I","II","III","IV","V","VI"][ordinal-1]||String(ordinal);
+        name=`${VENDETTA_NAMES.unassigned} ${roman}`;
+      }
       allianceData[g.id]={name,size:g.size,members:Object.fromEntries(g.members.map(m=>[m.uid,true]))};
       g.members.forEach(m=>{ allianceByPlayer[m.uid]=g.id; playerTeams[m.uid]=m.team; });
     });
