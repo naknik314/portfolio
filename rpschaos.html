@@ -4528,7 +4528,23 @@ async function refreshTeamPowerUI() {
       }).join("")}</div>
       <div class="section-label">Round highlights</div><div style="background:var(--panel2);border-radius:14px;padding:12px;font-size:13px;line-height:1.8">${(()=>{const normal=details.filter(d=>!d.includes("POWER USED")&&!d.includes("POWER CLASH")&&!d.includes("POWER ATTEMPT"));const counterSummaries=normal.filter(d=>d.startsWith("COUNTER BONUS —"));const playerCounterCredits=normal.filter(d=>/earned \+\d+ for the counter bonus by playing .* against /i.test(d));const casualNotes=normal.filter(d=>String(d).startsWith("ℹ️ Casual mode:"));const rest=normal.filter(d=>!d.startsWith("COUNTER BONUS —")&&!/earned \+\d+ for the counter bonus by playing .* against /i.test(d)&&!String(d).startsWith("ℹ️ Casual mode:"));return [...counterSummaries,...playerCounterCredits,...casualNotes,...rest].slice(0,12).map(d=>"• "+escapeHtml(d)).join("<br>");})()}</div>
       <div class="actions">${isHost?`<button class="btn wide" id="nextRound">${round===7?"See final results 🏆":"Next round →"}</button>`:`<p class="note">Waiting for the host to continue…</p>`}</div>`;
-    if(isHost && $("nextRound")) $("nextRound").onclick=advanceRound;
+    if(isHost && $("nextRound")) $("nextRound").onclick=async()=>{
+      const btn=$("nextRound");
+      if(!btn || btn.dataset.working==="true") return;
+      btn.dataset.working="true";
+      btn.disabled=true;
+      const originalText=btn.textContent;
+      btn.textContent=round===7?"Opening final results…":"Loading next round…";
+      try{
+        await advanceRound();
+      }catch(error){
+        console.error("Could not advance from reveal",error);
+        btn.dataset.working="false";
+        btn.disabled=false;
+        btn.textContent=originalText;
+        toast(round===7?"Couldn’t open final results. Try again.":"Couldn’t start the next round. Try again.");
+      }
+    };
   }
 
   async function advanceRound() {
@@ -4637,11 +4653,22 @@ async function refreshTeamPowerUI() {
           statsSaved:true,status:"finished",scores:finalScores,updatedAt:Date.now()
         });
       }else{
-        if(!roomData.statsSaved){
-          await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{});
-          await update(ref(db, `rooms/${room}`), {statsSaved:true});
+        // Round 7 must always be able to finish even if a secondary stats write
+        // fails. Previously, a stats error prevented status:"finished" from
+        // being written, which made the "See final results" button look stuck.
+        try{
+          if(!roomData.statsSaved){
+            await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{});
+            await update(ref(db, `rooms/${room}`), {statsSaved:true});
+          }
+        }catch(error){
+          console.error("Final stats save failed; finishing the game anyway.",error);
         }
-        await update(ref(db, `rooms/${room}`), {status:"finished",scores:finalScores,updatedAt:Date.now()});
+        await update(ref(db, `rooms/${room}`), {
+          status:"finished",
+          scores:finalScores,
+          updatedAt:Date.now()
+        });
       }
     } else {
       const completedRound=round;
