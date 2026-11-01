@@ -4397,7 +4397,7 @@ async function refreshTeamPowerUI() {
       // Identify the ACTUAL power being used/attempted from the notice lead-in.
       // Do not group by any later mention of another power (for example,
       // Stonewall's explanation says "Barricade cannot block Stonewall").
-      let m=s.match(/⚡\s*POWER\s+(?:USED|ATTEMPT)\s*[—-]\s*.+?\s+used\s+[🪨📄✂️]\s*(Barricade|Reprint|Cut in Half|Stonewall|Misprint|Cut Your Losses)\b/i);
+      let m=s.match(/⚡\s*POWER\s+(?:USED|ATTEMPT)\s*[—-]\s*[\s\S]*?\bused\s+[🪨📄✂️]\s*(Barricade|Reprint|Cut in Half|Stonewall|Misprint|Cut Your Losses)\b/i);
       if(m) return m[1];
 
       // For clashes, use the first possessive power named after the dash.
@@ -4461,6 +4461,14 @@ async function refreshTeamPowerUI() {
       ["SUCCESS:","NO EFFECT:","BLOCKED:"].forEach(marker=>{
         const matching=outcomes.filter(o=>o.marker===marker);
         if(!matching.length) return;
+
+        if(power.name==="Misprint" && matching.length>1){
+          matching.forEach(o=>{
+            const text=String(o.text||"").trim().replace(/\.$/,"");
+            outcomeLines.push(`${marker} ${text}.`);
+          });
+          return;
+        }
 
         let combined=matching
           .map(o=>String(o.text||"").trim().replace(/\.$/,""))
