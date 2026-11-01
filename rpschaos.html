@@ -4335,7 +4335,7 @@ async function refreshTeamPowerUI() {
       {name:"Barricade",icon:"🪨",description:"which protects against negative points"},
       {name:"Reprint",icon:"📄",description:"which copies the highest positive points another player earns that round"},
       {name:"Cut in Half",icon:"✂️",description:"which automatically targets the opponent who earned the most positive points this round"},
-      {name:"Stonewall",icon:"🪨",description:"which blocks everyone else's positive points that round"},
+      {name:"Stonewall",icon:"🪨",description:vendettaModeActive?"which blocks rival alliances' positive points that round":"which blocks everyone else's positive points that round"},
       {name:"Misprint",icon:"📄",description:"which copies the highest negative result to rival alliances only"},
       {name:"Cut Your Losses",icon:"✂️",description:"which protects the user from negative points that round"}
     ];
@@ -4407,60 +4407,80 @@ async function refreshTeamPowerUI() {
       return "";
     }
 
-    powerGroups.forEach(power=>{
-      const indexes=[];
-      powerNotices.forEach((line,index)=>{
-        if(noticeUsedPowerName(line)===power.name) indexes.push(index);
-      });
-      if(indexes.length<2) return;
+    // Group duplicate uses of the SAME power without mutating powerNotices
+    // in-place. The older index/splice approach could drop a single notice
+    // when several different powers were used in a large room.
+    const groupedPowerNotices=[];
+    const groupedPowerNames=new Set();
 
-      const notices=indexes.map(index=>String(powerNotices[index]));
-      const noticePlayers=notices.map(line=>{
-        const parsed=playerNameFromNotice(line);
+    powerNotices.forEach(line=>{
+      const powerName=noticeUsedPowerName(line);
+      const power=powerGroups.find(item=>item.name===powerName);
+
+      // Unknown/unparsed notices and powers used by only one player must be
+      // preserved exactly as written.
+      if(!power){
+        groupedPowerNotices.push(line);
+        return;
+      }
+
+      const samePowerNotices=powerNotices.filter(item=>noticeUsedPowerName(item)===power.name);
+      if(samePowerNotices.length<2){
+        groupedPowerNotices.push(line);
+        return;
+      }
+
+      // Emit each grouped power once, at the position of its first notice.
+      if(groupedPowerNames.has(power.name)) return;
+      groupedPowerNames.add(power.name);
+
+      const noticePlayers=samePowerNotices.map(item=>{
+        const parsed=playerNameFromNotice(item);
         if(parsed) return parsed;
-        const matchedPlayer=players.find(p=>String(line).includes(p.name));
+        const matchedPlayer=players.find(p=>String(item).includes(p.name));
         return matchedPlayer?.name||"";
       });
       const names=noticePlayers.filter(Boolean);
-      if(indexes.length<2) return;
-
       const outcomes=[];
       const usedNames=[];
       const notUsedNames=[];
 
-      notices.forEach((line,i)=>{
+      samePowerNotices.forEach((item,i)=>{
         const playerName=noticePlayers[i]||`Player ${i+1}`;
-        const outcome=outcomeFromNotice(line,playerName,power);
+        const outcome=outcomeFromNotice(item,playerName,power);
         if(outcome) outcomes.push(outcome);
 
-        const notUsed=/NOT USED UP|still available for a later round|can be used later/i.test(line);
+        const notUsed=/NOT USED UP|still available for a later round|can be used later/i.test(item);
         if(notUsed) notUsedNames.push(playerName);
-        else if(/USED UP/i.test(line)) usedNames.push(playerName);
+        else if(/USED UP/i.test(item)) usedNames.push(playerName);
       });
 
       const heading=`⚡ POWER USED — ${joinPlayerNames(names)} used ${power.icon} ${power.name}, ${power.description}.`;
-      // In large games, combine players with the same outcome label into a
-      // single line instead of repeating SUCCESS / NO EFFECT / BLOCKED.
       const outcomeLines=[];
+
       ["SUCCESS:","NO EFFECT:","BLOCKED:"].forEach(marker=>{
         const matching=outcomes.filter(o=>o.marker===marker);
         if(!matching.length) return;
+
         let combined=matching
           .map(o=>String(o.text||"").trim().replace(/\.$/,""))
           .join(", ");
+
         if(marker==="NO EFFECT:" && matching.length>1){
-    const prefix="there were no negative points or point-loss effects to block for ";
-    const texts=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
-    if(texts.every(text=>text.startsWith(prefix))){
-      combined=`${prefix}${joinPlayerNames(texts.map(text=>text.slice(prefix.length)))}`;
-    }
-  }
-  outcomeLines.push(`${marker} ${combined}.`);
+          const prefix="there were no negative points or point-loss effects to block for ";
+          const texts=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
+          if(texts.every(text=>text.startsWith(prefix))){
+            combined=`${prefix}${joinPlayerNames(texts.map(text=>text.slice(prefix.length)))}`;
+          }
+        }
+        outcomeLines.push(`${marker} ${combined}.`);
       });
+
       const statusLines=[];
       if(power.name==="Reprint"){
-        // Reprint is consumed whenever it is submitted, including NO EFFECT.
-        names.forEach(name=>{ if(name && !usedNames.includes(name)) usedNames.push(name); });
+        names.forEach(name=>{
+          if(name && !usedNames.includes(name)) usedNames.push(name);
+        });
       }
       if(usedNames.length){
         statusLines.push(`🔒 ${power.icon} ${power.name} USED UP — ${joinPlayerNames(usedNames)}.`);
@@ -4471,12 +4491,10 @@ async function refreshTeamPowerUI() {
           : `♻️ ${power.icon} ${power.name} NOT USED UP — still available for a later round for ${joinPlayerNames(notUsedNames)}.`);
       }
 
-      const grouped=[heading,...outcomeLines,...statusLines].join(" ");
-      const first=indexes[0];
-      const remove=new Set(indexes);
-      powerNotices=powerNotices.filter((_,index)=>!remove.has(index));
-      powerNotices.splice(first,0,grouped);
+      groupedPowerNotices.push([heading,...outcomeLines,...statusLines].join(" "));
     });
+
+    powerNotices=groupedPowerNotices;
 
     // Big animations are reserved for team-power moments so they stay special.
     // A clash can animate both powers in sequence.
