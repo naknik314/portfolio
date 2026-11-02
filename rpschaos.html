@@ -4571,6 +4571,36 @@ async function refreshTeamPowerUI() {
         const matching=outcomes.filter(o=>o.marker===marker);
         if(!matching.length) return;
 
+        // NO EFFECT and BLOCKED can be combined when the actual outcome text is
+        // identical. Group the affected users by alliance so we get lines like:
+        // "... for Gear Bot & Beep Bot (The Strikers), Pixel Bot (The Mimics)."
+        if(marker==="NO EFFECT:" || marker==="BLOCKED:"){
+          const groups=[];
+          matching.forEach((o,index)=>{
+            const playerLabel=noticePlayers[index]||"";
+            let text=String(o.text||"").trim().replace(/\.$/,"");
+            if(playerLabel){
+              const escaped=playerLabel.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+              text=text.replace(new RegExp(`\\s+for\\s+${escaped}$`,`i`),"");
+            }
+            let group=groups.find(g=>g.text===text);
+            if(!group){
+              group={text,labels:[]};
+              groups.push(group);
+            }
+            if(playerLabel) group.labels.push(playerLabel);
+          });
+
+          groups.forEach((group,i)=>{
+            const who=joinPlayerNamesSharedAlliance(group.labels);
+            const line=`${group.text}${who?` for ${who}`:""}.`;
+            outcomeLines.push(`${i===0?marker:"↳"} ${line}`);
+          });
+          return;
+        }
+
+        // SUCCESS stays player-specific because successful effects commonly have
+        // different amounts or targets even when the same power was used.
         if(matching.length>1 || samePowerNotices.length>1){
           const lines=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
           if(lines.length){
