@@ -1811,23 +1811,34 @@ const db = getDatabase(firebaseApp);
     if(!sizes || sizes.reduce((a,b)=>a+b,0)!==players.length) throw new Error("Vendetta player count no longer matches the selected layout.");
 
     const members=[];
-    for(const p of players){
-      if(p.bot){
-        const teams=["rock","paper","scissors","unassigned"];
-        const team=teams[Math.floor(Math.random()*teams.length)];
-        members.push({uid:p.uid,name:p.name,bot:true,team,rank:0,vendettaWins:0});
-      }else{
-        const snap=await get(ref(db,`profiles/${p.uid}`));
-        const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
-        members.push({
-          uid:p.uid,
-          name:p.name,
-          bot:false,
-          team:profile.team||"unassigned",
-          rank:vendettaRankLevel(profile.teamGames),
-          vendettaWins:Number(profile.vendettasWon||0)
-        });
-      }
+    const botTeamChoices=["rock","paper","scissors","unassigned"];
+    const teamCounts={rock:0,paper:0,scissors:0,unassigned:0};
+
+    // Load human team identities first so bot assignment can fill whichever
+    // identities are underrepresented instead of piling randomly onto one team.
+    for(const p of players.filter(p=>!p.bot)){
+      const snap=await get(ref(db,`profiles/${p.uid}`));
+      const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+      const team=botTeamChoices.includes(profile.team)?profile.team:"unassigned";
+      teamCounts[team]++;
+      members.push({
+        uid:p.uid,
+        name:p.name,
+        bot:false,
+        team,
+        rank:vendettaRankLevel(profile.teamGames),
+        vendettaWins:Number(profile.vendettasWon||0)
+      });
+    }
+
+    // Bots favor the least-represented team identity. If several are tied, pick
+    // randomly among those tied identities so layouts still have some variation.
+    for(const p of players.filter(p=>p.bot)){
+      const minCount=Math.min(...botTeamChoices.map(team=>teamCounts[team]));
+      const leastRepresented=botTeamChoices.filter(team=>teamCounts[team]===minCount);
+      const team=leastRepresented[Math.floor(Math.random()*leastRepresented.length)];
+      teamCounts[team]++;
+      members.push({uid:p.uid,name:p.name,bot:true,team,rank:0,vendettaWins:0});
     }
 
     // Keep same-team players together where possible, then fill open alliance slots.
