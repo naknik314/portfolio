@@ -461,6 +461,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div class="tutorial-step"><strong>🪨 Make your move</strong><span>Choose Rock, Paper, or Scissors. Everyone’s moves stay hidden until the reveal.</span></div>
           <div class="tutorial-step"><strong>🏆 Majority points</strong><span>With 3+ players, the single most-played move earns +1 for each player who chose it. If the majority is tied, there are no majority points.</span></div>
           <div class="tutorial-step"><strong>⚡ Minority counter bonus</strong><span>A minority move earns +1 when it beats the single majority move. Example: 1 Rock vs 2 Scissors gives Rock the counter bonus.</span></div>
+          <div class="tutorial-step"><strong>🐾 Underdog bonus</strong><span>When all three moves are played and two moves are tied for the lead, the lone smaller move gets +1 total move point. Example: 3 Rock · 3 Scissors · 2 Paper gives Paper +1 total move point. Two-move rounds use the normal Counter Bonus instead.</span></div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <div class="tutorial-step"><strong>🎲 Chaos rounds</strong><span>Special rounds can double points, turn predictions off, reverse the matchups, and finish with Winner Takes the Round.</span></div>
             <div class="tutorial-step"><strong>💠 Chaos Points</strong><span>Earn Chaos Points by completing games. Save them up and spend them on optional extras in the Game Lobby before a match begins.</span></div>
@@ -639,14 +640,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⚔️ Vendetta Mode <span class="muted">(TEST)</span></strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
-                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match.</span>
+                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match. Every alliance has at least 2 players — there are no 1-vs-everyone layouts.</span>
                 <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Precisionists</b>, ❓ <b>The Unknowns</b>.</span>
                 <span style="margin-top:8px"><b>Test cost: 0 CP.</b> Underdog balancing is not enabled in this first test build.</span>
               </details>
               <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
                 <option value="2v2">4 players — 2 vs 2</option>
+                <option value="2v3">5 players — 2 vs 3</option>
                 <option value="3v3">6 players — 3 vs 3</option>
                 <option value="2v2v2">6 players — 2 vs 2 vs 2</option>
+                <option value="3v4">7 players — 3 vs 4</option>
+                <option value="2v2v3">7 players — 2 vs 2 vs 3</option>
                 <option value="4v4">8 players — 4 vs 4</option>
                 <option value="2v3v3">8 players — 2 vs 3 vs 3</option>
               </select>
@@ -1604,8 +1608,11 @@ const db = getDatabase(firebaseApp);
   const VENDETTA_COST=0;
   const VENDETTA_LAYOUTS={
     "2v2":[2,2],
+    "2v3":[2,3],
     "3v3":[3,3],
     "2v2v2":[2,2,2],
+    "3v4":[3,4],
+    "2v2v3":[2,2,3],
     "4v4":[4,4],
     "2v3v3":[2,3,3]
   };
@@ -1638,7 +1645,7 @@ const db = getDatabase(firebaseApp);
     }
     status.textContent=active
       ? `Vendetta layout: ${vendettaLayout}. Swapped powers will be assigned when the match starts.`
-      : "Host chooses a supported 4-, 6-, or 8-player alliance layout.";
+      : "Host chooses a supported 4-, 5-, 6-, 7-, or 8-player alliance layout.";
   }
 
   async function activateVendettaMode(){
@@ -3789,12 +3796,33 @@ async function refreshTeamPowerUI() {
         }
       });
 
-      // If move totals tie, the tied move with a counter bonus wins the round tiebreak.
+      // Underdog Bonus: when all three moves are present and TWO moves are
+      // tied for the highest player count, the lone smaller move gets +1 total
+      // move point (+2 in Double Trouble). This never overlaps with the
+      // minority counter bonus because tied leaders mean there is no single
+      // majority move.
+      const underdogMoves={rock:0,paper:0,scissors:0};
+      const activeMoves=moves.filter(m=>(count[m]||0)>0);
+      if(activeMoves.length===3){
+        const activeCounts=activeMoves.map(m=>count[m]||0);
+        const highestCount=Math.max(...activeCounts);
+        const leaders=activeMoves.filter(m=>(count[m]||0)===highestCount);
+        const smaller=activeMoves.filter(m=>(count[m]||0)<highestCount);
+        if(leaders.length===2 && smaller.length===1){
+          const underdogMove=smaller[0];
+          underdogMoves[underdogMove]=1;
+          const bonus=1*multiplier;
+          details.push(`UNDERDOG BONUS — ${underdogMove[0].toUpperCase()+underdogMove.slice(1)} is the lone smaller move behind two tied leaders and gets +${bonus} total move ${bonus===1?"point":"points"}.`);
+        }
+      }
+
+      // Compare move totals after Counter and Underdog bonuses.
       const totals={};
       moves.forEach(m=>{
         const baseMovePoints=count[m]*multiplier;
         const counterBonusPoints=counterMoves[m]*multiplier;
-        totals[m]=baseMovePoints+counterBonusPoints;
+        const underdogBonusPoints=underdogMoves[m]*multiplier;
+        totals[m]=baseMovePoints+counterBonusPoints+underdogBonusPoints;
       });
       const top=Math.max(...Object.values(totals));
       const tied=moves.filter(m=>totals[m]===top);
@@ -3805,6 +3833,10 @@ async function refreshTeamPowerUI() {
           if(counterMoves[m]>0){
             const counterBonusPoints=counterMoves[m]*multiplier;
             return `${label} ${count[m]||0} + ${counterBonusPoints} counter bonus ${counterBonusPoints===1?"point":"points"} = ${totals[m]}`;
+          }
+          if(underdogMoves[m]>0){
+            const underdogBonusPoints=underdogMoves[m]*multiplier;
+            return `${label} ${(count[m]||0)*multiplier} + ${underdogBonusPoints} underdog bonus ${underdogBonusPoints===1?"point":"points"} = ${totals[m]}`;
           }
           return `${label} ${totals[m]}`;
         }).join(" | ");
@@ -3819,7 +3851,17 @@ async function refreshTeamPowerUI() {
         details.unshift(`${counterLabel}${tied[0][0].toUpperCase()+tied[0].slice(1)} wins the total move comparison${counterExplanation}. (${totalSummary})`);
       } else if(tied.length===3) {
         revealWinner="Draw!";
-        details.unshift("All three move totals tie: round draw.");
+        const underdogMove=moves.find(m=>underdogMoves[m]>0);
+        if(underdogMove){
+          const bonus=underdogMoves[underdogMove]*multiplier;
+          details.unshift(`DRAW — All three move totals tie after the Underdog Bonus. (${moves.map(m=>{
+            const label=m[0].toUpperCase()+m.slice(1);
+            if(underdogMoves[m]>0) return `${label} ${(count[m]||0)*multiplier} + ${bonus} underdog bonus ${bonus===1?"point":"points"} = ${totals[m]}`;
+            return `${label} ${totals[m]}`;
+          }).join(" | ")})`);
+        }else{
+          details.unshift("DRAW — All three move totals tie: round draw.");
+        }
       } else {
         const withCounter=tied.filter(m=>counterMoves[m]>0);
         if(withCounter.length===1){
