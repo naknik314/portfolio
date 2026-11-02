@@ -461,7 +461,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
           <div class="tutorial-step"><strong>🪨 Make your move</strong><span>Choose Rock, Paper, or Scissors. Everyone’s moves stay hidden until the reveal.</span></div>
           <div class="tutorial-step"><strong>🏆 Majority points</strong><span>With 3+ players, the single most-played move earns +1 for each player who chose it. If the majority is tied, there are no majority points.</span></div>
           <div class="tutorial-step"><strong>⚡ Minority counter bonus</strong><span>A minority move earns +1 when it beats the single majority move. Example: 1 Rock vs 2 Scissors gives Rock the counter bonus.</span></div>
-          <div class="tutorial-step"><strong>🐾 Vendetta Underdog Bonus</strong><span>In Vendetta Mode, an alliance with fewer players than the largest alliance earns +1 extra Vendetta point whenever at least one of its players is on the round-winning move. Example: in 2 vs 3 vs 3, the 2-player alliance gets the bonus if one of its players is on the winning move.</span></div>
+          <div class="tutorial-step"><strong>🐾 Vendetta Underdog Bonus</strong><span>In Vendetta Mode, an alliance with fewer players than the largest alliance earns one Underdog Bonus when at least one of its players is on the round-winning move: +1 extra Vendetta point normally, or +2 during Double Trouble. The bonus is awarded once per underdog alliance per round, no matter how many of its players share the winning move. Vendetta points are added to the alliance total and shown at the end of the game. Example: in 2 vs 3 vs 3, the 2-player alliance gets the bonus if one of its players is on the winning move.</span></div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <div class="tutorial-step"><strong>🎲 Chaos rounds</strong><span>Special rounds can double points, turn predictions off, reverse the matchups, and finish with Winner Takes the Round.</span></div>
             <div class="tutorial-step"><strong>💠 Chaos Points</strong><span>Earn Chaos Points by completing games. Save them up and spend them on optional extras in the Game Lobby before a match begins.</span></div>
@@ -642,7 +642,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
                 <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match. Every alliance has at least 2 players — there are no 1-vs-everyone layouts.</span>
                 <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Precisionists</b>, ❓ <b>The Unknowns</b>.</span>
-                <span style="margin-top:8px"><b>Underdog Bonus:</b> if an alliance has fewer players than the largest alliance, it earns +1 extra Vendetta point whenever at least one of its players is on the round-winning move. In 2 vs 3 vs 3, only the 2-player alliance is the underdog.</span>
+                <span style="margin-top:8px"><b>Underdog Bonus:</b> if an alliance has fewer players than the largest alliance, it earns one bonus when at least one of its players is on the round-winning move: +1 extra Vendetta point normally, or +2 during Double Trouble. It is awarded once per underdog alliance per round, even if multiple members share the winning move. Vendetta points are added to the alliance total and shown at the end of the game. In 2 vs 3 vs 3, only the 2-player alliance is the underdog.</span>
               </details>
               <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
                 <option value="2v2">4 players — 2 vs 2</option>
@@ -4145,8 +4145,9 @@ async function refreshTeamPowerUI() {
 
     // Vendetta Underdog Bonus: alliance size determines who is an underdog.
     // If an underdog alliance has at least one player on the round-winning move,
-    // that alliance earns +1 Vendetta point. The winning move may be shared by
-    // players from larger alliances; that does not cancel the underdog bonus.
+    // that alliance earns ONE Underdog Bonus for the round: +1 normally, +2 in
+    // Double Trouble. Multiple winning members do not stack the bonus. The
+    // winning move may also be shared by larger alliances without cancelling it.
     // This is an alliance-only point and does not change individual scores.
     const vendettaUnderdogWinnerIds=[];
     if(vendettaModeActive && Object.keys(vendettaAlliances||{}).length>1){
@@ -4160,9 +4161,10 @@ async function refreshTeamPowerUI() {
           const allianceSize=memberIds.length;
           const hasWinningPlayer=memberIds.some(uid=>played[uid]===winningMove);
           if(allianceSize<maxAllianceSize && hasWinningPlayer){
+            const underdogBonus=round===2?2:1;
             vendettaUnderdogWinnerIds.push(id);
-            a.bonusPoints=Number(a.bonusPoints||0)+1;
-            details.unshift(`🐾 UNDERDOG BONUS — ${a.name||"The smaller alliance"} had a player on the winning ${winningMove[0].toUpperCase()+winningMove.slice(1)} move and earns +1 extra Vendetta point.`);
+            a.bonusPoints=Number(a.bonusPoints||0)+underdogBonus;
+            details.unshift(`🐾 UNDERDOG BONUS — ${a.name||"The smaller alliance"} had a player on the winning ${winningMove[0].toUpperCase()+winningMove.slice(1)} move and earns +${underdogBonus} extra Vendetta point${underdogBonus===1?"":"s"}${round===2?" during Double Trouble":""}. Added to the alliance total.`);
           }
         });
       }
