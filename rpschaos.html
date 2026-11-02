@@ -4366,12 +4366,13 @@ async function refreshTeamPowerUI() {
     }
 
     function compactGroupedOutcomeText(texts){
-      return texts.map(text=>{
-        const raw=String(text||"").trim().replace(/\.$/,"");
-        const m=raw.match(/^(.*?)\s+\((The [^)]+)\)(.*)$/);
-        if(!m) return {text:raw,suffix:""};
-        return {text:`${m[1].trim()}${m[3]}`.trim(),suffix:""};
-      });
+      // Keep each player's alliance directly beside their name on individual
+      // outcome lines. This avoids ambiguity about which alliance the affected
+      // rival players belong to.
+      return texts.map(text=>({
+        text:String(text||"").trim().replace(/\.$/,""),
+        suffix:""
+      }));
     }
 
     const powerGroups=[
