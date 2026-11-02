@@ -4816,7 +4816,7 @@ async function refreshTeamPowerUI() {
         return `<div class="choice ${isRoundWinner?"round-winning-card":""}" style="cursor:default;min-height:0;padding:16px 12px;display:flex;flex-direction:column;align-items:center;text-align:center;${isYou?"border:2px solid #22c55e;background:rgba(34,197,94,.08);":""}">
           <div style="font-size:25px;line-height:1;margin-bottom:5px;font-weight:900;min-height:25px;display:flex;align-items:center;justify-content:center" aria-label="${vendettaModeActive?(isYou?"You":sameAlliance?"Ally":"Rival"):(isYou?"You":"Other player")}"><span class="badge" style="font-size:11px;${vendettaModeActive&&!isYou&&!sameAlliance?"background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.55);color:#dc2626;":""}">${relationLabel}</span></div>
           <b style="font-size:15px;line-height:1.25;display:flex;align-items:center;gap:5px;justify-content:center">${p.bot?'<span aria-hidden="true" style="font-size:1em;line-height:1">🤖</span>':""}<span>${escapeHtml(p.name)}</span></b>
-          ${vendettaModeActive && theirAllianceName ? `<div style="font-size:12px;line-height:1.3;margin-top:4px;font-style:italic;color:${isYou||sameAlliance?'#22c55e':'#dc2626'}">${escapeHtml(theirAllianceName)}</div>` : ""}
+          ${vendettaModeActive && theirAllianceName ? `<div style="font-size:12px !important;line-height:1.3;margin-top:4px;font-style:italic;color:${isYou||sameAlliance?'#22c55e':'#dc2626'}">${escapeHtml(theirAllianceName)}</div>` : ""}
           
           <div class="reveal-move-item" style="font-size:54px;line-height:1.05;margin:14px 0 5px" aria-label="${escapeHtml(moveLabel)}">${moveItems[move]}</div>
           <div class="muted" style="font-size:12px">Played ${escapeHtml(moveLabel)}</div>
