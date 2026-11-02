@@ -1849,16 +1849,19 @@ const db = getDatabase(firebaseApp);
 
     const allianceByPlayer={}, playerTeams={}, allianceData={};
     const rawAllianceNames=groups.map(g=>chooseVendettaAllianceName(g.members));
-    const unknownIds=rawAllianceNames
-      .map((name,index)=>name===VENDETTA_NAMES.unassigned?index:-1)
-      .filter(index=>index>=0);
+    const duplicateNameIndexes={};
+    rawAllianceNames.forEach((name,index)=>{
+      if(!duplicateNameIndexes[name]) duplicateNameIndexes[name]=[];
+      duplicateNameIndexes[name].push(index);
+    });
 
     groups.forEach((g,index)=>{
       let name=rawAllianceNames[index];
-      if(name===VENDETTA_NAMES.unassigned && unknownIds.length>1){
-        const ordinal=unknownIds.indexOf(index)+1;
+      const duplicates=duplicateNameIndexes[name]||[];
+      if(duplicates.length>1){
+        const ordinal=duplicates.indexOf(index)+1;
         const roman=["I","II","III","IV","V","VI"][ordinal-1]||String(ordinal);
-        name=`${VENDETTA_NAMES.unassigned} ${roman}`;
+        name=`${name} ${roman}`;
       }
       allianceData[g.id]={name,size:g.size,members:Object.fromEntries(g.members.map(m=>[m.uid,true])),bonusPoints:0};
       g.members.forEach(m=>{ allianceByPlayer[m.uid]=g.id; playerTeams[m.uid]=m.team; });
