@@ -4400,35 +4400,52 @@ async function refreshTeamPowerUI() {
 
     function noticeUsedPowerName(line){
       const s=String(line||"");
-      const knownPowers=["Cut Your Losses","Cut in Half","Barricade","Reprint","Stonewall","Misprint"];
+      const lead=(s.split(/\b(?:SUCCESS:|NO EFFECT:|BLOCKED:|AUTO-TARGET:|INTERACTION:)|🔒|♻️/)[0]||s)
+        .replace(/\s+/g," ")
+        .trim();
 
-      // Read only the lead-in before the first outcome/status marker.
-      // This prevents explanatory text later in the notice (for example
-      // "Barricade cannot block Stonewall") from changing the detected power.
-      const lead=s.split(/\b(?:SUCCESS:|NO EFFECT:|BLOCKED:)|🔒|♻️/)[0]||s;
+      // Detect the actual power only from the notice lead-in. Keep the longest
+      // names first so "Cut Your Losses" and "Cut in Half" are unambiguous.
+      const candidates=[
+        "Cut Your Losses",
+        "Cut in Half",
+        "Stonewall",
+        "Misprint",
+        "Barricade",
+        "Reprint"
+      ];
 
-      const usedMatch=lead.match(/⚡\s*POWER\s+(?:USED|ATTEMPT)\s*[—-]\s*[\s\S]*?\bused\s+([\s\S]+)$/i);
-      if(usedMatch){
-        const afterUsed=usedMatch[1].replace(/^[🪨📄✂️]\ufe0f?\s*/,"").trim();
-        const found=knownPowers.find(name=>afterUsed.toLowerCase().startsWith(name.toLowerCase()));
-        if(found) return found;
+      const usedPart=lead.match(/\bused\b([\s\S]*)$/i)?.[1] || "";
+      const clashPart=lead.match(/\bPOWER\s+CLASH\b[\s\S]*?'s\s+([\s\S]*)$/i)?.[1] || "";
+      const searchable=(usedPart || clashPart)
+        .replace(/^[^A-Za-z]+/,"")
+        .trim()
+        .toLowerCase();
+
+      for(const name of candidates){
+        if(searchable.startsWith(name.toLowerCase())) return name;
       }
 
-      const clashMatch=lead.match(/⚡\s*POWER\s+CLASH\s*[—-]\s*[\s\S]*?'s\s+([\s\S]+)$/i);
-      if(clashMatch){
-        const afterPossessive=clashMatch[1].replace(/^[🪨📄✂️]\ufe0f?\s*/,"").trim();
-        const found=knownPowers.find(name=>afterPossessive.toLowerCase().startsWith(name.toLowerCase()));
-        if(found) return found;
+      // Final fallback for harmless formatting changes around the icon/name.
+      for(const name of candidates){
+        const escaped=name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+        if(new RegExp(`\\bused\\b[^A-Za-z]*${escaped}\\b`,"i").test(lead)) return name;
       }
-
       return "";
     }
-
     // Group duplicate uses of the SAME power without mutating powerNotices
     // in-place. The older index/splice approach could drop a single notice
     // when several different powers were used in a large room.
     const groupedPowerNotices=[];
     const groupedPowerNames=new Set();
+    const noticesByPower=new Map();
+
+    powerNotices.forEach(item=>{
+      const detected=noticeUsedPowerName(item);
+      if(!detected) return;
+      if(!noticesByPower.has(detected)) noticesByPower.set(detected,[]);
+      noticesByPower.get(detected).push(item);
+    });
 
     powerNotices.forEach(line=>{
       const powerName=noticeUsedPowerName(line);
@@ -4441,7 +4458,7 @@ async function refreshTeamPowerUI() {
         return;
       }
 
-      const samePowerNotices=powerNotices.filter(item=>noticeUsedPowerName(item)===power.name);
+      const samePowerNotices=noticesByPower.get(power.name)||[];
       if(samePowerNotices.length<2){
         groupedPowerNotices.push(line);
         return;
