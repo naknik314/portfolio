@@ -4204,6 +4204,15 @@ async function refreshTeamPowerUI() {
       }
     });
 
+    // Preserve the true net result of the round before Casual mode applies its
+    // zero-score floor. This is what the reveal card should show as THIS ROUND.
+    // Example: +1 majority -2 Misprint -3 prediction = -4 this round, even if
+    // the player's running total is protected at 0.
+    const displayRoundPoints={};
+    players.forEach(p=>{
+      displayRoundPoints[p.uid]=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
+    });
+
     // Casual mode safety net: the total score can never fall below zero.
     // Apply this after predictions and Team Powers so every negative effect respects the floor.
     if(predictionMode==="optional"){
@@ -4230,6 +4239,12 @@ async function refreshTeamPowerUI() {
       // Solo Mode has no predictions and uses separate scoring rules.
       details.push(`ℹ️ Casual mode: points can't go below 0.`);
     }
+
+    // Snapshot the floored running scores before Round 7 redistributes its pot.
+    // Any Winner Takes the Round adjustment is added to displayRoundPoints so
+    // THIS ROUND still reflects the full round math while Total points keeps
+    // Casual mode's zero floor.
+    const scoresBeforeRound7={...scores};
 
     // Round 7 — Winner Takes the Round. Normal scoring and powers resolve first.
     if(round===7 && !soloModeActive){
@@ -4261,7 +4276,9 @@ async function refreshTeamPowerUI() {
 
     const roundPoints={};
     players.forEach(p=>{
-      roundPoints[p.uid]=Number(scores[p.uid]||0)-Number(scoresBefore[p.uid]||0);
+      // Add any Round 7 redistribution to the pre-floor round result.
+      const round7Adjustment=Number(scores[p.uid]||0)-Number(scoresBeforeRound7[p.uid]||0);
+      roundPoints[p.uid]=Number(displayRoundPoints[p.uid]||0)+round7Adjustment;
     });
 
     // Vendetta Underdog Bonus: alliance size determines who is an underdog.
