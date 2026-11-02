@@ -4366,40 +4366,12 @@ async function refreshTeamPowerUI() {
     }
 
     function compactGroupedOutcomeText(texts){
-      const parsed=texts.map(text=>{
+      return texts.map(text=>{
         const raw=String(text||"").trim().replace(/\.$/,"");
         const m=raw.match(/^(.*?)\s+\((The [^)]+)\)(.*)$/);
-        return m ? {name:m[1].trim(),alliance:m[2].trim(),rest:m[3]} : {name:"",alliance:"",rest:raw};
+        if(!m) return {text:raw,suffix:""};
+        return {text:`${m[1].trim()}${m[3]}`.trim(),suffix:""};
       });
-
-      // Group outcome rows by alliance. Repeated alliance labels are removed
-      // from each player row and shown once at the end of that alliance group.
-      const groups=[];
-      parsed.forEach((item,index)=>{
-        const key=item.alliance||"";
-        let group=groups.find(g=>g.alliance===key);
-        if(!group){
-          group={alliance:key,items:[]};
-          groups.push(group);
-        }
-        group.items.push({item,index});
-      });
-
-      const result=[];
-      groups.forEach(group=>{
-        group.items.forEach(({item,index},i)=>{
-          if(!item.alliance){
-            result.push({text:String(texts[index]||"").trim().replace(/\.$/,""),suffix:""});
-            return;
-          }
-          const line=`${item.name}${item.rest}`.trim();
-          result.push({
-            text:line,
-            suffix:i===group.items.length-1 ? ` (${group.alliance})` : ""
-          });
-        });
-      });
-      return result;
     }
 
     const powerGroups=[
