@@ -637,12 +637,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             </div>
 
             <div class="rule-card">
-              <strong>⚔️ Vendetta Mode <span class="muted">(TEST)</span></strong>
+              <strong>⚔️ Vendetta Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
                 <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match. Every alliance has at least 2 players — there are no 1-vs-everyone layouts.</span>
                 <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Precisionists</b>, ❓ <b>The Unknowns</b>.</span>
-                <span style="margin-top:8px"><b>Test cost: 0 CP.</b> Underdog balancing is not enabled in this first test build.</span>
+                <span style="margin-top:8px"><b>Cost: 0 CP.</b> Vendetta uses the Underdog Bonus: when all three moves are played and two moves are tied for the lead, the lone smaller move gets +1 total move point (+2 in Double Trouble).</span>
               </details>
               <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
                 <option value="2v2">4 players — 2 vs 2</option>
@@ -654,7 +654,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <option value="4v4">8 players — 4 vs 4</option>
                 <option value="2v3v3">8 players — 2 vs 3 vs 3</option>
               </select>
-              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — TEST 0 CP</button>
+              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — 0 CP</button>
               <span id="vendettaModeStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
@@ -1638,7 +1638,7 @@ const db = getDatabase(firebaseApp);
     vendettaLayout=active?String(v.layout||""):"";
     btn.disabled=active || !isHost;
     btn.style.opacity=btn.disabled?".55":"1";
-    btn.textContent=active?"⚔️ Vendetta Mode Active":"⚔️ Enable Vendetta Mode — TEST 0 CP";
+    btn.textContent=active?"⚔️ Vendetta Mode Active":"⚔️ Enable Vendetta Mode — 0 CP";
     if(select){
       if(active && vendettaLayout) select.value=vendettaLayout;
       select.disabled=active || !isHost;
@@ -1663,10 +1663,10 @@ const db = getDatabase(firebaseApp);
     const doubleAgentActive=Object.values(data.doubleAgent||{}).some(v=>v&&v.power);
     const powerSwapActive=Object.values(data.powerSwap||{}).some(Boolean) || Object.values(data.powerReversal||{}).some(Boolean);
     if(soloActive || chaosBotActive || doubleAgentActive || powerSwapActive){
-      return toast("Vendetta test mode can't be combined with Solo, Chaos Bot, Double Agent, or Power Swap.");
+      return toast("Vendetta Mode can't be combined with Solo, Chaos Bot, Double Agent, or Power Swap.");
     }
     await set(ref(db,`rooms/${room}/vendettaMode`),{active:true,layout,testing:true,cost:VENDETTA_COST});
-    toast("⚔️ Vendetta Mode enabled for testing!");
+    toast("⚔️ Vendetta Mode enabled!");
     await refreshVendettaLobby();
   }
 
