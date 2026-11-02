@@ -4067,7 +4067,7 @@ async function refreshTeamPowerUI() {
         if(gain>0){ scores[o.uid]-=gain; blocked++; }
       });
       if(blocked>0){
-        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${vendettaModeActive?(blocked===1?"rival player":"rival players"):(blocked===1?"player":"players")}. Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss. 🔒 🪨 Stonewall USED UP.`);
+        details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${vendettaModeActive?(blocked===1?"rival player":"rival players"):(blocked===1?"player":"players")}. 🔒 🪨 Stonewall USED UP.`);
       } else {
         details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. NO EFFECT: nobody else had positive round points to block. 🔒 🪨 Stonewall USED UP.`);
       }
@@ -4400,16 +4400,26 @@ async function refreshTeamPowerUI() {
 
     function noticeUsedPowerName(line){
       const s=String(line||"");
+      const knownPowers=["Cut Your Losses","Cut in Half","Barricade","Reprint","Stonewall","Misprint"];
 
-      // Identify the ACTUAL power being used/attempted from the notice lead-in.
-      // Do not group by any later mention of another power (for example,
-      // Stonewall's explanation says "Barricade cannot block Stonewall").
-      let m=s.match(/⚡\s*POWER\s+(?:USED|ATTEMPT)\s*[—-]\s*[\s\S]*?\bused\s+[🪨📄✂️]\s*(Barricade|Reprint|Cut in Half|Stonewall|Misprint|Cut Your Losses)\b/i);
-      if(m) return m[1];
+      // Read only the lead-in before the first outcome/status marker.
+      // This prevents explanatory text later in the notice (for example
+      // "Barricade cannot block Stonewall") from changing the detected power.
+      const lead=s.split(/\b(?:SUCCESS:|NO EFFECT:|BLOCKED:)|🔒|♻️/)[0]||s;
 
-      // For clashes, use the first possessive power named after the dash.
-      m=s.match(/⚡\s*POWER\s+CLASH\s*[—-]\s*.+?'s\s+[🪨📄✂️]\s*(Barricade|Reprint|Cut in Half|Stonewall|Misprint|Cut Your Losses)\b/i);
-      if(m) return m[1];
+      const usedMatch=lead.match(/⚡\s*POWER\s+(?:USED|ATTEMPT)\s*[—-]\s*[\s\S]*?\bused\s+([\s\S]+)$/i);
+      if(usedMatch){
+        const afterUsed=usedMatch[1].replace(/^[🪨📄✂️]\ufe0f?\s*/,"").trim();
+        const found=knownPowers.find(name=>afterUsed.toLowerCase().startsWith(name.toLowerCase()));
+        if(found) return found;
+      }
+
+      const clashMatch=lead.match(/⚡\s*POWER\s+CLASH\s*[—-]\s*[\s\S]*?'s\s+([\s\S]+)$/i);
+      if(clashMatch){
+        const afterPossessive=clashMatch[1].replace(/^[🪨📄✂️]\ufe0f?\s*/,"").trim();
+        const found=knownPowers.find(name=>afterPossessive.toLowerCase().startsWith(name.toLowerCase()));
+        if(found) return found;
+      }
 
       return "";
     }
@@ -4469,7 +4479,7 @@ async function refreshTeamPowerUI() {
         const matching=outcomes.filter(o=>o.marker===marker);
         if(!matching.length) return;
 
-        if(power.name==="Misprint" && matching.length>1){
+        if(matching.length>1 || samePowerNotices.length>1){
           matching.forEach(o=>{
             const text=String(o.text||"").trim().replace(/\.$/,"");
             outcomeLines.push(`${marker} ${text}.`);
@@ -4477,19 +4487,16 @@ async function refreshTeamPowerUI() {
           return;
         }
 
-        let combined=matching
-          .map(o=>String(o.text||"").trim().replace(/\.$/,""))
-          .join(", ");
-
-        if(marker==="NO EFFECT:" && matching.length>1){
-          const prefix="there were no negative points or point-loss effects to block for ";
-          const texts=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
-          if(texts.every(text=>text.startsWith(prefix))){
-            combined=`${prefix}${joinPlayerNames(texts.map(text=>text.slice(prefix.length)))}`;
-          }
-        }
-        outcomeLines.push(`${marker} ${combined}.`);
+        const text=String(matching[0]?.text||"").trim().replace(/\.$/,"");
+        outcomeLines.push(`${marker} ${text}.`);
       });
+
+      if(power.name==="Barricade"){
+        const stonewallWasUsed=powerNotices.some(item=>noticeUsedPowerName(item)==="Stonewall");
+        if(stonewallWasUsed){
+          outcomeLines.push("INTERACTION: Barricade cannot block Stonewall because Stonewall prevents positive points before they are awarded; it does not cause a point loss.");
+        }
+      }
 
       const statusLines=[];
       if(power.name==="Reprint"){
