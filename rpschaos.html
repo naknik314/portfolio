@@ -4122,14 +4122,13 @@ async function refreshTeamPowerUI() {
             const gain=positiveGains[index];
             if(gain>0) scores[p.uid]-=gain;
           });
-          const share=Math.floor(pot/winners.length);
-          let remainder=pot%winners.length;
+          const share=Math.ceil(pot/winners.length);
           winners.forEach(p=>{
-            scores[p.uid]+=share+(remainder>0?1:0);
-            if(remainder>0) remainder--;
+            scores[p.uid]+=share;
           });
           const winnerNames=winners.map(p=>p.name).join(", ");
-          details.unshift(`🏆 WINNER TAKES THE ROUND — ${winningMove[0].toUpperCase()+winningMove.slice(1)} won Round 7, so the +${pot} positive-point pot went to ${winnerNames}${winners.length>1?` (split among ${winners.length} winners)`:``}.`);
+          const roundedUp=winners.length>1 && pot%winners.length!==0;
+          details.unshift(`🏆 WINNER TAKES THE ROUND — ${winningMove[0].toUpperCase()+winningMove.slice(1)} won Round 7, so the +${pot} positive-point pot went to ${winnerNames}${winners.length>1?` (${share} point${share===1?"":"s"} each${roundedUp?", rounded up equally":""})`:``}.`);
         }else{
           details.unshift(`🏆 WINNER TAKES THE ROUND — ${winningMove[0].toUpperCase()+winningMove.slice(1)} won Round 7, but there were no positive points in the pot.`);
         }
