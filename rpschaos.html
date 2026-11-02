@@ -4497,10 +4497,11 @@ async function refreshTeamPowerUI() {
         if(!matching.length) return;
 
         if(matching.length>1 || samePowerNotices.length>1){
-          matching.forEach(o=>{
-            const text=String(o.text||"").trim().replace(/\.$/,"");
-            outcomeLines.push(`${marker} ${text}.`);
-          });
+          const lines=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
+          if(lines.length){
+            outcomeLines.push(`${marker} ${lines[0]}.`);
+            lines.slice(1).forEach(text=>outcomeLines.push(`↳ ${text}.`));
+          }
           return;
         }
 
