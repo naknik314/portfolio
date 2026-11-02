@@ -4338,6 +4338,70 @@ async function refreshTeamPowerUI() {
       return `${clean.slice(0,-1).join(", ")} & ${clean[clean.length-1]}`;
     }
 
+    function splitAllianceLabel(label){
+      const s=String(label||"").trim();
+      const m=s.match(/^(.*?)\s+\((The [^)]+)\)$/);
+      return m ? {name:m[1].trim(),alliance:m[2].trim()} : {name:s,alliance:""};
+    }
+
+    function joinPlayerNamesSharedAlliance(labels){
+      const parsed=labels.filter(Boolean).map(splitAllianceLabel);
+      if(!parsed.length) return "";
+
+      const groups=[];
+      parsed.forEach(item=>{
+        const key=item.alliance||"";
+        let group=groups.find(g=>g.alliance===key);
+        if(!group){
+          group={alliance:key,names:[]};
+          groups.push(group);
+        }
+        group.names.push(item.name);
+      });
+
+      return groups.map(group=>{
+        const names=joinPlayerNames(group.names);
+        return group.alliance ? `${names} (${group.alliance})` : names;
+      }).join(", ");
+    }
+
+    function compactGroupedOutcomeText(texts){
+      const parsed=texts.map(text=>{
+        const raw=String(text||"").trim().replace(/\.$/,"");
+        const m=raw.match(/^(.*?)\s+\((The [^)]+)\)(.*)$/);
+        return m ? {name:m[1].trim(),alliance:m[2].trim(),rest:m[3]} : {name:"",alliance:"",rest:raw};
+      });
+
+      // Group outcome rows by alliance. Repeated alliance labels are removed
+      // from each player row and shown once at the end of that alliance group.
+      const groups=[];
+      parsed.forEach((item,index)=>{
+        const key=item.alliance||"";
+        let group=groups.find(g=>g.alliance===key);
+        if(!group){
+          group={alliance:key,items:[]};
+          groups.push(group);
+        }
+        group.items.push({item,index});
+      });
+
+      const result=[];
+      groups.forEach(group=>{
+        group.items.forEach(({item,index},i)=>{
+          if(!item.alliance){
+            result.push({text:String(texts[index]||"").trim().replace(/\.$/,""),suffix:""});
+            return;
+          }
+          const line=`${item.name}${item.rest}`.trim();
+          result.push({
+            text:line,
+            suffix:i===group.items.length-1 ? ` (${group.alliance})` : ""
+          });
+        });
+      });
+      return result;
+    }
+
     const powerGroups=[
       {name:"Barricade",icon:"🪨",description:"which protects against negative points"},
       {name:"Reprint",icon:"📄",description:"which copies the highest positive points another player earns that round"},
@@ -4489,7 +4553,7 @@ async function refreshTeamPowerUI() {
         else if(/USED UP/i.test(item)) usedNames.push(playerName);
       });
 
-      const heading=`⚡ POWER USED — ${joinPlayerNames(names)} used ${power.icon} ${power.name}, ${power.description}.`;
+      const heading=`⚡ POWER USED — ${joinPlayerNamesSharedAlliance(names)} used ${power.icon} ${power.name}, ${power.description}.`;
       const outcomeLines=[];
 
       ["SUCCESS:","NO EFFECT:","BLOCKED:"].forEach(marker=>{
@@ -4499,8 +4563,9 @@ async function refreshTeamPowerUI() {
         if(matching.length>1 || samePowerNotices.length>1){
           const lines=matching.map(o=>String(o.text||"").trim().replace(/\.$/,""));
           if(lines.length){
-            outcomeLines.push(`${marker} ${lines[0]}.`);
-            lines.slice(1).forEach(text=>outcomeLines.push(`↳ ${text}.`));
+            const compact=compactGroupedOutcomeText(lines);
+            outcomeLines.push(`${marker} ${compact[0].text}${compact[0].suffix}.`);
+            compact.slice(1).forEach(item=>outcomeLines.push(`↳ ${item.text}${item.suffix}.`));
           }
           return;
         }
@@ -4523,12 +4588,12 @@ async function refreshTeamPowerUI() {
         });
       }
       if(usedNames.length){
-        statusLines.push(`🔒 ${power.icon} ${power.name} USED UP — ${joinPlayerNames(usedNames)}.`);
+        statusLines.push(`🔒 ${power.icon} ${power.name} USED UP — ${joinPlayerNamesSharedAlliance(usedNames)}.`);
       }
       if(notUsedNames.length){
         statusLines.push(round===7
-          ? `♻️ ${power.icon} ${power.name} NOT USED UP for ${joinPlayerNames(notUsedNames)}.`
-          : `♻️ ${power.icon} ${power.name} NOT USED UP — still available for a later round for ${joinPlayerNames(notUsedNames)}.`);
+          ? `♻️ ${power.icon} ${power.name} NOT USED UP for ${joinPlayerNamesSharedAlliance(notUsedNames)}.`
+          : `♻️ ${power.icon} ${power.name} NOT USED UP — still available for a later round for ${joinPlayerNamesSharedAlliance(notUsedNames)}.`);
       }
 
       groupedPowerNotices.push([heading,...outcomeLines,...statusLines].join(" "));
