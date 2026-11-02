@@ -1395,9 +1395,11 @@ const db = getDatabase(firebaseApp);
       predictionMode = data.predictionMode === "required" ? "required" : "optional";
       vendettaModeActive=Boolean(data.vendettaMode?.active);
       vendettaLayout=vendettaModeActive?String(data.vendettaMode?.layout||""):"";
+      const previousMyVendettaAlliance=vendettaAllianceByPlayer[currentUser?.uid]||"";
       vendettaAlliances=data.vendettaAlliances||{};
       vendettaAllianceByPlayer=data.vendettaAllianceByPlayer||{};
       vendettaPlayerTeams=data.vendettaPlayerTeams||{};
+      const currentMyVendettaAlliance=vendettaAllianceByPlayer[currentUser?.uid]||"";
       const roomMarksSolo = data.soloMode?.[currentUser?.uid] === true;
       const soloPlayingFallback = data.status==="playing" &&
         players.length===1 &&
@@ -1420,6 +1422,11 @@ const db = getDatabase(firebaseApp);
         if (round !== sharedRound || !$("game").classList.contains("active")) {
           round = sharedRound;
           beginRound(false);
+        } else if (vendettaModeActive && previousMyVendettaAlliance!==currentMyVendettaAlliance) {
+          // A joining device can enter the round before its Vendetta alliance mapping arrives.
+          // Rebuild the move screen when that mapping syncs so Alliance Move Sharing appears.
+          renderMovePicker();
+          watchAllyShares();
         }
         const r = data.rounds?.[sharedRound];
         if (r?.phase === "reveal" && r.results) {
@@ -2643,11 +2650,11 @@ async function refreshTeamPowerUI() {
     const myVendettaAllianceName=myVendettaAllianceId?(vendettaAlliances?.[myVendettaAllianceId]?.name||"Your Alliance"):"";
     $("playArea").innerHTML = `
       <div class="choose-move-line">Choose your move <span class="muted">· Your move stays private until everyone locks in.</span></div>
-      ${vendettaModeActive && myVendettaAllianceName ? `
+      ${vendettaModeActive && myVendettaAllianceId ? `
       <div style="margin:0 0 12px;padding:10px 12px;border:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.10);border-radius:12px;text-align:center">
         <strong style="color:#22c55e">⚔️ YOUR VENDETTA ALLIANCE: ${escapeHtml(myVendettaAllianceName)}</strong>
       </div>` : ""}
-      ${vendettaModeActive && myVendettaAllianceName ? `
+      ${vendettaModeActive && myVendettaAllianceId ? `
       <div class="rule-card" style="margin-bottom:12px">
         <strong>🤝 Alliance Move Sharing</strong>
         <span class="muted">Sharing is optional and sends only your current Rock, Paper, or Scissors move to your allies. Predictions stay private. If you change your move later, share again if you want allies to see the update.</span>
