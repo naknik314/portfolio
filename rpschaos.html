@@ -1351,11 +1351,24 @@ const db = getDatabase(firebaseApp);
         move=moves[Math.floor(Math.random()*3)];
         await set(ref(db,`${roundPath()}/botPlannedMoves/${bot.uid}`),move);
       }
+      // Roll exactly once per bot per round. Previously this function could run
+      // multiple times, giving bots repeated 35% chances until they eventually shared.
+      const decisionRef=ref(db,`${roundPath()}/botShareDecisions/${bot.uid}`);
+      const decisionSnap=await get(decisionRef);
+      let shouldShare;
+      if(decisionSnap.exists()){
+        shouldShare=decisionSnap.val()===true;
+      }else{
+        shouldShare=Math.random()<0.20;
+        await set(decisionRef,shouldShare);
+      }
+
       const shareRef=ref(db,`${roundPath()}/allyShares/${bot.uid}`);
       const shareSnap=await get(shareRef);
-      if(!shareSnap.exists() && Math.random()<0.35){
+      if(shouldShare && !shareSnap.exists()){
         const allianceId=vendettaAllianceByPlayer[bot.uid];
         if(allianceId){
+          // Share the same planned move the bot will later submit for this round.
           await set(shareRef,{name:bot.name,move,allianceId,sharedAt:Date.now(),bot:true});
         }
       }
