@@ -823,7 +823,7 @@ const db = getDatabase(firebaseApp);
     2:{name:"⚡ Double Trouble",desc:"Base round points and prediction gains/losses are doubled."},
     4: {name:"🚫 No Predictions", desc:"Predictions are disabled this round. Choose your move and read the room without a prediction."},
     6: {name:"🔄 Reverse Rules", desc:"The usual matchups are reversed: Scissors beats Rock, Rock beats Paper, and Paper beats Scissors."},
-    7: {name:"🏆 Winner Takes the Round", desc:"Everyone earns Round 7 points normally, but the winning move takes the round's positive-point pot. If multiple players played the winning move, they split the pot. Negative points stay with the player who earned them. A draw keeps normal Round 7 scoring."}
+    7: {name:"🏆 Winner Takes the Round", desc:"Everyone earns Round 7 points normally, but the winning move takes the round's positive-point pot. If multiple players played the winning move, they split the pot equally and each share is rounded up to a whole point when needed. Negative points stay with the player who earned them. A draw keeps normal Round 7 scoring."}
   };
   let players = [], room = "", round = 1, selectedMove = null, targetId = null, predictedMove = null, timerInt = null, deadline = 0, selectedUsername = "", teamPowerArmed = false, activeTeamPower = null, scissorsTargetUid = null;
   let currentUser = null, roomUnsubscribe = null, isHost = false, onlineRoom = false;
@@ -831,6 +831,8 @@ const db = getDatabase(firebaseApp);
   let predictionMode = "optional"; // required = competitive, optional = casual with a 0-point score floor
   let soloModeActive = false;
   let vendettaModeActive=false, vendettaLayout="", vendettaAlliances={}, vendettaAllianceByPlayer={}, vendettaPlayerTeams={};
+  let sharedMoveThisRound=null, allySharesUnsubscribe=null;
+  const seenAllyShares=new Map();
   let lastRoundIntroShown=null, roundIntroTimer=null;
   function showRoundIntro(roundNumber){
     const n=Number(roundNumber||0);
@@ -1282,6 +1284,83 @@ const db = getDatabase(firebaseApp);
   function me() { return players.find(p => p.uid === currentUser?.uid); }
   function opponents() { return players.filter(p => p.uid !== currentUser?.uid); }
   function roundPath(n=round) { return `rooms/${room}/rounds/${n}`; }
+
+  function allyShareMessage(share){
+    const move=String(share?.move||"");
+    const name=String(share?.name||"An ally");
+    if(!moves.includes(move)) return "";
+    return `🤝 ${name} shared their move with your alliance: ${hands[move]} ${move[0].toUpperCase()+move.slice(1)}`;
+  }
+
+  function renderAllyShareNotices(shares={}){
+    const wrap=$("allyShareNotices");
+    if(!wrap || !vendettaModeActive || !currentUser) return;
+    const myAlliance=vendettaAllianceByPlayer[currentUser.uid];
+    const notices=Object.entries(shares||{})
+      .filter(([uid,share])=>uid!==currentUser.uid && share && share.allianceId===myAlliance && moves.includes(String(share.move||"")))
+      .sort((a,b)=>Number(a[1]?.sharedAt||0)-Number(b[1]?.sharedAt||0));
+    wrap.innerHTML=notices.length
+      ? notices.map(([,share])=>`<div style="padding:9px 10px;border:1px solid rgba(34,197,94,.38);background:rgba(34,197,94,.08);border-radius:10px;margin-top:7px;font-weight:800">${escapeHtml(allyShareMessage(share))}</div>`).join("")
+      : `<span class="muted">No allies have shared a move yet this round.</span>`;
+  }
+
+  function watchAllyShares(){
+    if(allySharesUnsubscribe){ try{allySharesUnsubscribe();}catch(_){} allySharesUnsubscribe=null; }
+    if(!vendettaModeActive || !room || !currentUser) return;
+    const watchedRound=round;
+    allySharesUnsubscribe=onValue(ref(db,`${roundPath(watchedRound)}/allyShares`),snap=>{
+      if(round!==watchedRound) return;
+      const shares=snap.val()||{};
+      renderAllyShareNotices(shares);
+      const myAlliance=vendettaAllianceByPlayer[currentUser.uid];
+      Object.entries(shares).forEach(([uid,share])=>{
+        if(uid===currentUser.uid || !share || share.allianceId!==myAlliance) return;
+        const key=`${room}:${watchedRound}:${uid}`;
+        const stamp=Number(share.sharedAt||0);
+        if(stamp && stamp>Number(seenAllyShares.get(key)||0)){
+          seenAllyShares.set(key,stamp);
+          const msg=allyShareMessage(share);
+          if(msg) toast(msg);
+        }
+      });
+    });
+  }
+
+  async function shareMoveWithAlliance(){
+    if(!vendettaModeActive || !currentUser || !selectedMove) return;
+    const allianceId=vendettaAllianceByPlayer[currentUser.uid];
+    if(!allianceId) return toast("You are not assigned to a Vendetta alliance yet.");
+    const player=me();
+    const share={name:player?.name||selectedUsername||"Player",move:selectedMove,allianceId,sharedAt:Date.now()};
+    await set(ref(db,`${roundPath()}/allyShares/${currentUser.uid}`),share);
+    sharedMoveThisRound=selectedMove;
+    const btn=$("shareMoveBtn");
+    if(btn) btn.textContent=`🤝 Shared ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)} — Share Again`;
+    toast(`Shared ${hands[selectedMove]} ${selectedMove[0].toUpperCase()+selectedMove.slice(1)} with your alliance.`);
+  }
+
+  async function prepareVendettaBotShares(){
+    if(!isHost || !vendettaModeActive || !room) return;
+    const bots=players.filter(p=>p.bot);
+    if(!bots.length) return;
+    const plansRef=ref(db,`${roundPath()}/botPlannedMoves`);
+    const existing=(await get(plansRef)).val()||{};
+    for(const bot of bots){
+      let move=existing[bot.uid];
+      if(!moves.includes(move)){
+        move=moves[Math.floor(Math.random()*3)];
+        await set(ref(db,`${roundPath()}/botPlannedMoves/${bot.uid}`),move);
+      }
+      const shareRef=ref(db,`${roundPath()}/allyShares/${bot.uid}`);
+      const shareSnap=await get(shareRef);
+      if(!shareSnap.exists() && Math.random()<0.35){
+        const allianceId=vendettaAllianceByPlayer[bot.uid];
+        if(allianceId){
+          await set(shareRef,{name:bot.name,move,allianceId,sharedAt:Date.now(),bot:true});
+        }
+      }
+    }
+  }
 
   function listenToRoom(code) {
     if (roomUnsubscribe) roomUnsubscribe();
@@ -2492,7 +2571,7 @@ async function refreshTeamPowerUI() {
     // (for example when another player locks in). Only clear this player's
     // unfinished choices when we are actually entering a NEW round.
     if (preparedRound !== round) {
-      selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null;
+      selectedMove=null; targetId=null; predictedMove=null; teamPowerArmed=false; scissorsTargetUid=null; diceRollThisRound=null; sharedMoveThisRound=null;
       soloCardDeck=[]; soloCardFlips=[]; soloCardMatched=[]; if(soloCupPreviewTimer){ clearTimeout(soloCupPreviewTimer); soloCupPreviewTimer=null; } soloCupMoves=[]; soloCupRevealed=false; soloCupPreviewDone=false; soloCupShuffling=false; soloCupRoundInitialized=0; soloCupShuffleCompletedRound=0; soloSpinnerRunning=false;
       soloPowerActive=false; soloQuickDrawDelay=220;
       preparedRound = round;
@@ -2526,6 +2605,10 @@ async function refreshTeamPowerUI() {
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
     renderMovePicker();
+    if(vendettaModeActive){
+      watchAllyShares();
+      prepareVendettaBotShares().catch(err=>console.warn("Could not prepare Vendetta bot move shares:",err));
+    }
     const diceModeBeforeRefresh=rollDiceModeActive;
     refreshRollDiceGameState()
       .then(()=>{
@@ -2550,6 +2633,13 @@ async function refreshTeamPowerUI() {
       ${vendettaModeActive && myVendettaAllianceName ? `
       <div style="margin:0 0 12px;padding:10px 12px;border:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.10);border-radius:12px;text-align:center">
         <strong style="color:#22c55e">⚔️ YOUR VENDETTA ALLIANCE: ${escapeHtml(myVendettaAllianceName)}</strong>
+      </div>` : ""}
+      ${vendettaModeActive && myVendettaAllianceName ? `
+      <div class="rule-card" style="margin-bottom:12px">
+        <strong>🤝 Alliance Move Sharing</strong>
+        <span class="muted">Sharing is optional and sends only your current Rock, Paper, or Scissors move to your allies. Predictions stay private. If you change your move later, share again if you want allies to see the update.</span>
+        <div id="allyShareNotices" style="margin-top:8px"><span class="muted">No allies have shared a move yet this round.</span></div>
+        <button class="btn secondary wide" id="shareMoveBtn" type="button" style="margin-top:9px" ${selectedMove?"":"disabled"}>${sharedMoveThisRound?`🤝 Shared ${hands[sharedMoveThisRound]} ${sharedMoveThisRound[0].toUpperCase()+sharedMoveThisRound.slice(1)} — Share Again`:"🤝 Share with Ally"}</button>
       </div>` : ""}
       ${soloModeActive ? ((round===1 || round===4) ? `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
@@ -3303,6 +3393,11 @@ async function refreshTeamPowerUI() {
       // Reversal always appears on this round's Choose Your Move screen.
       setTimeout(()=>refreshTeamPowerUI(),0);
     }
+    if(vendettaModeActive){
+      const shareBtn=$("shareMoveBtn");
+      if(shareBtn) shareBtn.onclick=shareMoveWithAlliance;
+      get(ref(db,`${roundPath()}/allyShares`)).then(snap=>renderAllyShareNotices(snap.val()||{})).catch(()=>{});
+    }
 
     const ready = !!selectedMove && (noPrediction || predictionMode==="optional" || (!!targetId && !!predictedMove));
     $("lockBtn").disabled=!ready;
@@ -3651,8 +3746,15 @@ async function refreshTeamPowerUI() {
             // Half, which stays available on NO EFFECT / BLOCKED).
           }
 
+          let botMove=moves[Math.floor(Math.random()*3)];
+          if(vendettaModeActive){
+            try{
+              const plannedSnap=await get(ref(db,`${roundPath()}/botPlannedMoves/${p.uid}`));
+              if(plannedSnap.exists() && moves.includes(plannedSnap.val())) botMove=plannedSnap.val();
+            }catch(error){ console.warn("Could not read planned Vendetta bot move",error); }
+          }
           completed[p.uid]={
-            move:moves[Math.floor(Math.random()*3)],
+            move:botMove,
             prediction,
             teamPower,
             teamPowerTarget,
