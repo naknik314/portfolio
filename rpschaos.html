@@ -3156,6 +3156,19 @@ async function refreshTeamPowerUI() {
             lockBtn.style.opacity=ready?"1":".5";
             lockBtn.onclick=()=>{ if(ready) submitTurn(); };
           }
+          // Quick Draw chooses the move without re-rendering the whole picker,
+          // so explicitly enable/update Vendetta move sharing here too.
+          if(vendettaModeActive){
+            const shareBtn=$("shareMoveBtn");
+            if(shareBtn){
+              shareBtn.disabled=false;
+              shareBtn.style.opacity="1";
+              shareBtn.textContent=sharedMoveThisRound
+                ? `🤝 Shared ${hands[sharedMoveThisRound]} ${sharedMoveThisRound[0].toUpperCase()+sharedMoveThisRound.slice(1)} — Share Again`
+                : "🤝 Share with Ally";
+              shareBtn.onclick=shareMoveWithAlliance;
+            }
+          }
           const waiting=$("waitingNote");
           if(waiting) waiting.textContent=soloModeActive
             ? `Quick Draw landed on ${landed[0].toUpperCase()+landed.slice(1)}. Lock your choice to continue.`
