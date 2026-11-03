@@ -658,7 +658,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
                 <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>3 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
-                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Computer teammates take fair turns and do not know hidden tiles.</span>
+                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
                 <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves before finding it and the challenge ends.</span>
                 <span style="margin-top:7px">❓ <b>Jokers:</b> three Team Unpredictable wildcards are hidden on the board. If found, a Joker counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
                 <span style="margin-top:7px"><b>75 CP entry:</b> only the host pays when each Countdown challenge starts. Clear the board and the 75 CP prize pool is split across the player slots.</span>
@@ -2072,6 +2072,50 @@ const db = getDatabase(firebaseApp);
     return players[(idx+1)%players.length]?.uid||players[0].uid;
   }
 
+  function countdownCanPass(state,uid){
+    if(!state || state.status!=="playing" || state.currentTurnUid!==uid) return false;
+    return !Boolean(state.passedThisTarget?.[uid]);
+  }
+
+  function applyCountdownPassToState(state,actorUid,isBot=false){
+    if(!countdownCanPass(state,actorUid)) return state;
+    if(!state.passedThisTarget) state.passedThisTarget={};
+    state.passedThisTarget[actorUid]=true;
+    const actor=players.find(p=>p.uid===actorUid);
+    const actorName=actor?.name||(isBot?"Computer teammate":"Player");
+    const nextUid=nextCountdownTurnUid(actorUid);
+    const nextPlayer=players.find(p=>p.uid===nextUid);
+    const allPassed=players.length>0 && players.every(p=>Boolean(state.passedThisTarget?.[p.uid]));
+    state.currentTurnUid=nextUid;
+    state.lastMessage=allPassed
+      ? `${actorName} passed. Everyone has now passed once for this target, so ${nextPlayer?.name||"the next player"} must reveal a tile.`
+      : `${actorName} passed the turn to ${nextPlayer?.name||"the next player"}. Passing costs 0 moves.`;
+    state.updatedAt=Date.now();
+    return state;
+  }
+
+  async function passCountdownTurn(){
+    if(!room || !currentUser || !countdownModeActive) return;
+    await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownPassToState(state,currentUser.uid,false));
+  }
+
+  function countdownBotShouldPass(state,botUid,target){
+    if(!countdownCanPass(state,botUid)) return false;
+    const teams=state.playerTeams||{};
+    const botTeam=teams[botUid]||"unassigned";
+    // Team Unpredictable is useful for any target because Jokers are its objective.
+    if(botTeam==="unassigned" || botTeam===target) return false;
+    // Pass only when a teammate whose team matches Find Next still has a pass/turn
+    // available in this hunt. This keeps bots cooperative without making them omniscient.
+    let uid=nextCountdownTurnUid(botUid);
+    for(let i=0;i<players.length-1;i++){
+      const p=players.find(x=>x.uid===uid);
+      if(p && (teams[uid]||"unassigned")===target && !state.passedThisTarget?.[uid]) return true;
+      uid=nextCountdownTurnUid(uid);
+    }
+    return false;
+  }
+
   async function loadCountdownPlayerTeams(){
     const allowed=["rock","paper","scissors","unassigned"];
     const result={};
@@ -2109,6 +2153,7 @@ const db = getDatabase(firebaseApp);
       status:"playing",
       currentTurnUid:firstCountdownTurnUid(),
       playerTeams,
+      passedThisTarget:{},
       revealsByPlayer,
       jokerFinders:{},
       jokerObjectiveCredits:{},
@@ -2199,6 +2244,9 @@ const db = getDatabase(firebaseApp);
       state.activeMove=step.activeMove;
       state.targetMove=step.targetMove;
       const target=step.targetMove;
+      if(countdownBotShouldPass(state,botUid,target)){
+        return applyCountdownPassToState(state,botUid,true);
+      }
       const revealedTarget=Object.entries(tiles).filter(([,t])=>!t.cleared && t.revealed && t.move===target);
       const hidden=Object.entries(tiles).filter(([,t])=>!t.cleared && !t.revealed);
       const choices=revealedTarget.length?revealedTarget:hidden;
@@ -2309,6 +2357,7 @@ const db = getDatabase(firebaseApp);
       state.activeMove=nextStep.activeMove;
       state.targetMove=nextStep.targetMove;
       state.movesUsed=0;
+      state.passedThisTarget={};
       const creditNote=jokerCredit?` For bonus objectives, Joker also counts as ${countdownTileIcons[jokerCredit.move]} ${jokerCredit.move[0].toUpperCase()+jokerCredit.move.slice(1)} for ${players.find(x=>x.uid===jokerCredit.uid)?.name||"that teammate"}.`:"";
       state.lastMessage=`${actorName} found the ❓ JOKER! It counted as ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}, so ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it. FREE MOVE — countdown reset.${creditNote}`;
       if(state.clearedCount>=COUNTDOWN_TILE_COUNT){
@@ -2324,6 +2373,7 @@ const db = getDatabase(firebaseApp);
       state.activeMove=nextStep.activeMove;
       state.targetMove=nextStep.targetMove;
       state.movesUsed=0;
+      state.passedThisTarget={};
       state.lastMessage=`${actorName} found ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} — ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it! Countdown reset.`;
       if(state.clearedCount>=COUNTDOWN_TILE_COUNT){
         state.status="won";
@@ -2479,10 +2529,11 @@ const db = getDatabase(firebaseApp);
           <div class="rule-card countdown-active-card" style="text-align:center"><strong>CHAIN</strong><div style="font-size:34px;font-weight:900;margin:7px 0;white-space:nowrap">🪨 → ✂️ → 📄 → 🪨</div><div class="muted" style="font-size:13px;margin-top:2px">❓ = Joker</div><div style="height:1px;background:var(--line);margin:13px 0 10px"></div><div style="font-size:10px;letter-spacing:.12em;font-weight:900;color:var(--muted);text-transform:uppercase">Your objective</div><div style="font-size:13px;font-weight:800;line-height:1.45;margin-top:6px">${escapeHtml(countdownObjectiveTextFor(currentUser?.uid,state))}</div></div>
           <div class="rule-card countdown-target-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:44px;margin:6px 0 2px">${countdownTileIcons[target]}</div><div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div><span style="margin-top:5px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span><div class="countdown-remaining">${remaining} move${remaining===1?"":"s"} left · ${used}/${COUNTDOWN_MOVES_PER_TARGET} used</div></div>
         </div>
-        <div class="rule-card" style="text-align:center"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span><div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
+        <div class="rule-card" style="text-align:center"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span>${isMyTurn?`<button type="button" class="btn secondary" id="countdownPassBtn" style="margin-top:10px" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"}>↪ Pass Turn</button><span class="muted" style="margin-top:6px;font-size:12px">${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"You already passed once for this target."}</span>`:""}<div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
         <div class="countdown-board">${tileHtml}</div>
-        <p class="note">Wrong tiles stay revealed so the whole team can use the same information. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
+        <p class="note">Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
+      if($("countdownPassBtn")) $("countdownPassBtn").onclick=passCountdownTurn;
       scheduleCountdownBotTurn(state);
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
