@@ -350,6 +350,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-tile:not(:disabled):hover{transform:translateY(-2px);border-color:var(--purple)}
 .countdown-tile.revealed{background:var(--panel);border-color:var(--mint)}
 .countdown-tile.cleared{opacity:.32;text-decoration:line-through;cursor:default}
+.countdown-tile.bot-selected{border-color:var(--pink);box-shadow:0 0 0 4px color-mix(in srgb,var(--pink) 22%,transparent);transform:translateY(-2px) scale(1.03)}
 .countdown-meter{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;margin-top:8px}
 .countdown-meter>div{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width .2s}
 .countdown-status-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px;margin:12px 0}
@@ -656,10 +657,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⏳ Countdown Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
-                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>5 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
-                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed to help the team remember the board. Computer teammates take fair turns and do not know hidden tiles.</span>
+                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>3 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
+                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Computer teammates take fair turns and do not know hidden tiles.</span>
                 <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves before finding it and the challenge ends.</span>
                 <span style="margin-top:7px">❓ <b>Joker:</b> one Team Unpredictable wildcard is hidden on the board. If found, it counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
+                <span style="margin-top:7px"><b>75 CP entry:</b> only the host pays when each Countdown challenge starts. Clear the board and the 75 CP prize pool is split across the player slots.</span>
+                <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals the Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
+                <span style="margin-top:7px"><b>Co-op reward boost:</b> every player who completes their bonus objective adds <b>+5 CP</b> to the shared prize pool before it is split. If two Team Unpredictable players share the Joker objective, that counts as two completed objectives.</span>
               </details>
               <button class="btn secondary wide" id="countdownModeBtn" style="margin-top:10px">⏳ Enable Countdown Mode</button>
               <span id="countdownModeStatus" class="muted" style="margin-top:7px"></span>
@@ -1998,6 +2002,11 @@ const db = getDatabase(firebaseApp);
 
 
   const COUNTDOWN_MOVES_PER_TARGET=3;
+  const COUNTDOWN_COST=75;
+  const COUNTDOWN_TEAM_BONUS=10;
+  const COUNTDOWN_UNPREDICTABLE_BONUS=15;
+  const COUNTDOWN_SHARED_OBJECTIVE_BONUS=5;
+  let countdownSettlementInFlight=false;
   const COUNTDOWN_RPS_TILE_COUNT=18;
   const COUNTDOWN_TILE_COUNT=19;
   const countdownTileIcons={rock:"🪨",paper:"📄",scissors:"✂️",joker:"❓"};
@@ -2050,14 +2059,46 @@ const db = getDatabase(firebaseApp);
     return players[(idx+1)%players.length]?.uid||players[0].uid;
   }
 
-  function freshCountdownState(){
+  async function loadCountdownPlayerTeams(){
+    const allowed=["rock","paper","scissors","unassigned"];
+    const result={};
+    const counts={rock:0,paper:0,scissors:0,unassigned:0};
+    for(const p of players.filter(p=>!p.bot)){
+      const snap=await get(ref(db,`profiles/${p.uid}`));
+      const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+      const team=allowed.includes(profile.team)?profile.team:"unassigned";
+      result[p.uid]=team;
+      counts[team]++;
+    }
+    // Computer teammates get a balanced team identity for Countdown's bonus
+    // objectives. They do not receive persistent CP, but their tile reveals can
+    // still compete in the board challenge and can trigger a shared Joker bonus.
+    for(const p of players.filter(p=>p.bot)){
+      const min=Math.min(...allowed.map(team=>counts[team]));
+      const choices=allowed.filter(team=>counts[team]===min);
+      const team=choices[Math.floor(Math.random()*choices.length)]||"unassigned";
+      result[p.uid]=team;
+      counts[team]++;
+    }
+    return result;
+  }
+
+  function freshCountdownState(playerTeams={}){
+    const revealsByPlayer={};
+    players.forEach(p=>revealsByPlayer[p.uid]={rock:0,paper:0,scissors:0,joker:0});
     return {
+      attemptId:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
       activeMove:"rock",
       targetMove:"scissors",
       movesUsed:0,
       clearedCount:0,
       status:"playing",
       currentTurnUid:firstCountdownTurnUid(),
+      playerTeams,
+      revealsByPlayer,
+      jokerFoundBy:null,
+      rewardPaid:false,
+      rewardSummary:null,
       tiles:shuffledCountdownTiles(),
       lastMessage:"Start with Rock. Find a Scissors tile before the countdown runs out.",
       updatedAt:Date.now()
@@ -2077,10 +2118,10 @@ const db = getDatabase(firebaseApp);
     countdownModeActive=Boolean(snap.exists() && snap.val()?.active);
     btn.disabled=!isHost;
     btn.style.opacity=isHost?"1":".5";
-    btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":"⏳ Enable Countdown Mode";
+    btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":`⏳ Enable Countdown Mode — ${COUNTDOWN_COST} CP to play`;
     status.textContent=countdownModeActive
-      ? "Co-op board active: 2–8 players share 3 moves per target. Bots take turns too."
-      : (isHost?"Co-op challenge for 2–8 players. No Chaos Point cost while the mode is being tested.":"Only the host can change Countdown Mode.");
+      ? `Co-op board active: 2–8 players share 3 moves per target. The host pays ${COUNTDOWN_COST} CP when each challenge starts.`
+      : (isHost?`Co-op challenge for 2–8 players. Only the host pays the ${COUNTDOWN_COST} CP entry when the challenge starts.`:"Only the host can change Countdown Mode.");
     const predictionSelect=$("predictionModeSelect");
     const predictionHelp=$("predictionModeHelp");
     if(predictionSelect){
@@ -2125,15 +2166,19 @@ const db = getDatabase(firebaseApp);
   function scheduleCountdownBotTurn(state){
     if(countdownBotTimer){ clearTimeout(countdownBotTimer); countdownBotTimer=null; }
     if(!isHost || !countdownModeActive || state?.status!=="playing") return;
+    if(state.botPendingTileId) return; // bot has selected a tile; wait for its reveal step
     const bot=players.find(p=>p.uid===state.currentTurnUid && p.bot);
     if(!bot) return;
-    countdownBotTimer=setTimeout(()=>countdownBotTakeTurn(bot.uid),650);
+    const holdUntil=Number(state.botResultHoldUntil||0);
+    const delay=Math.max(850,holdUntil-Date.now());
+    countdownBotTimer=setTimeout(()=>countdownBotTakeTurn(bot.uid),delay);
   }
 
   async function countdownBotTakeTurn(botUid){
     if(!isHost || !room) return;
+    let chosenTileId=null;
     await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
-      if(!state || state.status!=="playing" || state.currentTurnUid!==botUid) return state;
+      if(!state || state.status!=="playing" || state.currentTurnUid!==botUid || state.botPendingTileId) return state;
       const tiles=state.tiles||{};
       const step=countdownAvailableStep(state.activeMove||"rock",tiles);
       state.activeMove=step.activeMove;
@@ -2144,8 +2189,25 @@ const db = getDatabase(firebaseApp);
       const choices=revealedTarget.length?revealedTarget:hidden;
       if(!choices.length) return state;
       const [tileId]=choices[Math.floor(Math.random()*choices.length)];
-      return applyCountdownChoiceToState(state,tileId,botUid,true);
+      chosenTileId=tileId;
+      state.botPendingTileId=tileId;
+      const bot=players.find(p=>p.uid===botUid);
+      state.lastMessage=`${bot?.name||"Computer teammate"} selected a tile…`;
+      state.updatedAt=Date.now();
+      return state;
     });
+    if(!chosenTileId) return;
+    // Give everyone time to see which tile the bot picked before it flips.
+    countdownBotTimer=setTimeout(async()=>{
+      countdownBotTimer=null;
+      await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
+        if(!state || state.status!=="playing" || state.currentTurnUid!==botUid || state.botPendingTileId!==chosenTileId) return state;
+        state.botPendingTileId=null;
+        const next=applyCountdownChoiceToState(state,chosenTileId,botUid,true);
+        if(next?.status==="playing") next.botResultHoldUntil=Date.now()+1450;
+        return next;
+      });
+    },950);
   }
 
   function applyCountdownChoiceToState(state,tileId,actorUid,isBot=false){
@@ -2160,6 +2222,14 @@ const db = getDatabase(firebaseApp);
     if(tile.revealed && tile.move!==target) return state;
     const actor=players.find(p=>p.uid===actorUid);
     const actorName=actor?.name||(isBot?"Computer teammate":"Player");
+    const firstReveal=!tile.revealed;
+    if(firstReveal){
+      tile.revealedBy=actorUid;
+      if(!state.revealsByPlayer) state.revealsByPlayer={};
+      if(!state.revealsByPlayer[actorUid]) state.revealsByPlayer[actorUid]={rock:0,paper:0,scissors:0,joker:0};
+      state.revealsByPlayer[actorUid][tile.move]=Number(state.revealsByPlayer[actorUid][tile.move]||0)+1;
+      if(tile.move==="joker") state.jokerFoundBy=actorUid;
+    }
     tile.revealed=true;
     if(tile.move==="joker"){
       // ❓ Joker is a Team Unpredictable wildcard. It counts as whatever the
@@ -2210,6 +2280,82 @@ const db = getDatabase(firebaseApp);
     await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownChoiceToState(state,tileId,currentUser.uid,false));
   }
 
+  function countdownBaseShareForSeat(index,totalPlayers,pool=COUNTDOWN_COST){
+    const n=Math.max(1,Number(totalPlayers||1));
+    const totalPool=Math.max(0,Number(pool||0));
+    const base=Math.floor(totalPool/n);
+    const remainder=totalPool%n;
+    return base+(index<remainder?1:0);
+  }
+
+  function countdownBonusForPlayer(player,state){
+    const teams=state.playerTeams||{};
+    const reveals=state.revealsByPlayer||{};
+    const team=teams[player.uid]||"unassigned";
+    if(team==="unassigned"){
+      const finder=state.jokerFoundBy;
+      const jokerTriggered=Boolean(finder && teams[finder]==="unassigned");
+      return jokerTriggered?COUNTDOWN_UNPREDICTABLE_BONUS:0;
+    }
+    if(!["rock","paper","scissors"].includes(team)) return 0;
+    const leader=Math.max(0,...players.map(p=>Number(reveals[p.uid]?.[team]||0)));
+    const mine=Number(reveals[player.uid]?.[team]||0);
+    return leader>0 && mine===leader ? COUNTDOWN_TEAM_BONUS : 0;
+  }
+
+  function countdownObjectiveTextFor(uid,state){
+    const team=state.playerTeams?.[uid]||"unassigned";
+    if(team==="rock") return `🪨 Bonus objective: reveal the most Rock tiles for +${COUNTDOWN_TEAM_BONUS} CP.`;
+    if(team==="paper") return `📄 Bonus objective: reveal the most Paper tiles for +${COUNTDOWN_TEAM_BONUS} CP.`;
+    if(team==="scissors") return `✂️ Bonus objective: reveal the most Scissors tiles for +${COUNTDOWN_TEAM_BONUS} CP.`;
+    return `❓ Bonus objective: if any Team Unpredictable player finds the Joker, every Unpredictable player gets +${COUNTDOWN_UNPREDICTABLE_BONUS} CP.`;
+  }
+
+  async function settleCountdownRewards(state){
+    if(!isHost || !room || state?.status!=="won" || state?.rewardPaid || countdownSettlementInFlight) return;
+    countdownSettlementInFlight=true;
+    try{
+      // Re-read the authoritative state so a stale render cannot settle an old attempt.
+      const stateSnap=await get(ref(db,`rooms/${room}/countdownState`));
+      const latest=stateSnap.exists()?stateSnap.val():null;
+      if(!latest || latest.status!=="won" || latest.rewardPaid || latest.attemptId!==state.attemptId) return;
+      const completedObjectiveUids=players
+        .filter(p=>countdownBonusForPlayer(p,latest)>0)
+        .map(p=>p.uid);
+      const completedObjectives=completedObjectiveUids.length;
+      const sharedBoost=completedObjectives*COUNTDOWN_SHARED_OBJECTIVE_BONUS;
+      const sharedPool=COUNTDOWN_COST+sharedBoost;
+      const summary={};
+      for(let i=0;i<players.length;i++){
+        const p=players[i];
+        const baseShare=countdownBaseShareForSeat(i,players.length,sharedPool);
+        const bonus=countdownBonusForPlayer(p,latest);
+        // Bots occupy a player slot when the 75 CP pool is divided, but do not
+        // have persistent profiles and therefore do not collect CP.
+        const paidBase=p.bot?0:baseShare;
+        const paidBonus=p.bot?0:bonus;
+        const total=paidBase+paidBonus;
+        summary[p.uid]={name:p.name,bot:!!p.bot,team:latest.playerTeams?.[p.uid]||"unassigned",baseShare,basePaid:paidBase,bonus:paidBonus,total,objectiveCompleted:bonus>0,completedObjectives,sharedBoost,sharedPool};
+        if(p.bot || total<=0) continue;
+        const marker=String(latest.attemptId||"countdown").replace(/[.#$\[\]\/]/g,"_");
+        await runTransaction(ref(db,`profiles/${p.uid}`),raw=>{
+          const profile={...blankProfile(),...(raw||{})};
+          const rewards={...(profile.countdownRewards||{})};
+          if(rewards[marker]) return raw||profile;
+          const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+          rewards[marker]={room,base:paidBase,bonus:paidBonus,total,team:latest.playerTeams?.[p.uid]||"unassigned",objectiveCompleted:bonus>0,completedObjectives,sharedBoost,sharedPool,paidAt:Date.now()};
+          profile.chaosPoints=balance+total;
+          profile.countdownRewards=rewards;
+          profile.updatedAt=Date.now();
+          return profile;
+        });
+      }
+      await update(ref(db,`rooms/${room}/countdownState`),{rewardPaid:true,rewardSummary:summary,rewardPaidAt:Date.now()});
+    }finally{
+      countdownSettlementInFlight=false;
+    }
+  }
+
   function renderCountdownGame(state={}){
     show("game");
     clearInterval(timerInt);
@@ -2231,7 +2377,7 @@ const db = getDatabase(firebaseApp);
       const known=t.revealed||t.cleared;
       const canPick=isMyTurn && !t.cleared && (!t.revealed || t.move===target || t.move==="joker");
       const tileLabel=t.move==="joker"?"Joker":(t.move[0].toUpperCase()+t.move.slice(1));
-      return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${tileLabel} tile`:"Hidden tile"}">${t.cleared?`✓ ${countdownTileIcons[t.move]}`:(t.revealed?countdownTileIcons[t.move]:"?")}</button>`;
+      return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""} ${state.botPendingTileId===id?"bot-selected":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${tileLabel} tile`:"Hidden tile"}">${t.cleared?`✓ ${countdownTileIcons[t.move]}`:(t.revealed?countdownTileIcons[t.move]:"?")}</button>`;
     }).join("");
     if(state.status==="playing"){
       play.innerHTML=`
@@ -2240,22 +2386,40 @@ const db = getDatabase(firebaseApp);
           <div class="rule-card countdown-target-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:44px;margin:6px 0 2px">${countdownTileIcons[target]}</div><div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div><span style="margin-top:5px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span><div class="countdown-remaining">${remaining} move${remaining===1?"":"s"} left · ${used}/${COUNTDOWN_MOVES_PER_TARGET} used</div></div>
         </div>
         <div class="rule-card" style="text-align:center"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span><div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
+        <div class="rule-card" style="text-align:center;margin-top:12px"><strong>💠 YOUR COUNTDOWN BONUS</strong><span style="margin-top:5px">${escapeHtml(countdownObjectiveTextFor(currentUser?.uid,state))}</span></div>
         <div class="countdown-board">${tileHtml}</div>
-        <p class="note">Wrong tiles stay revealed so the whole team can remember them. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
+        <p class="note">Wrong tiles stay revealed so the whole team can use the same information. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
       scheduleCountdownBotTurn(state);
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
       const won=state.status==="won";
-      play.innerHTML=`<div class="rule-card" style="text-align:center;padding:26px"><div style="font-size:58px">${won?"🏆":"💥"}</div><h2 style="margin:8px 0">${won?"Countdown cleared!":"KABOOM — Countdown failed"}</h2><p class="muted">${escapeHtml(state.lastMessage||"")}</p><p><b>${Number(state.clearedCount||0)}/${COUNTDOWN_TILE_COUNT}</b> tiles cleared.</p>${isHost?`<div class="actions" style="justify-content:center"><button class="btn" id="countdownRetryBtn">Try Again ↻</button><button class="btn secondary" id="countdownLobbyBtn">Back to Lobby</button></div>`:`<p class="note">Waiting for the host to retry or return to the lobby.</p>`}</div>`;
+      if(won && isHost && !state.rewardPaid) settleCountdownRewards(state).catch(error=>console.warn("Countdown reward settlement failed",error));
+      const myReward=state.rewardSummary?.[currentUser?.uid];
+      const rewardHtml=won
+        ? (state.rewardPaid
+            ? (myReward
+                ? `<div class="rule-card" style="margin-top:14px"><strong>💠 YOUR COUNTDOWN REWARD</strong><span style="margin-top:6px">Shared pool: <b>${Number(myReward.sharedPool||COUNTDOWN_COST)} CP</b> (${Number(myReward.completedObjectives||0)} objective${Number(myReward.completedObjectives||0)===1?"":"s"} completed${Number(myReward.sharedBoost||0)>0?` · +${Number(myReward.sharedBoost||0)} CP co-op boost`:""})</span><span style="margin-top:4px">Prize share: <b>+${Number(myReward.basePaid||0)} CP</b>${Number(myReward.bonus||0)>0?` · Personal team bonus: <b>+${Number(myReward.bonus||0)} CP</b>`:""}</span><span style="margin-top:4px;font-size:18px"><b>Total: +${Number(myReward.total||0)} CP</b></span></div>`
+                : `<p class="note">Countdown rewards settled.</p>`)
+            : `<p class="note">Calculating Countdown CP rewards…</p>`)
+        : `<p class="note">No CP prize is awarded when the Countdown challenge fails.</p>`;
+      play.innerHTML=`<div class="rule-card" style="text-align:center;padding:26px"><div style="font-size:58px">${won?"🏆":"💥"}</div><h2 style="margin:8px 0">${won?"Countdown cleared!":"KABOOM — Countdown failed"}</h2><p class="muted">${escapeHtml(state.lastMessage||"")}</p><p><b>${Number(state.clearedCount||0)}/${COUNTDOWN_TILE_COUNT}</b> tiles cleared.</p>${rewardHtml}${isHost?`<div class="actions" style="justify-content:center"><button class="btn" id="countdownRetryBtn">Try Again — ${COUNTDOWN_COST} CP ↻</button><button class="btn secondary" id="countdownLobbyBtn">Back to Lobby</button></div>`:`<p class="note">Waiting for the host to retry or return to the lobby.</p>`}</div>`;
       if(isHost && $("countdownRetryBtn")) $("countdownRetryBtn").onclick=resetCountdownChallenge;
       if(isHost && $("countdownLobbyBtn")) $("countdownLobbyBtn").onclick=returnCountdownToLobby;
     }
   }
 
   async function resetCountdownChallenge(){
-    if(!isHost || !room) return;
-    await set(ref(db,`rooms/${room}/countdownState`),freshCountdownState());
+    if(!isHost || !room || !currentUser) return;
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const snap=await get(profileRef);
+    const profile=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
+    const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+    if(balance<COUNTDOWN_COST) return toast(`You need ${COUNTDOWN_COST} Chaos Points to try Countdown Mode again.`);
+    await update(profileRef,{chaosPoints:balance-COUNTDOWN_COST,updatedAt:Date.now()});
+    const teams=await loadCountdownPlayerTeams();
+    await set(ref(db,`rooms/${room}/countdownState`),freshCountdownState(teams));
+    toast(`⏳ New Countdown challenge — ${COUNTDOWN_COST} CP spent by the host.`);
   }
 
   async function returnCountdownToLobby(){
@@ -2274,8 +2438,16 @@ const db = getDatabase(firebaseApp);
     countdownModeActive=Boolean(countdownSnap.exists() && countdownSnap.val()?.active);
     if(countdownModeActive){
       if(players.length<2) return toast("Countdown Mode needs at least 2 players.");
-      const state=freshCountdownState();
+      const profileRef=ref(db,`profiles/${currentUser.uid}`);
+      const profileSnap=await get(profileRef);
+      const profile=profileSnap.exists()?{...blankProfile(),...profileSnap.val()}:blankProfile();
+      const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
+      if(balance<COUNTDOWN_COST) return toast(`You need ${COUNTDOWN_COST} Chaos Points to start Countdown Mode.`);
+      await update(profileRef,{chaosPoints:balance-COUNTDOWN_COST,updatedAt:Date.now()});
+      const teams=await loadCountdownPlayerTeams();
+      const state=freshCountdownState(teams);
       await update(ref(db,`rooms/${room}`),{status:"playing",round:1,countdownState:state,scores:null,rounds:null,updatedAt:Date.now()});
+      toast(`⏳ Countdown started — ${COUNTDOWN_COST} CP spent by the host.`);
       show("game");
       renderCountdownGame(state);
       return;
