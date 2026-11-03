@@ -4498,12 +4498,11 @@ async function refreshTeamPowerUI() {
           const usedSnap=await get(ref(db,`rooms/${room}/teamPowerUsed/${p.uid}`));
           const alreadyUsed=usedSnap.exists() && usedSnap.val()===true;
 
-          // Normal computer rivals follow the same once-per-game Team Power
-          // rule as human players. Chaos Bot Mode is the deliberate exception:
-          // Chaos Bots may activate a Team Power again in later rounds.
-          // They still use at most one power in a single round and Round 4
-          // remains power-free.
-          const botPowerAvailable=chaosBotMode || !alreadyUsed;
+          // Every computer rival follows the same once-per-game Team Power
+          // rule as human players, including Chaos Bot Mode. A blocked or
+          // no-effect Cut in Half may still be retained under the normal rule,
+          // but a successfully consumed power cannot be used again this game.
+          const botPowerAvailable=!alreadyUsed;
           const useChance=chaosBotMode?(round>=7?1:round>=6?.92:round>=5?.72:round>=3?.50:.30):(round>=7?1:round>=6?.80:round>=5?.55:round>=3?.32:.18);
           let teamPower=null, teamPowerTarget=null;
 
@@ -5151,37 +5150,31 @@ async function refreshTeamPowerUI() {
       // "Round resolution error".
       const powerStateUpdates={};
 
-      // Normal computer rivals get only ONE Team Power per game, exactly like
-      // human players. Chaos Bot Mode is the only exception. Bot submissions
-      // are created by the host, so the resolver must persist their consumed
-      // state here rather than relying on the human submission UI.
-      if(!resolverChaosBotMode){
-        players.filter(p=>p.bot).forEach(p=>{
-          const submittedPower=submissions[p.uid]?.teamPower;
-          if(!submittedPower) return;
+      // Every computer rival gets ONE Team Power per game, including Chaos Bots.
+      // Bot submissions are created by the host, so the resolver persists their
+      // consumed state here rather than relying on the human submission UI.
+      players.filter(p=>p.bot).forEach(p=>{
+        const submittedPower=submissions[p.uid]?.teamPower;
+        if(!submittedPower) return;
 
-          // Cut in Half is special: BLOCKED / NO EFFECT keeps the power.
-          if(submittedPower==="scissors"){
-            if(successfulScissorsPower.includes(p.uid)){
-              powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
-            }else if(restoreScissorsPower.includes(p.uid)){
-              powerStateUpdates[`teamPowerUsed/${p.uid}`]=false;
-            }
-          }else{
-            // Barricade, Reprint, and swapped bot powers are consumed when
-            // activated under the current normal-game rules.
+        // Cut in Half is special: BLOCKED / NO EFFECT keeps the power.
+        if(submittedPower==="scissors"){
+          if(successfulScissorsPower.includes(p.uid)){
             powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
+          }else if(restoreScissorsPower.includes(p.uid)){
+            powerStateUpdates[`teamPowerUsed/${p.uid}`]=false;
           }
-        });
-      }
+        }else{
+          // Barricade, Reprint, and swapped bot powers are consumed when used.
+          powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
+        }
+      });
 
       // Keep Cut in Half bookkeeping authoritative for human players too.
       successfulScissorsPower.forEach(uid=>{
-        if(resolverChaosBotMode && players.find(p=>p.uid===uid)?.bot) return;
         powerStateUpdates[`teamPowerUsed/${uid}`]=true;
       });
       restoreScissorsPower.forEach(uid=>{
-        if(resolverChaosBotMode && players.find(p=>p.uid===uid)?.bot) return;
         powerStateUpdates[`teamPowerUsed/${uid}`]=false;
       });
       if(Object.keys(powerStateUpdates).length){
@@ -5268,21 +5261,6 @@ async function refreshTeamPowerUI() {
   function renderReveal(details,reverse,basePoints,attachNext=true,playedMoves={},revealWinner="Draw!",roundPoints={},resultScores={}) {
     stopLockedInRecovery();
     try{ window.scrollTo({top:0,left:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
-    // Chaos Bots can reuse Team Powers in later rounds, so their power is
-    // never described as USED UP. Keep the success/no-effect result, but
-    // replace any consumed-power status with a Chaos Bot reusable status.
-    if(chaosBotModeActive){
-      const chaosBotNames=new Set(players.filter(p=>p.bot).map(p=>p.name));
-      details=(details||[]).map(line=>{
-        let text=String(line||"");
-        chaosBotNames.forEach(name=>{
-          if(!text.includes(name)) return;
-          text=text.replace(/\s*🔒\s*(🪨 Barricade|📄 Reprint|✂️ Cut in Half|🪨 Stonewall|📄 Misprint|✂️ Cut Your Losses) USED UP[^.]*\.?/g,
-            ` ♻️ $1 AVAILABLE AGAIN${round===7?".":" in a later round."}`);
-        });
-        return text;
-      });
-    }
 
     // Round 7 has no later round. Clean power availability wording here as
     // well as during resolution so reconnecting to an older stored result
@@ -5827,7 +5805,7 @@ async function refreshTeamPowerUI() {
 
       let headline, detail;
       if(current==="unassigned"){
-        headline="🎲 You’re Team Unpredictable!";
+        headline="❓ You’re Team Unpredictable!";
         detail="Play more games to unlock Team Rock, Team Paper, or Team Scissors.";
       } else if(previous==="unassigned"){
         headline=`${currentMeta.icon} You joined ${currentMeta.label}!`;
