@@ -556,6 +556,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <div class="rule-card">
               <strong>💠 Chaos Points Extras</strong>
               <span style="margin-top:6px">Use Chaos Points for optional game features before the match starts.</span>
+              <div id="lobbyChaosPointsBalance" style="margin-top:10px;font-size:20px;font-weight:900;color:var(--purple)">Current balance: — CP</div>
               <button class="btn secondary wide" id="openChaosPoints" style="margin-top:10px">Choose Chaos Points extras →</button>
             </div>
 
@@ -1644,6 +1645,7 @@ const db = getDatabase(firebaseApp);
 
   function renderLobby() {
     refreshLobbyTeamCard();
+    refreshChaosPointsPageBalance().catch(console.warn);
     $("roomCode").textContent = room;
     $("playerCount").textContent = `${players.length}/8`;
     $("lobbyPlayers").innerHTML = players.map(p => {
@@ -6228,16 +6230,20 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
   };
 
   async function refreshChaosPointsPageBalance(){
-    const el=$("chaosPointsPageBalance");
-    if(!el || !currentUser) return;
+    const storeEl=$("chaosPointsPageBalance");
+    const lobbyEl=$("lobbyChaosPointsBalance");
+    if((!storeEl && !lobbyEl) || !currentUser) return;
     try{
       const snap=await get(ref(db,`profiles/${currentUser.uid}`));
       const p=snap.exists()?snap.val():blankProfile();
       const cp=Number(p.chaosPoints==null ? (p.totalPoints||0) : p.chaosPoints);
-      el.textContent=`Current balance: ${cp} CP`;
+      const text=`Current balance: ${cp} CP`;
+      if(storeEl) storeEl.textContent=text;
+      if(lobbyEl) lobbyEl.textContent=text;
     }catch(e){
       console.error(e);
-      el.textContent="Current balance unavailable";
+      if(storeEl) storeEl.textContent="Current balance unavailable";
+      if(lobbyEl) lobbyEl.textContent="Current balance unavailable";
     }
   }
 
