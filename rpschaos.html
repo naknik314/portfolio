@@ -663,7 +663,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <span style="margin-top:7px">❓ <b>Joker:</b> one Team Unpredictable wildcard is hidden on the board. If found, it counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
                 <span style="margin-top:7px"><b>75 CP entry:</b> only the host pays when each Countdown challenge starts. Clear the board and the 75 CP prize pool is split across the player slots.</span>
                 <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals the Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
-                <span style="margin-top:7px"><b>Co-op reward boost:</b> every player who completes their bonus objective adds <b>+5 CP</b> to the shared prize pool before it is split. If two Team Unpredictable players share the Joker objective, that counts as two completed objectives.</span>
+                <span style="margin-top:7px"><b>Co-op reward boost:</b> every player who completes their bonus objective adds <b>+5 CP</b> to the shared prize pool before it is split. If two Team Unpredictable players share a Joker objective, that counts as two completed objectives.</span>
               </details>
               <button class="btn secondary wide" id="countdownModeBtn" style="margin-top:10px">⏳ Enable Countdown Mode</button>
               <span id="countdownModeStatus" class="muted" style="margin-top:7px"></span>
@@ -1454,7 +1454,7 @@ const db = getDatabase(firebaseApp);
         return;
       }
       if (data.status === "playing") {
-        if(countdownModeActive){
+        if(countdownModeActive || data.countdownState){
           show("game");
           renderCountdownGame(data.countdownState||{});
           return;
@@ -2007,8 +2007,9 @@ const db = getDatabase(firebaseApp);
   const COUNTDOWN_UNPREDICTABLE_BONUS=15;
   const COUNTDOWN_SHARED_OBJECTIVE_BONUS=5;
   let countdownSettlementInFlight=false;
-  const COUNTDOWN_RPS_TILE_COUNT=18;
-  const COUNTDOWN_TILE_COUNT=19;
+  const COUNTDOWN_RPS_TILE_COUNT=15;
+  const COUNTDOWN_JOKER_COUNT=3;
+  const COUNTDOWN_TILE_COUNT=18;
   const countdownTileIcons={rock:"🪨",paper:"📄",scissors:"✂️",joker:"❓"};
 
   function countdownTargetFor(activeMove){
@@ -2037,16 +2038,19 @@ const db = getDatabase(firebaseApp);
   }
 
   function shuffledCountdownTiles(){
+    // 18 total tiles in a clean 3x6 board: 5 Rock, 5 Paper, 5 Scissors, 3 Jokers.
     const pool=[];
-    for(let i=0;i<COUNTDOWN_RPS_TILE_COUNT/3;i++) pool.push("rock","paper","scissors");
-    pool.push("joker");
+    ["rock","paper","scissors"].forEach(move=>{
+      for(let i=0;i<5;i++) pool.push(move);
+    });
+    for(let i=0;i<COUNTDOWN_JOKER_COUNT;i++) pool.push("joker");
     for(let i=pool.length-1;i>0;i--){
       const j=Math.floor(Math.random()*(i+1));
       [pool[i],pool[j]]=[pool[j],pool[i]];
     }
     const tiles={};
     pool.forEach((move,i)=>tiles[`tile_${i+1}`]={move,revealed:false,cleared:false});
-    return tiles;
+    return {tiles};
   }
 
   function firstCountdownTurnUid(){
@@ -2086,6 +2090,7 @@ const db = getDatabase(firebaseApp);
   function freshCountdownState(playerTeams={}){
     const revealsByPlayer={};
     players.forEach(p=>revealsByPlayer[p.uid]={rock:0,paper:0,scissors:0,joker:0});
+    const board=shuffledCountdownTiles();
     return {
       attemptId:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
       activeMove:"rock",
@@ -2096,10 +2101,11 @@ const db = getDatabase(firebaseApp);
       currentTurnUid:firstCountdownTurnUid(),
       playerTeams,
       revealsByPlayer,
-      jokerFoundBy:null,
+      jokerFinders:{},
+      jokerObjectiveCredits:{},
       rewardPaid:false,
       rewardSummary:null,
-      tiles:shuffledCountdownTiles(),
+      tiles:board.tiles,
       lastMessage:"Start with Rock. Find a Scissors tile before the countdown runs out.",
       updatedAt:Date.now()
     };
@@ -2132,6 +2138,7 @@ const db = getDatabase(firebaseApp);
     if(predictionHelp && countdownModeActive) predictionHelp.textContent="Predictions are unavailable in Countdown Mode.";
     const start=$("startBtn");
     if(start) start.textContent=countdownModeActive?"Start Countdown Mode →":(soloModeActive?"Start Solo Mode →":"Start 7-round game →");
+    applyCountdownStoreLock();
   }
 
   async function toggleCountdownMode(){
@@ -2161,6 +2168,7 @@ const db = getDatabase(firebaseApp);
     await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
     await refreshVendettaLobby();
+    applyCountdownStoreLock();
   }
 
   function scheduleCountdownBotTurn(state){
@@ -2200,14 +2208,63 @@ const db = getDatabase(firebaseApp);
     // Give everyone time to see which tile the bot picked before it flips.
     countdownBotTimer=setTimeout(async()=>{
       countdownBotTimer=null;
-      await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
+      const result=await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
         if(!state || state.status!=="playing" || state.currentTurnUid!==botUid || state.botPendingTileId!==chosenTileId) return state;
         state.botPendingTileId=null;
         const next=applyCountdownChoiceToState(state,chosenTileId,botUid,true);
         if(next?.status==="playing") next.botResultHoldUntil=Date.now()+1450;
         return next;
       });
+      const next=result?.snapshot?.val?.();
+      if(next && next.status!=="playing") await autoDisableCountdownAfterAttempt(next);
     },950);
+  }
+
+  function countdownObjectiveCount(uid,move,state){
+    let count=Number(state.revealsByPlayer?.[uid]?.[move]||0);
+    Object.values(state.jokerObjectiveCredits||{}).forEach(credit=>{
+      if(credit?.uid===uid && credit?.move===move) count+=1;
+    });
+    return count;
+  }
+
+  function assignCountdownJokerObjectiveCredit(state,finderUid,tileId){
+    const teams=state.playerTeams||{};
+    const finderTeam=teams[finderUid]||"unassigned";
+    if(!state.jokerObjectiveCredits) state.jokerObjectiveCredits={};
+
+    // Rock/Paper/Scissors players can use a Joker as one tile of their own
+    // team move for the personal objective.
+    if(["rock","paper","scissors"].includes(finderTeam)){
+      const credit={uid:finderUid,move:finderTeam,reason:"finderTeam"};
+      state.jokerObjectiveCredits[tileId]=credit;
+      return credit;
+    }
+
+    // Team Unpredictable can make a Joker count as any R/P/S objective tile.
+    // Assign each Joker where one extra credit helps the co-op most.
+    if(finderTeam==="unassigned"){
+      const candidates=players.filter(p=>["rock","paper","scissors"].includes(teams[p.uid]));
+      if(!candidates.length) return null;
+      let best=null;
+      candidates.forEach(p=>{
+        const move=teams[p.uid];
+        const mine=countdownObjectiveCount(p.uid,move,state);
+        const otherLeader=Math.max(0,...players.filter(o=>o.uid!==p.uid).map(o=>countdownObjectiveCount(o.uid,move,state)));
+        const completesAfter=(mine+1)>0 && (mine+1)>=otherLeader;
+        const completesBefore=mine>0 && mine>=otherLeader;
+        const createsCompletion=completesAfter && !completesBefore;
+        const gap=Math.max(0,otherLeader-mine);
+        const score=(createsCompletion?1000:0)-gap;
+        if(!best || score>best.score) best={uid:p.uid,move,score};
+      });
+      if(best){
+        const credit={uid:best.uid,move:best.move,reason:"unpredictableWild"};
+        state.jokerObjectiveCredits[tileId]=credit;
+        return credit;
+      }
+    }
+    return null;
   }
 
   function applyCountdownChoiceToState(state,tileId,actorUid,isBot=false){
@@ -2228,7 +2285,10 @@ const db = getDatabase(firebaseApp);
       if(!state.revealsByPlayer) state.revealsByPlayer={};
       if(!state.revealsByPlayer[actorUid]) state.revealsByPlayer[actorUid]={rock:0,paper:0,scissors:0,joker:0};
       state.revealsByPlayer[actorUid][tile.move]=Number(state.revealsByPlayer[actorUid][tile.move]||0)+1;
-      if(tile.move==="joker") state.jokerFoundBy=actorUid;
+      if(tile.move==="joker"){
+        if(!state.jokerFinders) state.jokerFinders={};
+        state.jokerFinders[tileId]=actorUid;
+      }
     }
     tile.revealed=true;
     if(tile.move==="joker"){
@@ -2237,13 +2297,15 @@ const db = getDatabase(firebaseApp);
       // the RPS chain.
       tile.cleared=true;
       state.clearedCount=Number(state.clearedCount||0)+1;
+      const jokerCredit=assignCountdownJokerObjectiveCredit(state,actorUid,tileId);
       const oldActive=state.activeMove||"rock";
       state.activeMove=target;
       const nextStep=countdownAvailableStep(state.activeMove,tiles);
       state.activeMove=nextStep.activeMove;
       state.targetMove=nextStep.targetMove;
       state.movesUsed=0;
-      state.lastMessage=`${actorName} found the ❓ JOKER! It counted as ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}, so ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it. FREE MOVE — countdown reset.`;
+      const creditNote=jokerCredit?` For bonus objectives, Joker also counts as ${countdownTileIcons[jokerCredit.move]} ${jokerCredit.move[0].toUpperCase()+jokerCredit.move.slice(1)} for ${players.find(x=>x.uid===jokerCredit.uid)?.name||"that teammate"}.`:"";
+      state.lastMessage=`${actorName} found the ❓ JOKER! It counted as ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}, so ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it. FREE MOVE — countdown reset.${creditNote}`;
       if(state.clearedCount>=COUNTDOWN_TILE_COUNT){
         state.status="won";
         state.lastMessage="BOARD CLEARED! Your team completed the whole RPS chain.";
@@ -2275,9 +2337,20 @@ const db = getDatabase(firebaseApp);
     return state;
   }
 
+  async function autoDisableCountdownAfterAttempt(state){
+    if(!room || !state || !["won","failed"].includes(state.status)) return;
+    const modeSnap=await get(ref(db,`rooms/${room}/countdownMode`));
+    if(modeSnap.exists() && modeSnap.val()?.active){
+      await update(ref(db,`rooms/${room}`),{countdownMode:null,updatedAt:Date.now()});
+    }
+    countdownModeActive=false;
+  }
+
   async function chooseCountdownTile(tileId){
     if(!room || !currentUser || !countdownModeActive) return;
-    await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownChoiceToState(state,tileId,currentUser.uid,false));
+    const result=await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownChoiceToState(state,tileId,currentUser.uid,false));
+    const next=result?.snapshot?.val?.();
+    if(next && next.status!=="playing") await autoDisableCountdownAfterAttempt(next);
   }
 
   function countdownBaseShareForSeat(index,totalPlayers,pool=COUNTDOWN_COST){
@@ -2293,22 +2366,21 @@ const db = getDatabase(firebaseApp);
     const reveals=state.revealsByPlayer||{};
     const team=teams[player.uid]||"unassigned";
     if(team==="unassigned"){
-      const finder=state.jokerFoundBy;
-      const jokerTriggered=Boolean(finder && teams[finder]==="unassigned");
+      const jokerTriggered=Object.values(state.jokerFinders||{}).some(uid=>teams[uid]==="unassigned");
       return jokerTriggered?COUNTDOWN_UNPREDICTABLE_BONUS:0;
     }
     if(!["rock","paper","scissors"].includes(team)) return 0;
-    const leader=Math.max(0,...players.map(p=>Number(reveals[p.uid]?.[team]||0)));
-    const mine=Number(reveals[player.uid]?.[team]||0);
+    const leader=Math.max(0,...players.map(p=>countdownObjectiveCount(p.uid,team,state)));
+    const mine=countdownObjectiveCount(player.uid,team,state);
     return leader>0 && mine===leader ? COUNTDOWN_TEAM_BONUS : 0;
   }
 
   function countdownObjectiveTextFor(uid,state){
     const team=state.playerTeams?.[uid]||"unassigned";
-    if(team==="rock") return `🪨 Bonus objective: reveal the most Rock tiles for +${COUNTDOWN_TEAM_BONUS} CP.`;
-    if(team==="paper") return `📄 Bonus objective: reveal the most Paper tiles for +${COUNTDOWN_TEAM_BONUS} CP.`;
-    if(team==="scissors") return `✂️ Bonus objective: reveal the most Scissors tiles for +${COUNTDOWN_TEAM_BONUS} CP.`;
-    return `❓ Bonus objective: if any Team Unpredictable player finds the Joker, every Unpredictable player gets +${COUNTDOWN_UNPREDICTABLE_BONUS} CP.`;
+    if(team==="rock") return `🪨 Bonus objective: reveal the most Rock tiles for +${COUNTDOWN_TEAM_BONUS} CP. If you find a ❓ Joker, it can count as Rock for your objective.`;
+    if(team==="paper") return `📄 Bonus objective: reveal the most Paper tiles for +${COUNTDOWN_TEAM_BONUS} CP. If you find a ❓ Joker, it can count as Paper for your objective.`;
+    if(team==="scissors") return `✂️ Bonus objective: reveal the most Scissors tiles for +${COUNTDOWN_TEAM_BONUS} CP. If you find a ❓ Joker, it can count as Scissors for your objective.`;
+    return `❓ Bonus objective: if any Team Unpredictable player finds a Joker, every Unpredictable player gets +${COUNTDOWN_UNPREDICTABLE_BONUS} CP. Each Joker you find can also count as Rock, Paper, or Scissors objective credit wherever it helps the co-op most.`;
   }
 
   async function settleCountdownRewards(state){
@@ -2417,13 +2489,15 @@ const db = getDatabase(firebaseApp);
     if(balance<COUNTDOWN_COST) return toast(`You need ${COUNTDOWN_COST} Chaos Points to try Countdown Mode again.`);
     await update(profileRef,{chaosPoints:balance-COUNTDOWN_COST,updatedAt:Date.now()});
     const teams=await loadCountdownPlayerTeams();
-    await set(ref(db,`rooms/${room}/countdownState`),freshCountdownState(teams));
+    await update(ref(db,`rooms/${room}`),{countdownMode:{active:true,enabledBy:currentUser.uid,enabledAt:Date.now()},countdownState:freshCountdownState(teams),updatedAt:Date.now()});
+    countdownModeActive=true;
     toast(`⏳ New Countdown challenge — ${COUNTDOWN_COST} CP spent by the host.`);
   }
 
   async function returnCountdownToLobby(){
     if(!isHost || !room) return;
-    await update(ref(db,`rooms/${room}`),{status:"lobby",countdownState:null,updatedAt:Date.now()});
+    await update(ref(db,`rooms/${room}`),{status:"lobby",countdownMode:null,countdownState:null,updatedAt:Date.now()});
+    countdownModeActive=false;
   }
 
   async function startGame() {
@@ -2506,6 +2580,27 @@ const db = getDatabase(firebaseApp);
         btn.style.cursor="";
         btn.title="";
       }
+    });
+  }
+
+  function applyCountdownStoreLock(){
+    if(!countdownModeActive) return;
+    const lockedIds=["soloModeBtn","rollDiceBtn","chaosBotBtn","vendettaModeBtn","doubleAgentBtn","powerReversalBtn"];
+    lockedIds.forEach(id=>{
+      const btn=$(id);
+      if(!btn) return;
+      btn.disabled=true;
+      btn.setAttribute("aria-disabled","true");
+      btn.style.opacity=".5";
+      btn.style.cursor="not-allowed";
+      btn.title="Unavailable while Countdown Mode is selected.";
+    });
+    ["doubleAgentPowerSelect","vendettaLayoutSelect"].forEach(id=>{
+      const control=$(id);
+      if(!control) return;
+      control.disabled=true;
+      control.style.opacity=".55";
+      control.title="Unavailable while Countdown Mode is selected.";
     });
   }
 
@@ -6131,6 +6226,7 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
     await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
     await refreshRollDiceLobby();
+    applyCountdownStoreLock();
   }
 
   function returnFromChaosPoints(){
