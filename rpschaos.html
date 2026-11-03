@@ -1994,6 +1994,7 @@ const db = getDatabase(firebaseApp);
 
   const COUNTDOWN_MOVES_PER_TARGET=10;
   const COUNTDOWN_TILE_COUNT=18;
+  const countdownTileIcons={rock:"🪨",paper:"📄",scissors:"✂️"};
 
   function countdownTargetFor(activeMove){
     return activeMove==="rock"?"scissors":activeMove==="scissors"?"paper":"rock";
@@ -2137,17 +2138,17 @@ const db = getDatabase(firebaseApp);
       state.activeMove=target;
       state.targetMove=countdownTargetFor(target);
       state.movesUsed=0;
-      state.lastMessage=`${actorName} found ${hands[target]} ${target[0].toUpperCase()+target.slice(1)} — ${hands[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it! Countdown reset.`;
+      state.lastMessage=`${actorName} found ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} — ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it! Countdown reset.`;
       if(state.clearedCount>=COUNTDOWN_TILE_COUNT){
         state.status="won";
         state.lastMessage="BOARD CLEARED! Your team completed the whole RPS chain.";
       }
     }else{
       state.movesUsed=Number(state.movesUsed||0)+1;
-      state.lastMessage=`${actorName} revealed ${hands[tile.move]} ${tile.move[0].toUpperCase()+tile.move.slice(1)}. Keep looking for ${hands[target]} ${target[0].toUpperCase()+target.slice(1)}.`;
+      state.lastMessage=`${actorName} revealed ${countdownTileIcons[tile.move]} ${tile.move[0].toUpperCase()+tile.move.slice(1)}. Keep looking for ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}.`;
       if(state.movesUsed>=COUNTDOWN_MOVES_PER_TARGET){
         state.status="failed";
-        state.lastMessage=`KABOOM! The team did not find ${hands[target]} ${target[0].toUpperCase()+target.slice(1)} within 10 moves.`;
+        state.lastMessage=`KABOOM! The team did not find ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} within 10 moves.`;
       }
     }
     if(state.status==="playing") state.currentTurnUid=nextCountdownTurnUid(actorUid);
@@ -2168,23 +2169,24 @@ const db = getDatabase(firebaseApp);
     const target=state.targetMove||countdownTargetFor(active);
     const used=Math.max(0,Number(state.movesUsed||0));
     const remaining=Math.max(0,COUNTDOWN_MOVES_PER_TARGET-used);
+    const tilesLeft=Math.max(0,COUNTDOWN_TILE_COUNT-Number(state.clearedCount||0));
     const current=players.find(p=>p.uid===state.currentTurnUid);
     const isMyTurn=state.status==="playing" && state.currentTurnUid===currentUser?.uid;
-    $("timer").textContent=state.status==="playing"?`${remaining} LEFT`:state.status==="won"?"CLEARED":"GAME OVER";
-    $("progressFill").style.width=`${Math.max(0,remaining/COUNTDOWN_MOVES_PER_TARGET*100)}%`;
+    $("timer").textContent=state.status==="playing"?`${tilesLeft} TILES LEFT`:state.status==="won"?"0 TILES LEFT":"GAME OVER";
+    $("progressFill").style.width=`${Math.max(0,Number(state.clearedCount||0)/COUNTDOWN_TILE_COUNT*100)}%`;
     const top=$("topRoundModifier");
     if(top) top.innerHTML=`<b>⏳ Countdown Mode</b><span>Co-op board · ${Number(state.clearedCount||0)}/${COUNTDOWN_TILE_COUNT} tiles cleared</span>`;
     const tiles=state.tiles||{};
     const tileHtml=Object.entries(tiles).map(([id,t])=>{
       const known=t.revealed||t.cleared;
       const canPick=isMyTurn && !t.cleared && (!t.revealed || t.move===target);
-      return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${t.move} tile`:"Hidden tile"}">${t.cleared?`✓ ${hands[t.move]}`:(t.revealed?hands[t.move]:"?")}</button>`;
+      return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${t.move} tile`:"Hidden tile"}">${t.cleared?`✓ ${countdownTileIcons[t.move]}`:(t.revealed?countdownTileIcons[t.move]:"?")}</button>`;
     }).join("");
     if(state.status==="playing"){
       play.innerHTML=`
         <div class="countdown-status-grid">
-          <div class="rule-card" style="text-align:center"><strong>ACTIVE MOVE</strong><div style="font-size:34px;margin:7px 0">${hands[active]}</div><span>${active[0].toUpperCase()+active.slice(1)}</span></div>
-          <div class="rule-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:34px;margin:7px 0">${hands[target]}</div><span>${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} ${target[0].toUpperCase()+target.slice(1)}</span></div>
+          <div class="rule-card" style="text-align:center"><strong>ACTIVE MOVE</strong><div style="font-size:34px;margin:7px 0">${countdownTileIcons[active]}</div><span>${active[0].toUpperCase()+active.slice(1)}</span></div>
+          <div class="rule-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:34px;margin:7px 0">${countdownTileIcons[target]}</div><span>${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} ${target[0].toUpperCase()+target.slice(1)}</span></div>
           <div class="rule-card" style="text-align:center"><strong>COUNTDOWN</strong><div style="font-size:34px;font-weight:950;margin:7px 0">${remaining}</div><span>${used}/10 team moves used</span></div>
         </div>
         <div class="rule-card" style="text-align:center"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span><div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
