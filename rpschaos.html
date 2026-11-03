@@ -1841,22 +1841,63 @@ const db = getDatabase(firebaseApp);
       members.push({uid:p.uid,name:p.name,bot:true,team,rank:0,vendettaWins:0});
     }
 
-    // Keep same-team players together where possible, then fill open alliance slots.
-    const buckets={rock:[],paper:[],scissors:[],unassigned:[]};
-    members.forEach(m=>(buckets[m.team]||buckets.unassigned).push(m));
-    const ordered=Object.values(buckets).sort((a,b)=>b.length-a.length);
-    const groups=sizes.map((size,i)=>({id:`a${i+1}`,size,members:[]}));
-    ordered.forEach(bucket=>{
-      bucket.forEach(m=>{
-        const candidates=groups.filter(g=>g.members.length<g.size);
-        candidates.sort((a,b)=>{
-          const asame=a.members.filter(x=>x.team===m.team).length;
-          const bsame=b.members.filter(x=>x.team===m.team).length;
-          return bsame-asame || (b.size-b.members.length)-(a.size-a.members.length);
-        });
-        candidates[0].members.push(m);
+    // Build the whole Vendetta layout at once instead of greedily filling one
+    // alliance at a time. With only 4-8 players, a small backtracking search is
+    // cheap and avoids leftovers such as two mixed 1-1 alliances in 2v2v2.
+    // Prefer clear dominant team identities, fewer Unknowns, and distinct names.
+    function scoreVendettaGrouping(groups){
+      const names=groups.map(g=>chooseVendettaAllianceName(g.members));
+      let score=0;
+      for(const g of groups){
+        const counts={rock:0,paper:0,scissors:0,unassigned:0};
+        g.members.forEach(m=>counts[m.team]=(counts[m.team]||0)+1);
+        const sorted=Object.values(counts).sort((a,b)=>b-a);
+        const top=sorted[0]||0, second=sorted[1]||0;
+        score += top*12 + (top-second)*22;
+        if(top===second) score -= 28;
+      }
+      const nameCounts={};
+      names.forEach(name=>nameCounts[name]=(nameCounts[name]||0)+1);
+      Object.entries(nameCounts).forEach(([name,count])=>{
+        if(name===VENDETTA_NAMES.unassigned) score -= 24*count;
+        if(count>1) score -= 34*(count-1);
       });
+      score += new Set(names).size*18;
+      return score;
+    }
+
+    let bestGroups=null, bestScore=-Infinity;
+    const working=sizes.map((size,i)=>({id:`a${i+1}`,size,members:[]}));
+    const orderedMembers=[...members].sort((a,b)=>{
+      const countA=teamCounts[a.team]||0, countB=teamCounts[b.team]||0;
+      return countB-countA || Number(a.bot)-Number(b.bot);
     });
+
+    function searchVendettaGroups(index){
+      if(index>=orderedMembers.length){
+        const score=scoreVendettaGrouping(working);
+        if(score>bestScore){
+          bestScore=score;
+          bestGroups=working.map(g=>({id:g.id,size:g.size,members:[...g.members]}));
+        }
+        return;
+      }
+      const member=orderedMembers[index];
+      const seenShapes=new Set();
+      for(const g of working){
+        if(g.members.length>=g.size) continue;
+        // Alliances with the same size/current team makeup are interchangeable,
+        // so skip equivalent branches to keep the search tiny.
+        const shape=`${g.size}|${g.members.map(x=>x.team).sort().join(',')}`;
+        if(seenShapes.has(shape)) continue;
+        seenShapes.add(shape);
+        g.members.push(member);
+        searchVendettaGroups(index+1);
+        g.members.pop();
+      }
+    }
+    searchVendettaGroups(0);
+    const groups=bestGroups || working;
 
     const allianceByPlayer={}, playerTeams={}, allianceData={};
     const rawAllianceNames=groups.map(g=>chooseVendettaAllianceName(g.members));
