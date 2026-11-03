@@ -660,9 +660,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>3 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
                 <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Computer teammates take fair turns and do not know hidden tiles.</span>
                 <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves before finding it and the challenge ends.</span>
-                <span style="margin-top:7px">❓ <b>Jokers:</b> three Team Unpredictable wildcards are hidden on the board. If found, a Joker counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
+                <span style="margin-top:7px">❓ <b>Joker:</b> one Team Unpredictable wildcard is hidden on the board. If found, it counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
                 <span style="margin-top:7px"><b>75 CP entry:</b> only the host pays when each Countdown challenge starts. Clear the board and the 75 CP prize pool is split across the player slots.</span>
-                <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals a Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
+                <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals the Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
                 <span style="margin-top:7px"><b>Co-op reward boost:</b> every player who completes their bonus objective adds <b>+5 CP</b> to the shared prize pool before it is split. If two Team Unpredictable players share a Joker objective, that counts as two completed objectives.</span>
               </details>
               <button class="btn secondary wide" id="countdownModeBtn" style="margin-top:10px">⏳ Enable Countdown Mode</button>
@@ -1192,7 +1192,11 @@ const db = getDatabase(firebaseApp);
         <div class="result-row"><b>✂️ Scissors</b><b class="score">${Number(p.moveWinPoints?.scissors||0)}</b></div>
       </div>
       <div class="section-label">Recent games</div>
-      <div class="results-list">${recent.length?recent.map(g=>`<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${g.solo?"Solo":`${Number(g.players||0)} players`}</div></div><b class="score">${g.solo?`${Number(g.roundsPlayed||7)} rounds`:`${Number(g.points||0)} pts`}</b></div>`).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
+      <div class="results-list">${recent.length?recent.map(g=>{
+        const modeLine=g.countdown?`${Number(g.players||0)} players · Countdown Mode`:(g.solo?"Solo":`${Number(g.players||0)} players`);
+        const scoreLine=g.countdown?`${Number(g.tilesCleared||0)}/${Number(g.totalTiles||COUNTDOWN_TILE_COUNT)} tiles`:(g.solo?`${Number(g.roundsPlayed||7)} rounds`:`${Number(g.points||0)} pts`);
+        return `<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${modeLine}</div></div><b class="score">${scoreLine}</b></div>`;
+      }).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
     const statsStoreBtn=$("statsChaosStoreBtn");
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
       chaosPointsReturnScreen="stats";
@@ -1454,7 +1458,7 @@ const db = getDatabase(firebaseApp);
         return;
       }
       if (data.status === "playing") {
-        if(countdownModeActive || data.countdownState){
+        if(countdownModeActive){
           show("game");
           renderCountdownGame(data.countdownState||{});
           return;
@@ -2138,7 +2142,6 @@ const db = getDatabase(firebaseApp);
     if(predictionHelp && countdownModeActive) predictionHelp.textContent="Predictions are unavailable in Countdown Mode.";
     const start=$("startBtn");
     if(start) start.textContent=countdownModeActive?"Start Countdown Mode →":(soloModeActive?"Start Solo Mode →":"Start 7-round game →");
-    applyCountdownStoreLock();
   }
 
   async function toggleCountdownMode(){
@@ -2168,7 +2171,6 @@ const db = getDatabase(firebaseApp);
     await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
     await refreshVendettaLobby();
-    applyCountdownStoreLock();
   }
 
   function scheduleCountdownBotTurn(state){
@@ -2208,15 +2210,13 @@ const db = getDatabase(firebaseApp);
     // Give everyone time to see which tile the bot picked before it flips.
     countdownBotTimer=setTimeout(async()=>{
       countdownBotTimer=null;
-      const result=await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
+      await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
         if(!state || state.status!=="playing" || state.currentTurnUid!==botUid || state.botPendingTileId!==chosenTileId) return state;
         state.botPendingTileId=null;
         const next=applyCountdownChoiceToState(state,chosenTileId,botUid,true);
         if(next?.status==="playing") next.botResultHoldUntil=Date.now()+1450;
         return next;
       });
-      const next=result?.snapshot?.val?.();
-      if(next && next.status!=="playing") await autoDisableCountdownAfterAttempt(next);
     },950);
   }
 
@@ -2337,20 +2337,9 @@ const db = getDatabase(firebaseApp);
     return state;
   }
 
-  async function autoDisableCountdownAfterAttempt(state){
-    if(!room || !state || !["won","failed"].includes(state.status)) return;
-    const modeSnap=await get(ref(db,`rooms/${room}/countdownMode`));
-    if(modeSnap.exists() && modeSnap.val()?.active){
-      await update(ref(db,`rooms/${room}`),{countdownMode:null,updatedAt:Date.now()});
-    }
-    countdownModeActive=false;
-  }
-
   async function chooseCountdownTile(tileId){
     if(!room || !currentUser || !countdownModeActive) return;
-    const result=await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownChoiceToState(state,tileId,currentUser.uid,false));
-    const next=result?.snapshot?.val?.();
-    if(next && next.status!=="playing") await autoDisableCountdownAfterAttempt(next);
+    await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownChoiceToState(state,tileId,currentUser.uid,false));
   }
 
   function countdownBaseShareForSeat(index,totalPlayers,pool=COUNTDOWN_COST){
@@ -2428,6 +2417,34 @@ const db = getDatabase(firebaseApp);
     }
   }
 
+  async function saveMyCountdownRecentGame(state){
+    if(!currentUser?.uid || !state || !["won","failed"].includes(state.status)) return;
+    const attemptKey=String(state.attemptId||"countdown").replace(/[.#$\[\]\/]/g,"_");
+    const historyKey=`countdown_${attemptKey}`;
+    try{
+      await runTransaction(ref(db,`profiles/${currentUser.uid}`),raw=>{
+        const profile={...blankProfile(),...(raw||{})};
+        const recentGames={...(profile.recentGames||{})};
+        if(recentGames[historyKey]) return raw||profile;
+        recentGames[historyKey]={
+          result:state.status==="won"?"Completed Countdown":"Failed Countdown",
+          players:players.length,
+          countdown:true,
+          tilesCleared:Number(state.clearedCount||0),
+          totalTiles:COUNTDOWN_TILE_COUNT,
+          endedAt:Date.now()
+        };
+        profile.recentGames=Object.fromEntries(Object.entries(recentGames)
+          .sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0))
+          .slice(0,10));
+        profile.updatedAt=Date.now();
+        return profile;
+      });
+    }catch(error){
+      console.warn("Could not save Countdown recent-game entry",error);
+    }
+  }
+
   function renderCountdownGame(state={}){
     show("game");
     clearInterval(timerInt);
@@ -2464,6 +2481,7 @@ const db = getDatabase(firebaseApp);
       scheduleCountdownBotTurn(state);
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
+      saveMyCountdownRecentGame(state).catch(error=>console.warn("Countdown recent-game save failed",error));
       const won=state.status==="won";
       if(won && isHost && !state.rewardPaid) settleCountdownRewards(state).catch(error=>console.warn("Countdown reward settlement failed",error));
       const myReward=state.rewardSummary?.[currentUser?.uid];
@@ -2489,15 +2507,13 @@ const db = getDatabase(firebaseApp);
     if(balance<COUNTDOWN_COST) return toast(`You need ${COUNTDOWN_COST} Chaos Points to try Countdown Mode again.`);
     await update(profileRef,{chaosPoints:balance-COUNTDOWN_COST,updatedAt:Date.now()});
     const teams=await loadCountdownPlayerTeams();
-    await update(ref(db,`rooms/${room}`),{countdownMode:{active:true,enabledBy:currentUser.uid,enabledAt:Date.now()},countdownState:freshCountdownState(teams),updatedAt:Date.now()});
-    countdownModeActive=true;
+    await set(ref(db,`rooms/${room}/countdownState`),freshCountdownState(teams));
     toast(`⏳ New Countdown challenge — ${COUNTDOWN_COST} CP spent by the host.`);
   }
 
   async function returnCountdownToLobby(){
     if(!isHost || !room) return;
-    await update(ref(db,`rooms/${room}`),{status:"lobby",countdownMode:null,countdownState:null,updatedAt:Date.now()});
-    countdownModeActive=false;
+    await update(ref(db,`rooms/${room}`),{status:"lobby",countdownState:null,updatedAt:Date.now()});
   }
 
   async function startGame() {
@@ -2580,27 +2596,6 @@ const db = getDatabase(firebaseApp);
         btn.style.cursor="";
         btn.title="";
       }
-    });
-  }
-
-  function applyCountdownStoreLock(){
-    if(!countdownModeActive) return;
-    const lockedIds=["soloModeBtn","rollDiceBtn","chaosBotBtn","vendettaModeBtn","doubleAgentBtn","powerReversalBtn"];
-    lockedIds.forEach(id=>{
-      const btn=$(id);
-      if(!btn) return;
-      btn.disabled=true;
-      btn.setAttribute("aria-disabled","true");
-      btn.style.opacity=".5";
-      btn.style.cursor="not-allowed";
-      btn.title="Unavailable while Countdown Mode is selected.";
-    });
-    ["doubleAgentPowerSelect","vendettaLayoutSelect"].forEach(id=>{
-      const control=$(id);
-      if(!control) return;
-      control.disabled=true;
-      control.style.opacity=".55";
-      control.title="Unavailable while Countdown Mode is selected.";
     });
   }
 
@@ -6226,7 +6221,6 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
     await refreshDoubleAgentLobby();
     await refreshPowerReversalLobby();
     await refreshRollDiceLobby();
-    applyCountdownStoreLock();
   }
 
   function returnFromChaosPoints(){
