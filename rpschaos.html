@@ -652,9 +652,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⏳ Countdown Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
-                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>10 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
-                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 10-move countdown for each target. Wrong tiles stay revealed to help the team remember the board. Computer teammates take fair turns and do not know hidden tiles.</span>
-                <span style="margin-top:7px">Find the target and the countdown resets to 10. Run out of moves before finding it and the challenge ends.</span>
+                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>5 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
+                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 5-move countdown for each target. Wrong tiles stay revealed to help the team remember the board. Computer teammates take fair turns and do not know hidden tiles.</span>
+                <span style="margin-top:7px">Find the target and the countdown resets to 5. Run out of moves before finding it and the challenge ends.</span>
               </details>
               <button class="btn secondary wide" id="countdownModeBtn" style="margin-top:10px">⏳ Enable Countdown Mode</button>
               <span id="countdownModeStatus" class="muted" style="margin-top:7px"></span>
@@ -1992,7 +1992,7 @@ const db = getDatabase(firebaseApp);
 
 
 
-  const COUNTDOWN_MOVES_PER_TARGET=10;
+  const COUNTDOWN_MOVES_PER_TARGET=5;
   const COUNTDOWN_TILE_COUNT=18;
   const countdownTileIcons={rock:"🪨",paper:"📄",scissors:"✂️"};
 
@@ -2055,7 +2055,7 @@ const db = getDatabase(firebaseApp);
     btn.style.opacity=isHost?"1":".5";
     btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":"⏳ Enable Countdown Mode";
     status.textContent=countdownModeActive
-      ? "Co-op board active: 2–8 players share 10 moves per target. Bots take turns too."
+      ? "Co-op board active: 2–8 players share 5 moves per target. Bots take turns too."
       : (isHost?"Co-op challenge for 2–8 players. No Chaos Point cost while the mode is being tested.":"Only the host can change Countdown Mode.");
     const predictionSelect=$("predictionModeSelect");
     const predictionHelp=$("predictionModeHelp");
@@ -2148,7 +2148,7 @@ const db = getDatabase(firebaseApp);
       state.lastMessage=`${actorName} revealed ${countdownTileIcons[tile.move]} ${tile.move[0].toUpperCase()+tile.move.slice(1)}. Keep looking for ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}.`;
       if(state.movesUsed>=COUNTDOWN_MOVES_PER_TARGET){
         state.status="failed";
-        state.lastMessage=`KABOOM! The team did not find ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} within 10 moves.`;
+        state.lastMessage=`KABOOM! The team did not find ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} within ${COUNTDOWN_MOVES_PER_TARGET} moves.`;
       }
     }
     if(state.status==="playing") state.currentTurnUid=nextCountdownTurnUid(actorUid);
@@ -2187,11 +2187,11 @@ const db = getDatabase(firebaseApp);
         <div class="countdown-status-grid">
           <div class="rule-card" style="text-align:center"><strong>ACTIVE MOVE</strong><div style="font-size:34px;margin:7px 0">${countdownTileIcons[active]}</div><span>${active[0].toUpperCase()+active.slice(1)}</span></div>
           <div class="rule-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:34px;margin:7px 0">${countdownTileIcons[target]}</div><span>${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} ${target[0].toUpperCase()+target.slice(1)}</span></div>
-          <div class="rule-card" style="text-align:center"><strong>COUNTDOWN</strong><div style="font-size:34px;font-weight:950;margin:7px 0">${remaining}</div><span>${used}/10 team moves used</span></div>
+          <div class="rule-card" style="text-align:center"><strong>COUNTDOWN</strong><div style="font-size:34px;font-weight:950;margin:7px 0">${remaining}</div><span>${used}/${COUNTDOWN_MOVES_PER_TARGET} team moves used</span></div>
         </div>
         <div class="rule-card" style="text-align:center"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span><div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
         <div class="countdown-board">${tileHtml}</div>
-        <p class="note">Wrong tiles stay revealed so the whole team can remember them. The 10-move counter resets every time the correct tile is cleared.</p>`;
+        <p class="note">Wrong tiles stay revealed so the whole team can remember them. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter resets every time the correct tile is cleared.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
       scheduleCountdownBotTurn(state);
     }else{
