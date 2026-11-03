@@ -653,8 +653,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
                 <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>5 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
-                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 5-move countdown for each target. Wrong tiles stay revealed to help the team remember the board. Computer teammates take fair turns and do not know hidden tiles.</span>
-                <span style="margin-top:7px">Find the target and the countdown resets to 5. Run out of moves before finding it and the challenge ends.</span>
+                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 4-move countdown for each target. Wrong tiles stay revealed to help the team remember the board. Computer teammates take fair turns and do not know hidden tiles.</span>
+                <span style="margin-top:7px">Find the target and the countdown resets to 4. Run out of moves before finding it and the challenge ends.</span>
               </details>
               <button class="btn secondary wide" id="countdownModeBtn" style="margin-top:10px">⏳ Enable Countdown Mode</button>
               <span id="countdownModeStatus" class="muted" style="margin-top:7px"></span>
@@ -1992,7 +1992,7 @@ const db = getDatabase(firebaseApp);
 
 
 
-  const COUNTDOWN_MOVES_PER_TARGET=5;
+  const COUNTDOWN_MOVES_PER_TARGET=4;
   const COUNTDOWN_TILE_COUNT=18;
   const countdownTileIcons={rock:"🪨",paper:"📄",scissors:"✂️"};
 
@@ -2055,7 +2055,7 @@ const db = getDatabase(firebaseApp);
     btn.style.opacity=isHost?"1":".5";
     btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":"⏳ Enable Countdown Mode";
     status.textContent=countdownModeActive
-      ? "Co-op board active: 2–8 players share 5 moves per target. Bots take turns too."
+      ? "Co-op board active: 2–8 players share 4 moves per target. Bots take turns too."
       : (isHost?"Co-op challenge for 2–8 players. No Chaos Point cost while the mode is being tested.":"Only the host can change Countdown Mode.");
     const predictionSelect=$("predictionModeSelect");
     const predictionHelp=$("predictionModeHelp");
