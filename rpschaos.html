@@ -2006,6 +2006,23 @@ const db = getDatabase(firebaseApp);
     return activeMove==="rock"?"scissors":activeMove==="scissors"?"paper":"rock";
   }
 
+  // Joker can make the remaining R/P/S counts uneven near the end. Never ask
+  // the team to find a move type with no uncleared tile left. Advance through
+  // the RPS chain until the next real remaining tile type is found. If only
+  // Joker remains, keep the normal next target because Joker can stand in for it.
+  function countdownAvailableStep(activeMove,tiles){
+    let active=activeMove||"rock";
+    let target=countdownTargetFor(active);
+    const remainingRps=Object.values(tiles||{}).filter(t=>!t.cleared && t.move!=="joker");
+    if(!remainingRps.length) return {activeMove:active,targetMove:target};
+    for(let i=0;i<3;i++){
+      if(remainingRps.some(t=>t.move===target)) return {activeMove:active,targetMove:target};
+      active=target;
+      target=countdownTargetFor(active);
+    }
+    return {activeMove:active,targetMove:target};
+  }
+
   function countdownActionWord(activeMove){
     return activeMove==="rock"?"crush":activeMove==="scissors"?"cut":"cover";
   }
@@ -2118,7 +2135,10 @@ const db = getDatabase(firebaseApp);
     await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
       if(!state || state.status!=="playing" || state.currentTurnUid!==botUid) return state;
       const tiles=state.tiles||{};
-      const target=state.targetMove||countdownTargetFor(state.activeMove||"rock");
+      const step=countdownAvailableStep(state.activeMove||"rock",tiles);
+      state.activeMove=step.activeMove;
+      state.targetMove=step.targetMove;
+      const target=step.targetMove;
       const revealedTarget=Object.entries(tiles).filter(([,t])=>!t.cleared && t.revealed && t.move===target);
       const hidden=Object.entries(tiles).filter(([,t])=>!t.cleared && !t.revealed);
       const choices=revealedTarget.length?revealedTarget:hidden;
@@ -2132,7 +2152,10 @@ const db = getDatabase(firebaseApp);
     const tiles=state.tiles||{};
     const tile=tiles[tileId];
     if(!tile || tile.cleared || state.status!=="playing" || state.currentTurnUid!==actorUid) return state;
-    const target=state.targetMove||countdownTargetFor(state.activeMove||"rock");
+    const step=countdownAvailableStep(state.activeMove||"rock",tiles);
+    state.activeMove=step.activeMove;
+    state.targetMove=step.targetMove;
+    const target=step.targetMove;
     // A revealed tile that is not the current target is already known and cannot waste another move.
     if(tile.revealed && tile.move!==target) return state;
     const actor=players.find(p=>p.uid===actorUid);
@@ -2146,7 +2169,9 @@ const db = getDatabase(firebaseApp);
       state.clearedCount=Number(state.clearedCount||0)+1;
       const oldActive=state.activeMove||"rock";
       state.activeMove=target;
-      state.targetMove=countdownTargetFor(target);
+      const nextStep=countdownAvailableStep(state.activeMove,tiles);
+      state.activeMove=nextStep.activeMove;
+      state.targetMove=nextStep.targetMove;
       state.movesUsed=0;
       state.lastMessage=`${actorName} found the ❓ JOKER! It counted as ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}, so ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it. FREE MOVE — countdown reset.`;
       if(state.clearedCount>=COUNTDOWN_TILE_COUNT){
@@ -2158,7 +2183,9 @@ const db = getDatabase(firebaseApp);
       state.clearedCount=Number(state.clearedCount||0)+1;
       const oldActive=state.activeMove||"rock";
       state.activeMove=target;
-      state.targetMove=countdownTargetFor(target);
+      const nextStep=countdownAvailableStep(state.activeMove,tiles);
+      state.activeMove=nextStep.activeMove;
+      state.targetMove=nextStep.targetMove;
       state.movesUsed=0;
       state.lastMessage=`${actorName} found ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} — ${countdownTileIcons[oldActive]} ${oldActive[0].toUpperCase()+oldActive.slice(1)} ${countdownActionWord(oldActive)}s it! Countdown reset.`;
       if(state.clearedCount>=COUNTDOWN_TILE_COUNT){
@@ -2187,8 +2214,9 @@ const db = getDatabase(firebaseApp);
     show("game");
     clearInterval(timerInt);
     const play=$("playArea"); if(!play) return;
-    const active=state.activeMove||"rock";
-    const target=state.targetMove||countdownTargetFor(active);
+    const renderStep=countdownAvailableStep(state.activeMove||"rock",state.tiles||{});
+    const active=renderStep.activeMove;
+    const target=renderStep.targetMove;
     const used=Math.max(0,Number(state.movesUsed||0));
     const remaining=Math.max(0,COUNTDOWN_MOVES_PER_TARGET-used);
     const tilesLeft=Math.max(0,COUNTDOWN_TILE_COUNT-Number(state.clearedCount||0));
