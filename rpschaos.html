@@ -640,7 +640,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⚔️ Vendetta Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
-                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player receives the swapped version of their own Team Power for this match. Every alliance has at least 2 players — there are no 1-vs-everyone layouts.</span>
+                <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player privately chooses either the normal or swapped version of their own Team Power for this match. Your choice stays hidden until you use the power. Every alliance has at least 2 players — there are no 1-vs-everyone layouts.</span>
                 <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Precisionists</b>, ❓ <b>The Unknowns</b>.</span>
                 <span style="margin-top:8px"><b>Underdog Bonus:</b> if an alliance has fewer players than the largest alliance, it earns one bonus when at least one of its players is on the round-winning move: +1 extra Vendetta point normally, or +2 during Double Trouble. It is awarded once per underdog alliance per round, even if multiple members share the winning move. Vendetta points are added to the alliance total and shown at the end of the game. In 2 vs 3 vs 3, only the 2-player alliance is the underdog.</span>
               </details>
@@ -653,8 +653,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <option value="2v2v3">7 players — 2 vs 2 vs 3</option>
                 <option value="4v4">8 players — 4 vs 4</option>
                 <option value="2v3v3">8 players — 2 vs 3 vs 3</option>
+                <option value="2v2v2v2">8 players — 2 vs 2 vs 2 vs 2</option>
               </select>
-              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — 0 CP</button>
+              <button class="btn secondary wide" id="vendettaModeBtn" style="margin-top:10px">⚔️ Enable Vendetta Mode — 100 CP</button>
               <span id="vendettaModeStatus" class="muted" style="margin-top:7px"></span>
             </div>
 
@@ -1704,7 +1705,7 @@ const db = getDatabase(firebaseApp);
     const wins = (a==="rock"&&b==="scissors") || (a==="paper"&&b==="rock") || (a==="scissors"&&b==="paper");
     return reverse ? (wins ? -1 : 1) : (wins ? 1 : -1);
   }
-  const VENDETTA_COST=0;
+  const VENDETTA_COST=100;
   const VENDETTA_LAYOUTS={
     "2v2":[2,2],
     "2v3":[2,3],
@@ -1713,7 +1714,8 @@ const db = getDatabase(firebaseApp);
     "3v4":[3,4],
     "2v2v3":[2,2,3],
     "4v4":[4,4],
-    "2v3v3":[2,3,3]
+    "2v3v3":[2,3,3],
+    "2v2v2v2":[2,2,2,2]
   };
   const VENDETTA_NAMES={
     rock:"The Strikers",
@@ -1737,13 +1739,13 @@ const db = getDatabase(firebaseApp);
     vendettaLayout=active?String(v.layout||""):"";
     btn.disabled=active || !isHost;
     btn.style.opacity=btn.disabled?".55":"1";
-    btn.textContent=active?"⚔️ Vendetta Mode Active":"⚔️ Enable Vendetta Mode — 0 CP";
+    btn.textContent=active?"⚔️ Vendetta Mode Active":`⚔️ Enable Vendetta Mode — ${VENDETTA_COST} CP`;
     if(select){
       if(active && vendettaLayout) select.value=vendettaLayout;
       select.disabled=active || !isHost;
     }
     status.textContent=active
-      ? `Vendetta layout: ${vendettaLayout}. Swapped powers will be assigned when the match starts.`
+      ? `Vendetta layout: ${vendettaLayout}. Each player privately chooses a normal or swapped Team Power for the match.`
       : "Host chooses a supported 4-, 5-, 6-, 7-, or 8-player alliance layout.";
   }
 
@@ -1764,8 +1766,15 @@ const db = getDatabase(firebaseApp);
     if(soloActive || chaosBotActive || doubleAgentActive || powerSwapActive){
       return toast("Vendetta Mode can't be combined with Solo, Chaos Bot, Double Agent, or Power Swap.");
     }
-    await set(ref(db,`rooms/${room}/vendettaMode`),{active:true,layout,testing:true,cost:VENDETTA_COST});
-    toast("⚔️ Vendetta Mode enabled!");
+    const profileRef=ref(db,`profiles/${currentUser.uid}`);
+    const profileSnap=await get(profileRef);
+    const rawProfile=profileSnap.exists()?profileSnap.val():blankProfile();
+    const balance=Number(rawProfile.chaosPoints==null?rawProfile.totalPoints||0:rawProfile.chaosPoints);
+    if(balance<VENDETTA_COST) return toast(`You need ${VENDETTA_COST} Chaos Points to enable Vendetta Mode.`);
+    await update(profileRef,{chaosPoints:balance-VENDETTA_COST,updatedAt:Date.now()});
+    await set(ref(db,`rooms/${room}/vendettaMode`),{active:true,layout,cost:VENDETTA_COST});
+    await remove(ref(db,`rooms/${room}/vendettaPowerChoices`));
+    toast(`⚔️ Vendetta Mode enabled — ${VENDETTA_COST} CP spent.`);
     await refreshVendettaLobby();
   }
 
@@ -2189,6 +2198,10 @@ const db = getDatabase(firebaseApp);
   async function activateDoubleAgentMode(){
     if(!hasActiveGameLobby()) return toast("Create or join a game first before purchasing a Chaos Points option.");
     if(soloModeActive) return toast("Double Agent cannot be used with Solo Mode.");
+    const vendettaSnap=await get(ref(db,`rooms/${room}/vendettaMode`));
+    if(vendettaSnap.exists() && vendettaSnap.val()?.active){
+      return toast("Vendetta already includes a Normal/Swapped power choice, so Double Agent can't be used with it.");
+    }
     const chosen=$("doubleAgentPowerSelect")?.value||"";
     if(!["rock","paper","scissors"].includes(chosen)) return toast("Choose Barricade, Reprint, or Cut in Half first.");
     const ps=await get(ref(db,`profiles/${currentUser.uid}`));
@@ -2465,7 +2478,12 @@ let soloCupCrusherX2Choice=null;
     ]);
     const vendettaSnap=await get(ref(db,`rooms/${room}/vendettaMode`));
     const vendettaActive=Boolean(vendettaSnap.exists() && vendettaSnap.val()?.active);
-    const reversalActive=vendettaActive ||
+    let vendettaPowerChoice=null;
+    if(vendettaActive){
+      const choiceSnap=await get(ref(db,`rooms/${room}/vendettaPowerChoices/${currentUser.uid}`));
+      vendettaPowerChoice=choiceSnap.exists()?String(choiceSnap.val()):null;
+    }
+    const reversalActive=(vendettaActive && vendettaPowerChoice==="swapped") ||
                          (swapSnap.exists() && swapSnap.val()===true) ||
                          (legacySnap.exists() && legacySnap.val()===true);
     if(isUnpredictable){
@@ -2543,7 +2561,7 @@ let soloCupCrusherX2Choice=null;
     const powerName=activeTeamPower.displayName || activeTeamPower.name || "Team Power";
     const isSwap=String(activeTeamPower.key||"").startsWith("reverse");
     const prefix=(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power");
-    const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta swapped power — included with Vendetta Mode. No separate Power Swap charge.":"⚡ Power Swap is active for this game."}</span>` : "";
+    const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta choice: Swapped power. Your choice stays private until you use it.":"⚡ Power Swap is active for this game."}</span>` : "";
     const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
       activeTeamPower.team==="paper" ? "📄 Team Paper" :
       activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
@@ -2569,6 +2587,18 @@ async function refreshTeamPowerUI() {
 
     const btn=$("teamPowerBtn");
     if(!btn) return;
+    if(vendettaModeActive && currentUser){
+      const choiceSnap=await get(ref(db,`rooms/${room}/vendettaPowerChoices/${currentUser.uid}`));
+      if(!choiceSnap.exists()){
+        teamPowerArmed=false;
+        btn.disabled=true;
+        btn.style.opacity=".5";
+        btn.textContent="⚡ Choose Normal or Swapped first";
+        const desc=$("teamPowerDesc");
+        if(desc) desc.innerHTML=`<b>⚔️ Choose your Vendetta power version</b><br><span class="muted">Pick Normal or Swapped above. Your choice is private and locked for this match.</span>`;
+        return;
+      }
+    }
     activeTeamPower=await loadActiveTeamPower();
     if(!activeTeamPower) return;
     if(activeTeamPower.pending){
@@ -2627,7 +2657,7 @@ async function refreshTeamPowerUI() {
       const teamHeading=activeTeamPower.team==="rock" ? "🪨 Team Rock" :
         activeTeamPower.team==="paper" ? "📄 Team Paper" :
         activeTeamPower.team==="scissors" ? "✂️ Team Scissors" : "❓ Team Unpredictable";
-      const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta swapped power — included with Vendetta Mode. No separate Power Swap charge.":"⚡ Power Swap is active for this game."}</span>` : "";
+      const swapStatus=isSwap ? `<br><span class="muted">${vendettaModeActive?"⚔️ Vendetta choice: Swapped power. Your choice stays private until you use it.":"⚡ Power Swap is active for this game."}</span>` : "";
       $("teamPowerDesc").innerHTML = `<b style="display:block;margin-bottom:6px">${teamHeading}</b><b>${(activeTeamPower.doubleAgent && isSwap) ? "Your Double Agent swapped power" : activeTeamPower.doubleAgent ? "Your Double Agent power" : (isSwap ? "Your swapped team power" : "Your team power")}: ${exactName}</b><br>${activeTeamPower.desc || ""}${swapStatus}<br><span class="muted">One use per game.</span>`;
     }
 
@@ -2788,6 +2818,7 @@ async function refreshTeamPowerUI() {
       </div>` : `
       <div class="rule-card" style="text-align:center;margin-bottom:12px">
         <span id="teamPowerDesc">One use per game.</span>
+        ${vendettaModeActive ? `<div id="vendettaPowerChoiceWrap" style="margin-top:10px"><div class="muted" style="margin-bottom:7px">⚔️ Vendetta power choice · private until used</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn secondary" id="vendettaNormalPowerBtn" type="button">Normal</button><button class="btn secondary" id="vendettaSwappedPowerBtn" type="button">Swapped</button></div><span id="vendettaPowerChoiceStatus" class="muted" style="display:block;margin-top:6px">Choose which version you want for this match.</span></div>` : ""}
         <div id="scissorsTargetWrap" style="display:none;margin-top:10px">
           <div style="font-weight:900;margin-bottom:7px">✂️ Choose your Cut in Half target</div>
           <div class="muted" style="margin-bottom:8px">Pick one player below. This choice is separate from your required prediction target.</div>
@@ -3482,6 +3513,20 @@ async function refreshTeamPowerUI() {
       setTimeout(()=>refreshTeamPowerUI(),0);
     }
     if(vendettaModeActive){
+      const normalBtn=$("vendettaNormalPowerBtn");
+      const swappedBtn=$("vendettaSwappedPowerBtn");
+      const choiceStatus=$("vendettaPowerChoiceStatus");
+      const paintVendettaPowerChoice=async()=>{
+        if(!currentUser) return;
+        const snap=await get(ref(db,`rooms/${room}/vendettaPowerChoices/${currentUser.uid}`));
+        const choice=snap.exists()?String(snap.val()):"";
+        if(normalBtn){ normalBtn.classList.toggle("selected",choice==="normal"); normalBtn.disabled=!!choice; normalBtn.style.opacity=choice&&choice!=="normal"?".55":"1"; }
+        if(swappedBtn){ swappedBtn.classList.toggle("selected",choice==="swapped"); swappedBtn.disabled=!!choice; swappedBtn.style.opacity=choice&&choice!=="swapped"?".55":"1"; }
+        if(choiceStatus) choiceStatus.textContent=choice ? `Selected: ${choice==="swapped"?"Swapped":"Normal"}. Choice locked for this match and private until you use it.` : "Choose which version you want for this match.";
+      };
+      if(normalBtn) normalBtn.onclick=async()=>{ const r=ref(db,`rooms/${room}/vendettaPowerChoices/${currentUser.uid}`); const existing=await get(r); if(existing.exists()) return; await set(r,"normal"); teamPowerArmed=false; await paintVendettaPowerChoice(); await refreshTeamPowerUI(); };
+      if(swappedBtn) swappedBtn.onclick=async()=>{ const r=ref(db,`rooms/${room}/vendettaPowerChoices/${currentUser.uid}`); const existing=await get(r); if(existing.exists()) return; await set(r,"swapped"); teamPowerArmed=false; await paintVendettaPowerChoice(); await refreshTeamPowerUI(); };
+      paintVendettaPowerChoice().catch(()=>{});
       const shareBtn=$("shareMoveBtn");
       if(shareBtn) shareBtn.onclick=shareMoveWithAlliance;
       get(ref(db,`${roundPath()}/allyShares`)).then(snap=>renderAllyShareNotices(snap.val()||{})).catch(()=>{});
@@ -3543,10 +3588,9 @@ async function refreshTeamPowerUI() {
       const isReversedPower=String(submissionPower?.key||"").startsWith("reverse");
 
       if(isReversedPower && vendettaModeActive){
-        // Vendetta Mode grants each player the swapped version of their own
-        // Team Power as part of the mode. It is NOT a separate 50 CP Power
-        // Swap purchase. Using it consumes only that player's one Vendetta
-        // Team Power use for the game.
+        // Vendetta lets each player privately choose Normal or Swapped. A swapped
+        // choice is included in the 100 CP Vendetta mode and does not cost another
+        // 50 CP. Using it consumes that player's one Team Power use for the game.
         await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
         teamPowerArmed=false;
       } else if(isReversedPower){
@@ -3777,15 +3821,22 @@ async function refreshTeamPowerUI() {
             await set(botPowerRef,botPower);
           }
 
-          // Vendetta bots use the swapped power matching their temporary
-          // Vendetta team identity. Team Unpredictable gets a random swapped family.
+          // Vendetta bots privately choose Normal or Swapped once per match.
           if(vendettaModeActive){
             let vTeam=vendettaPlayerTeams[p.uid]||"unassigned";
             if(vTeam==="unassigned"){
               const choices=["rock","paper","scissors"];
               vTeam=choices[Math.floor(Math.random()*choices.length)];
             }
-            botPower=vTeam==="rock"?"reverseRock":vTeam==="paper"?"reversePaper":"reverseScissors";
+            const choiceRef=ref(db,`rooms/${room}/vendettaPowerChoices/${p.uid}`);
+            const choiceSnap=await get(choiceRef);
+            let choice=choiceSnap.exists()?String(choiceSnap.val()):"";
+            if(choice!=="normal" && choice!=="swapped"){
+              choice=Math.random()<0.5?"normal":"swapped";
+              await set(choiceRef,choice);
+            }
+            if(choice==="swapped") botPower=vTeam==="rock"?"reverseRock":vTeam==="paper"?"reversePaper":"reverseScissors";
+            else botPower=vTeam;
           }
           // Chaos Bot Mode: each bot gets a stable 50/50 normal/swapped
           // power variant for the game. Unlike normal bots, Chaos Bots may
@@ -3915,6 +3966,8 @@ async function refreshTeamPowerUI() {
     players.forEach(p=>{ if(!moveLedger[p.uid]) moveLedger[p.uid]={rock:0,paper:0,scissors:0}; });
     const addMoveWin=(uid,move,points)=>{ moveLedger[uid][move]=Number(moveLedger[uid][move]||0)+Number(points||0); };
     const details=[];
+    const positiveRoundPoints={};
+    players.forEach(p=>positiveRoundPoints[p.uid]=0);
     let revealWinner="Draw!";
     const rockSolidActive=players.some(p=>submissions[p.uid]?.teamPower==="rock");
     const played={};
@@ -3956,7 +4009,12 @@ async function refreshTeamPowerUI() {
 
       // Majority points first. A full three-way tie is a draw.
       if (majority.length===1) {
-        players.filter(p=>played[p.uid]===majority[0]).forEach(p=>{scores[p.uid]+=1*multiplier;addMoveWin(p.uid,played[p.uid],1*multiplier);});
+        players.filter(p=>played[p.uid]===majority[0]).forEach(p=>{
+          const pts=1*multiplier;
+          scores[p.uid]+=pts;
+          positiveRoundPoints[p.uid]+=pts;
+          addMoveWin(p.uid,played[p.uid],pts);
+        });
         details.push(`${majority[0][0].toUpperCase()+majority[0].slice(1)} has the majority: +${1*multiplier} to each matching player.`);
       } else if(majority.length===3) {
         details.push("All three moves are tied: no majority points.");
@@ -3979,8 +4037,10 @@ async function refreshTeamPowerUI() {
         // result means a beats b, including Round 6 reverse rules.
         const countersMajority=isMinority && beats(myMove,majorityMove,reverse)>0;
         if(countersMajority){
-          scores[p.uid]+=1*multiplier;
-          addMoveWin(p.uid,myMove,1*multiplier);
+          const pts=1*multiplier;
+          scores[p.uid]+=pts;
+          positiveRoundPoints[p.uid]+=pts;
+          addMoveWin(p.uid,myMove,pts);
           counterMoves[myMove]++;
           details.push(`${p.name} earned +${1*multiplier} for the counter bonus by playing ${myMove[0].toUpperCase()+myMove.slice(1)} against ${majorityMove[0].toUpperCase()+majorityMove.slice(1)} (the majority).`);
         }
@@ -4039,8 +4099,10 @@ async function refreshTeamPowerUI() {
           const winningMove=matchup>0?tied[0]:tied[1];
           revealWinner=`${winningMove[0].toUpperCase()+winningMove.slice(1)} wins!`;
           players.filter(p=>played[p.uid]===winningMove).forEach(p=>{
-            scores[p.uid]+=1*multiplier;
-            addMoveWin(p.uid,winningMove,1*multiplier);
+            const pts=1*multiplier;
+            scores[p.uid]+=pts;
+            positiveRoundPoints[p.uid]+=pts;
+            addMoveWin(p.uid,winningMove,pts);
           });
           const tiedLeaderCounts=tied.map(m=>count[m]||0);
           const tiedAtOriginalLead=tiedLeaderCounts.every(n=>n===maxCount) && majority.length>1;
@@ -4061,8 +4123,8 @@ async function refreshTeamPowerUI() {
     } else {
       const a=players[0], b=players[1];
       const r=beats(played[a.uid],played[b.uid],reverse);
-      if(r>0){revealWinner=`${played[a.uid][0].toUpperCase()+played[a.uid].slice(1)} wins!`;scores[a.uid]+=1*multiplier;addMoveWin(a.uid,played[a.uid],1*multiplier);details.push(`${a.name} wins: +${1*multiplier}.`);}
-      else if(r<0){revealWinner=`${played[b.uid][0].toUpperCase()+played[b.uid].slice(1)} wins!`;scores[b.uid]+=1*multiplier;addMoveWin(b.uid,played[b.uid],1*multiplier);details.push(`${b.name} wins: +${1*multiplier}.`);}
+      if(r>0){const pts=1*multiplier;revealWinner=`${played[a.uid][0].toUpperCase()+played[a.uid].slice(1)} wins!`;scores[a.uid]+=pts;positiveRoundPoints[a.uid]+=pts;addMoveWin(a.uid,played[a.uid],pts);details.push(`${a.name} wins: +${pts}.`);}
+      else if(r<0){const pts=1*multiplier;revealWinner=`${played[b.uid][0].toUpperCase()+played[b.uid].slice(1)} wins!`;scores[b.uid]+=pts;positiveRoundPoints[b.uid]+=pts;addMoveWin(b.uid,played[b.uid],pts);details.push(`${b.name} wins: +${pts}.`);}
       else {revealWinner="Draw!";details.push("Head-to-head tie: no win point.");}
     }
 
@@ -4075,8 +4137,10 @@ async function refreshTeamPowerUI() {
         if(!pred) {
           details.push(`${p.name} skipped the prediction.`);
         } else if(played[pred.targetUid]===pred.move){
-          scores[p.uid]+=2*multiplier;
-          details.push(`${p.name} predicted correctly: +${2*multiplier}.`);
+          const pts=2*multiplier;
+          scores[p.uid]+=pts;
+          positiveRoundPoints[p.uid]+=pts;
+          details.push(`${p.name} predicted correctly: +${pts}.`);
         } else {
           const penalty=Math.floor(Math.random()*4);
           let appliedPenalty=penalty*multiplier;
@@ -4167,7 +4231,9 @@ async function refreshTeamPowerUI() {
       }else{
         const gain=Math.max(0,Number(scores[target.uid]||0)-Number(scoresBefore[target.uid]||0));
         const reduced=Math.floor(gain/2);
-        scores[target.uid]-=(gain-reduced);
+        const removedByCut=gain-reduced;
+        scores[target.uid]-=removedByCut;
+        positiveRoundPoints[target.uid]=Math.max(0,Number(positiveRoundPoints[target.uid]||0)-removedByCut);
         successfulScissorsPower.push(p.uid);
         const tieNote=tiedTargets.length>1
           ? (totalLeaders.length>1
@@ -4211,6 +4277,7 @@ async function refreshTeamPowerUI() {
     reprintAwards.forEach(({player:p,copied})=>{
       if(copied>0){
         scores[p.uid]=Number(scores[p.uid]||0)+copied;
+        positiveRoundPoints[p.uid]+=copied;
         details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 📄 Reprint USED UP.`);
       } else {
         details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. NO EFFECT: nobody else earned positive points to copy. 🔒 📄 Reprint USED UP.`);
@@ -4252,7 +4319,7 @@ async function refreshTeamPowerUI() {
       }
     });
 
-    // Power Swap — Stonewall: block everyone else's positive final round gain.
+    // Power Swap — Stonewall: block positive round-point components only. Negative effects remain.
     players.forEach(p=>{
       if(submissions[p.uid]?.teamPower!=="reverseRock") return;
       let blocked=0;
@@ -4262,8 +4329,13 @@ async function refreshTeamPowerUI() {
         if(!vendettaModeActive || !sourceAlliance) return true;
         return vendettaAllianceByPlayer[o.uid]!==sourceAlliance;
       }).forEach(o=>{
-        const gain=Math.max(0,Number(scores[o.uid]||0)-Number(scoresBefore[o.uid]||0));
-        if(gain>0){ scores[o.uid]-=gain; blocked++; }
+        const blockedPositive=Math.max(0,Number(positiveRoundPoints[o.uid]||0));
+        if(blockedPositive>0){
+          scores[o.uid]-=blockedPositive;
+          positiveRoundPoints[o.uid]=0;
+          blocked++;
+          details.push(`${o.name}: +${blockedPositive} positive round point${blockedPositive===1?"":"s"} (blocked by Stonewall).`);
+        }
       });
       if(blocked>0){
         details.push(`⚡ POWER USED — ${vendettaPlayerLabel(p,p.name)} used 🪨 Stonewall. SUCCESS: blocked positive round points for ${blocked} ${vendettaModeActive?(blocked===1?"rival player":"rival players"):(blocked===1?"player":"players")}. 🔒 🪨 Stonewall USED UP.`);
