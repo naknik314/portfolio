@@ -607,7 +607,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>🎲 Roll the Dice Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Roll the Dice Mode</summary>
-                <span style="display:block;margin-top:10px">Let the dice choose your move for the entire 7-round game. Each round, roll a six-sided die: <b>1–2 = 🪨 Rock</b>, <b>3–4 = 📄 Paper</b>, and <b>5–6 = ✂️ Scissors</b>. Predictions and Team Powers still work normally.</span>
+                <span style="display:block;margin-top:10px">Let the dice choose your move for the entire 7-round game. Each round, roll a six-sided die: <b>1–2 = 🪨 Rock</b>, <b>3–4 = 📄 Paper</b>, and <b>5–6 = ✂️ Scissors</b>. Predictions and Team Powers still work normally. <b>Win the game to earn +30 Chaos Points.</b></span>
               </details>
               <button class="btn secondary wide" id="rollDiceBtn" style="margin-top:10px">🎲 Enable Roll the Dice Mode — 15 CP</button>
               <span id="rollDiceStatus" class="muted" style="margin-top:7px"></span>
@@ -1275,9 +1275,14 @@ const db = getDatabase(firebaseApp);
         vendettaTie=topIds.length>1 && allianceScore===top ? 1 : 0;
         vendettaWon=topIds.length===1 && allianceScore===top ? 1 : 0;
       }
-      const challengeSnap=await get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`));
+      const [challengeSnap,diceSnap]=await Promise.all([
+        get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`)),
+        get(ref(db,`rooms/${room}/rollDiceMode/${uid}`))
+      ]);
       const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
       const challengeBonus=(challengeActive && result==="Win" && players.some(x=>x.bot))?CHAOS_BOT_WIN_BONUS:0;
+      const rollDiceActive=diceSnap.exists() && diceSnap.val()===true;
+      const rollDiceWinBonus=(rollDiceActive && result==="Win")?ROLL_DICE_WIN_BONUS:0;
       const recentGames={...(old.recentGames||{})};
       recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now()};
       const trimmed=Object.entries(recentGames).sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0)).slice(0,10);
@@ -1288,7 +1293,7 @@ const db = getDatabase(firebaseApp);
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
         totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
-        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(vendettaAllianceScore ?? finalScores[uid] ?? 0))+challengeBonus,
+        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(vendettaAllianceScore ?? finalScores[uid] ?? 0))+challengeBonus+rollDiceWinBonus,
         moveWinPoints,
         previousTeam:old.team||"unassigned",
         team,
@@ -2796,6 +2801,7 @@ const db = getDatabase(firebaseApp);
   }
 
   const ROLL_DICE_COST=15;
+  const ROLL_DICE_WIN_BONUS=30;
   let rollDiceModeActive=false;
   let diceRollThisRound=null;
   let soloCardDeck=[];
@@ -2871,7 +2877,7 @@ let soloCupCrusherX2Choice=null;
         ? `Solo Mode has its own minigames, so Roll the Dice cannot be selected.`
       : balance<ROLL_DICE_COST
         ? `You have ${balance} CP. Click to check the cost.`
-        : `Costs ${ROLL_DICE_COST} CP upfront and lasts for the full 7-round game.`;
+        : `Costs ${ROLL_DICE_COST} CP upfront. Win the game to earn +${ROLL_DICE_WIN_BONUS} CP.`;
   }
 
   async function activateRollDiceMode(){
