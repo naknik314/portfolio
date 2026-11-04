@@ -362,7 +362,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-active-card{opacity:.87;grid-area:auto}
 .countdown-chain-icons{font-size:clamp(19px,2.1vw,29px);font-weight:900;margin:10px 0 6px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:clamp(1px,.4vw,6px)}
 .countdown-chain-step{display:inline-flex;align-items:center;justify-content:center;width:1.55em;height:1.55em;box-sizing:border-box;border:3px solid transparent;border-radius:50%;flex-shrink:0}
-.countdown-chain-step.is-target{border-color:light-dark(#be185d,#f9a8d4);background:#ec4899;box-shadow:0 0 0 2px color-mix(in srgb,#ec4899 30%,transparent),0 2px 12px rgba(236,72,153,.3);opacity:1}
+.countdown-chain-step.is-target{border-color:light-dark(#be185d,#f9a8d4);background:#000;box-shadow:0 0 0 2px color-mix(in srgb,#ec4899 30%,transparent),0 2px 12px rgba(236,72,153,.3);opacity:1}
 .countdown-chain-arrow{font-size:.72em;flex-shrink:0}
 .countdown-chain-loop{opacity:.6}
 .countdown-target-card{border:3px solid var(--pink);box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 14%,transparent);background:light-dark(#FFF7FB,#2A1C2B)}
@@ -636,7 +636,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <button class="btn secondary wide" id="openChaosPoints" style="margin-top:10px">Choose Chaos Points extras →</button>
             </div>
 
-            <button class="btn wide" id="startBtn">Start 7-round game →</button>
+            <button class="btn wide" id="startBtn">Start Game →</button>
             <p class="note">You need at least 2 players. Only the room host can start the match.</p>
           </div>
         </div>
@@ -1785,7 +1785,7 @@ const db = getDatabase(firebaseApp);
     const canStart = isHost && (players.length >= 2 || (soloModeActive && players.length === 1));
     $("startBtn").disabled = !isHost;
     $("startBtn").style.opacity = isHost ? "1" : ".5";
-    $("startBtn").textContent = countdownModeActive ? "Start Countdown Mode →" : (soloModeActive && players.length===1 ? "Start Solo Mode →" : "Start 7-round game →");
+    $("startBtn").textContent = "Start Game →";
     if($("countdownModeStatus")) refreshCountdownModeLobby().catch(console.warn);
     const modeSelect=$("predictionModeSelect");
     const modeHelp=$("predictionModeHelp");
@@ -2361,7 +2361,7 @@ const db = getDatabase(firebaseApp);
     }
     if(predictionHelp && countdownModeActive) predictionHelp.textContent="Predictions are unavailable in Countdown Mode.";
     const start=$("startBtn");
-    if(start) start.textContent=countdownModeActive?"Start Countdown Mode →":(soloModeActive?"Start Solo Mode →":"Start 7-round game →");
+    if(start) start.textContent="Start Game →";
   }
 
   async function toggleCountdownMode(){
@@ -2390,7 +2390,7 @@ const db = getDatabase(firebaseApp);
         updatedAt:Date.now()
       });
       countdownModeActive=true;
-      toast("⏳ Countdown Mode selected — press Start Countdown Mode for a new board.");
+      toast("⏳ Countdown Mode selected — press Start Game for a new board.");
     }
     renderLobby();
     await refreshCountdownModeLobby();
@@ -2747,7 +2747,7 @@ const db = getDatabase(firebaseApp);
               <div class="countdown-chain-icons" aria-label="Follow the chain; currently find ${target[0].toUpperCase()+target.slice(1)}">
                 <span class="countdown-chain-step ${target==="rock"?"is-target":""}" ${target==="rock"?'aria-current="step"':""}>🪨</span>
                 <span class="countdown-chain-arrow" aria-hidden="true">→</span>
-                <span class="countdown-chain-step ${target==="scissors"?"is-target":""}" ${target==="scissors"?'aria-current="step"':""}>✂️</span>
+                <span class="countdown-chain-step is-scissors ${target==="scissors"?"is-target":""}" ${target==="scissors"?'aria-current="step"':""}>✂️</span>
                 <span class="countdown-chain-arrow" aria-hidden="true">→</span>
                 <span class="countdown-chain-step ${target==="paper"?"is-target":""}" ${target==="paper"?'aria-current="step"':""}>📄</span>
                 <span class="countdown-chain-arrow" aria-hidden="true">→</span>
@@ -2970,7 +2970,7 @@ const db = getDatabase(firebaseApp);
     if(start){
       const canStart=isHost && (soloModeActive ? onlyOne : players.length>=2);
       start.disabled=!isHost; start.style.opacity=isHost?"1":".5";
-      start.textContent=soloModeActive?"Start Solo Mode →":"Start 7-round game →";
+      start.textContent="Start Game →";
     }
 
     // Solo Mode conflicts with Chaos Bot Mode too. The activation logic already
