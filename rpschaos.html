@@ -391,6 +391,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-chain-divider{height:1px;background:var(--line);margin:14px 0 11px;width:100%}
 .countdown-chain-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-height:33px}
 .countdown-chain-actions .btn{font-size:12px;padding:7px 10px}
+.countdown-target-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:36px;width:100%}
+.countdown-target-actions .btn{font-size:12px;padding:7px 10px;white-space:nowrap}
+.countdown-moves-bubble{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;background:var(--pink);color:#fff;font-size:15px;font-weight:1000;letter-spacing:.02em;line-height:1.1;box-shadow:0 4px 14px color-mix(in srgb,var(--pink) 32%,transparent)}
+.countdown-moves-bubble.flash{animation:countdownBubbleFlash .7s ease-out 1}
+@keyframes countdownBubbleFlash{0%{transform:scale(1);box-shadow:0 4px 14px color-mix(in srgb,var(--pink) 32%,transparent)}35%{transform:scale(1.08);box-shadow:0 0 0 7px color-mix(in srgb,var(--pink) 24%,transparent),0 6px 18px color-mix(in srgb,var(--pink) 36%,transparent)}100%{transform:scale(1);box-shadow:0 4px 14px color-mix(in srgb,var(--pink) 32%,transparent)}}
 @media(max-width:620px){
  .game-top:has(.countdown-header-turn:not(.hidden)){grid-template-columns:minmax(0,1fr) auto;row-gap:7px}
  .game-top:has(.countdown-header-turn:not(.hidden)) .countdown-header-turn{grid-column:1/-1;grid-row:2}
@@ -401,6 +406,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 /* Make the Find Next move counter visible from the board. */
 .countdown-moves-footer{font-size:clamp(18px,2.2vw,24px);font-weight:950;letter-spacing:.02em;color:var(--pink);line-height:1.15}
 .countdown-moves-footer.is-last-move{font-weight:1000;text-transform:uppercase}
+.round-intro-text.countdown-your-turn-intro{font-size:clamp(30px,6.5vw,64px);letter-spacing:.03em;text-align:center;border-color:var(--purple);color:var(--purple);padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
 .round-intro-text.countdown-last-move-intro{font-size:clamp(26px,6vw,62px);letter-spacing:.01em;text-align:center;border-color:var(--pink);color:#b51c57;padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
 </style>
 </head>
@@ -936,11 +942,28 @@ const db = getDatabase(firebaseApp);
     const intro=$("roundIntro"), label=$("roundIntroText");
     if(!intro || !label) return;
     label.textContent="ONLY 1 MOVE LEFT";
+    label.classList.remove("countdown-your-turn-intro");
     label.classList.add("countdown-last-move-intro");
     intro.classList.remove("hidden");
     clearTimeout(roundIntroTimer);
     roundIntroTimer=setTimeout(()=>intro.classList.add("hidden"),1350);
   }
+  let lastCountdownYourTurnKey=null;
+  function showCountdownYourTurnWarning(state,isMyTurn){
+    if(state?.status!=="playing" || !isMyTurn) return;
+    const key=`${room}:${state.attemptId||""}:${state.targetMove||""}:${Number(state.movesUsed||0)}:${state.currentTurnUid||""}`;
+    if(lastCountdownYourTurnKey===key) return;
+    lastCountdownYourTurnKey=key;
+    const intro=$("roundIntro"), label=$("roundIntroText");
+    if(!intro || !label) return;
+    label.textContent="YOUR TURN";
+    label.classList.remove("countdown-last-move-intro");
+    label.classList.add("countdown-your-turn-intro");
+    intro.classList.remove("hidden");
+    clearTimeout(roundIntroTimer);
+    roundIntroTimer=setTimeout(()=>intro.classList.add("hidden"),1050);
+  }
+  let lastCountdownMovesBubbleKey=null;
   const LAST_ROOM_KEY="rockPaperChaosLastRoom";
   function rememberRoom(code){ try{ if(code) localStorage.setItem(LAST_ROOM_KEY,String(code)); }catch(e){} }
   function forgetRoom(){ try{ localStorage.removeItem(LAST_ROOM_KEY); }catch(e){} }
@@ -2662,9 +2685,7 @@ const db = getDatabase(firebaseApp);
             </div>
             <div>
               <div class="countdown-chain-divider"></div>
-              <div class="countdown-chain-actions">
-                ${isMyTurn?`<button type="button" class="btn secondary countdown-inline-pass" id="countdownPassBtn" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"} title="${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"Already passed once this target"}">↪ Pass Turn</button>`:""}
-              </div>
+              <div class="countdown-chain-actions"></div>
               <div class="muted countdown-last-message">${escapeHtml(state.lastMessage||"")}</div>
             </div>
           </div>
@@ -2675,8 +2696,11 @@ const db = getDatabase(firebaseApp);
               <div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div>
               <span style="margin-top:5px;font-size:12px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span>
             </div>
-            <div class="countdown-card-footer" style="justify-content:center">
-              <span class="countdown-moves-footer ${remaining===1?"is-last-move":""}">${remaining===1?"ONLY 1 MOVE LEFT":`${remaining} moves left`}</span>
+            <div class="countdown-card-footer">
+              <div class="countdown-target-actions">
+                <span class="countdown-moves-bubble ${flashMovesBubble?"flash":""}">${remaining===1?"ONLY 1 MOVE LEFT":`${remaining} moves left`}</span>
+                ${isMyTurn?`<button type="button" class="btn secondary countdown-inline-pass" id="countdownPassBtn" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"} title="${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"Already passed once this target"}">↪ Pass Turn</button>`:`<span class="muted" style="font-size:12px;text-align:right">Only the current player can pass.</span>`}
+              </div>
             </div>
           </div>
           <div class="rule-card countdown-progress-card" style="text-align:center">
@@ -2696,6 +2720,7 @@ const db = getDatabase(firebaseApp);
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
       if($("countdownPassBtn")) $("countdownPassBtn").onclick=passCountdownTurn;
       showCountdownLastMoveWarning(state,remaining);
+      showCountdownYourTurnWarning(state,isMyTurn);
       scheduleCountdownBotTurn(state);
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
