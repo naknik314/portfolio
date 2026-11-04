@@ -358,12 +358,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-meter{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;margin-top:8px}
 .countdown-meter>div{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width .2s}
 .countdown-status-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.9fr) minmax(0,1.15fr);gap:10px;margin:12px 0;align-items:stretch}
-.countdown-status-grid>.rule-card{margin:0;padding:14px 10px;min-width:0}
+.countdown-status-grid>.rule-card{margin:0;padding:14px 10px;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
 .countdown-active-card{opacity:.87;grid-area:auto}
 .countdown-chain-icons{font-size:clamp(19px,2.1vw,29px);font-weight:900;margin:10px 0 6px;white-space:nowrap}
 .countdown-target-card{border:3px solid var(--pink);box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 14%,transparent);background:light-dark(#FFF7FB,#2A1C2B)}
 .countdown-target-card .countdown-target-name{font-size:19px;font-weight:950;margin-top:2px}
 .countdown-progress-card{background:var(--panel2)}
+
+/* Keep the turn action next to the turn label within Follow the Chain. */
+.countdown-turn-actions{justify-content:space-between;flex-wrap:wrap}
+.countdown-inline-pass{font-size:12px;padding:7px 9px;white-space:nowrap;flex-shrink:0}
+.countdown-last-message{font-size:12px;line-height:1.35;text-align:left;margin-top:6px;overflow-wrap:anywhere}
+
 .countdown-turn-card{padding:11px 14px}
 .countdown-turn-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .countdown-turn-heading strong{font-size:15px}
@@ -2499,7 +2505,7 @@ const db = getDatabase(firebaseApp);
       const matching=countdownObjectiveCount(uid,team,state);
       const jokerCredits=Object.values(state.jokerObjectiveCredits||{}).filter(c=>c?.uid===uid && c?.move===team).length;
       const teamName=team[0].toUpperCase()+team.slice(1);
-      return `${countdownTileIcons[team]} ${matching} ${teamName} tile${matching===1?"":"s"} out of ${total} total tile${total===1?"":"s"} you revealed${jokerCredits?` (includes ${jokerCredits} Joker credit${jokerCredits===1?"":"s"})`:""}.`;
+      return `${countdownTileIcons[team]} ${matching} of ${total} tiles you revealed ${jokerCredits?"counted as":"were"} ${teamName}${jokerCredits?` (includes ${jokerCredits} Joker credit${jokerCredits===1?"":"s"})`:""}.`;
     }
     const sharedJokers=Object.values(state.jokerFinders||{}).filter(finderUid=>(state.playerTeams?.[finderUid]||"unassigned")==="unassigned").length;
     return `❓ ${sharedJokers} Joker${sharedJokers===1?"":"s"} found by Team Unpredictable · ${total} total tile${total===1?"":"s"} you revealed.`;
@@ -2606,11 +2612,40 @@ const db = getDatabase(firebaseApp);
     if(state.status==="playing"){
       play.innerHTML=`
         <div class="countdown-status-grid">
-          <div class="rule-card countdown-active-card" style="text-align:center"><strong>FOLLOW THE CHAIN</strong><div class="countdown-chain-icons">🪨 → ✂️ → 📄 → 🪨</div><div class="muted" style="font-size:12px;margin-top:2px">❓ = Joker</div><div style="height:1px;background:var(--line);margin:11px 0 9px"></div><div style="font-size:10px;letter-spacing:.1em;font-weight:900;color:var(--muted);text-transform:uppercase">BONUS OBJECTIVE</div><div style="font-size:12px;font-weight:800;line-height:1.4;margin-top:6px">${escapeHtml(countdownObjectiveTextFor(currentUser?.uid,state).replace(/^.*?Bonus objective: /,""))}</div></div>
-          <div class="rule-card countdown-target-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:41px;margin:5px 0 2px">${countdownTileIcons[target]}</div><div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div><span style="margin-top:5px;font-size:12px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span></div>
-          <div class="rule-card countdown-progress-card" style="text-align:center"><strong style="font-size:11px">BONUS OBJECTIVE PROGRESS</strong><div style="font-size:13px;font-weight:800;line-height:1.5;margin-top:10px">${escapeHtml(countdownObjectiveProgressText(currentUser?.uid,state))}</div></div>
+          <div class="rule-card countdown-active-card" style="text-align:center">
+            <div>
+              <strong>FOLLOW THE CHAIN</strong>
+              <div class="countdown-chain-icons">🪨 → ✂️ → 📄 → 🪨</div>
+              <div class="muted" style="font-size:12px;margin-top:2px">❓ = Joker</div>
+            </div>
+            <div class="countdown-card-footer countdown-turn-actions">
+              <strong class="countdown-turn-inline">${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong>
+              ${isMyTurn?`<button type="button" class="btn secondary countdown-inline-pass" id="countdownPassBtn" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"} title="${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"Already passed once this target"}">↪ Pass Turn</button>`:""}
+            </div>
+            <div class="muted countdown-last-message">${escapeHtml(state.lastMessage||"")}</div>
+          </div>
+          <div class="rule-card countdown-target-card" style="text-align:center">
+            <div>
+              <strong>FIND NEXT</strong>
+              <div style="font-size:41px;margin:5px 0 2px">${countdownTileIcons[target]}</div>
+              <div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div>
+              <span style="margin-top:5px;font-size:12px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span>
+            </div>
+            <div class="countdown-card-footer" style="justify-content:center">
+              <span class="countdown-moves-footer">${remaining} move${remaining===1?"":"s"} left</span>
+            </div>
+          </div>
+          <div class="rule-card countdown-progress-card" style="text-align:center">
+            <div>
+              <strong style="font-size:11px">BONUS OBJECTIVE</strong>
+              <div class="countdown-objective-text">${escapeHtml(countdownObjectiveTextFor(currentUser?.uid,state).replace(/^.*?Bonus objective: /,""))}</div>
+              <div style="height:1px;background:var(--line);margin:11px 0 9px"></div>
+              <strong style="font-size:11px">BONUS OBJECTIVE PROGRESS</strong>
+              <div class="countdown-progress-text">${escapeHtml(countdownObjectiveProgressText(currentUser?.uid,state))}</div>
+            </div>
+          </div>
         </div>
-        <div class="rule-card countdown-turn-card" style="text-align:center"><div class="countdown-turn-heading"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span class="countdown-moves-left">${remaining} move${remaining===1?"":"s"} left</span></div><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span>${isMyTurn?`<button type="button" class="btn secondary" id="countdownPassBtn" style="margin-top:10px" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"}>↪ Pass Turn</button><span class="muted" style="margin-top:6px;font-size:12px">${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"You already passed once for this target."}</span>`:""}<div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
+        <div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div>
         <p class="note" style="margin:10px 0 0;text-align:center;font-weight:750">Reveal a hidden tile or select a highlighted READY tile to clear your target. Both count as a turn.</p>
         <div class="countdown-board">${tileHtml}</div>
         <p class="note">Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
