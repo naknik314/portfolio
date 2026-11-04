@@ -348,8 +348,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;margin:16px 0}
 .countdown-tile{aspect-ratio:1/1;min-height:64px;border:2px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);font-size:clamp(24px,5vw,38px);font-weight:950;display:grid;place-items:center;transition:transform .12s,border-color .12s,opacity .12s}
 .countdown-tile:not(:disabled):hover{transform:translateY(-2px);border-color:var(--purple)}
-.countdown-tile.revealed{background:var(--panel);border-color:var(--mint)}
+.countdown-tile.revealed{background:var(--panel);border-color:var(--line)}
+.countdown-tile.revealed.countdown-not-target{opacity:.55;cursor:default}
+.countdown-tile.revealed.countdown-ready{position:relative;border:3px solid #22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22),0 0 18px rgba(34,197,94,.24);background:light-dark(#e8fff0,#173b29);opacity:1;padding-top:12px}
+.countdown-ready-label{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:950;line-height:1.1;color:light-dark(#137239,#8df9b0);letter-spacing:.09em}
 .countdown-tile.cleared{opacity:.32;text-decoration:line-through;cursor:default}
+.countdown-tile.cleared .countdown-ready-label{display:none}
 .countdown-tile.bot-selected{border-color:var(--pink);box-shadow:0 0 0 4px color-mix(in srgb,var(--pink) 22%,transparent);transform:translateY(-2px) scale(1.03)}
 .countdown-meter{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;margin-top:8px}
 .countdown-meter>div{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width .2s}
@@ -688,6 +692,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <summary style="cursor:pointer;font-weight:800">Learn about Vendetta Mode</summary>
                 <span style="display:block;margin-top:10px">Players are automatically grouped into alliances based on their current teams. Vendetta uses alliance totals instead of an individual winner, and every player privately chooses either the normal or swapped version of their own Team Power for this match. Your choice stays hidden until you use the power. Every alliance has at least 2 players — there are no 1-vs-everyone layouts.</span>
                 <span>Alliance names: 🪨 <b>The Strikers</b>, 📄 <b>The Mimics</b>, ✂️ <b>The Precisionists</b>, ❓ <b>The Unknowns</b>.</span>
+                <span style="margin-top:8px"><b>Vendetta CP prizes:</b> the winning alliance shares a <b>150 CP pool</b> among its players. In matches with <b>3 or more alliances</b>, second place shares a <b>75 CP pool</b>. Tied first-place alliances split the same 150 CP pool equally, with no second-place prize in that case. Tied second-place alliances share one 75 CP pool. Bots count as player slots but cannot collect CP. Normal game CP earnings still apply.</span>
                 <span style="margin-top:8px"><b>Underdog Bonus:</b> if an alliance has fewer players than the largest alliance, it earns one bonus when at least one of its players is on the round-winning move: +1 extra Vendetta point normally, or +2 during Double Trouble. It is awarded once per underdog alliance per round, even if multiple members share the winning move. Vendetta points are added to the alliance total and shown at the end of the game. In 2 vs 3 vs 3, only the 2-player alliance is the underdog.</span>
               </details>
               <select id="vendettaLayoutSelect" style="width:100%;margin-top:10px;padding:10px;border-radius:10px">
@@ -1246,6 +1251,7 @@ const db = getDatabase(firebaseApp);
     const maxScore=Math.max(...Object.values(finalScores).map(Number));
     const winners=Object.keys(finalScores).filter(uid=>Number(finalScores[uid])===maxScore);
     const isTie=winners.length>1;
+    const vendettaPrizes=vendettaPrizeAwards(finalScores);
 
     await Promise.all(players.filter(p=>!p.bot).map(async p=>{
       const uid=p.uid;
@@ -1296,8 +1302,9 @@ const db = getDatabase(firebaseApp);
       const challengeBonus=(challengeActive && result==="Win" && players.some(x=>x.bot))?CHAOS_BOT_WIN_BONUS:0;
       const rollDiceActive=diceSnap.exists() && diceSnap.val()===true;
       const rollDiceWinBonus=(rollDiceActive && result==="Win")?ROLL_DICE_WIN_BONUS:0;
+      const vendettaPrize=Number(vendettaPrizes.awards[uid]||0);
       const recentGames={...(old.recentGames||{})};
-      recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now()};
+      recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now(),...(vendettaModeActive?{vendetta:true,vendettaPrize}: {})};
       const trimmed=Object.entries(recentGames).sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0)).slice(0,10);
       const trimmedObj=Object.fromEntries(trimmed);
 
@@ -1306,7 +1313,7 @@ const db = getDatabase(firebaseApp);
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
         totalPoints:Number(old.totalPoints||0)+Number(finalScores[uid]||0),
-        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(vendettaAllianceScore ?? finalScores[uid] ?? 0))+challengeBonus+rollDiceWinBonus,
+        chaosPoints:Number(old.chaosPoints==null?old.totalPoints||0:old.chaosPoints)+Math.max(0,Number(vendettaAllianceScore ?? finalScores[uid] ?? 0))+challengeBonus+rollDiceWinBonus+vendettaPrize,
         moveWinPoints,
         previousTeam:old.team||"unassigned",
         team,
@@ -2003,6 +2010,48 @@ const db = getDatabase(firebaseApp);
     });
   }
 
+  // Vendetta prize pools are split across alliance member slots, including bots.
+  // Bots occupy a slot but have no CP profile to credit. Allocation is stable by uid.
+  const VENDETTA_FIRST_PRIZE_POOL=150;
+  const VENDETTA_SECOND_PRIZE_POOL=75;
+  function vendettaPrizeAwards(finalScores){
+    const awards={};
+    if(!vendettaModeActive) return {awards,firstPool:0,secondPool:0,firstIds:[],secondIds:[]};
+    const totals=vendettaTotals(finalScores);
+    const groups=Object.entries(totals).map(([id,score])=>({id,score:Number(score)}));
+    if(!groups.length) return {awards,firstPool:0,secondPool:0,firstIds:[],secondIds:[]};
+    const best=Math.max(...groups.map(x=>x.score));
+    const firstIds=groups.filter(x=>x.score===best).map(x=>x.id);
+    // A tied first place shares the SAME 150 CP pool between winning alliances.
+    // Second-place prizes only exist if exactly one alliance finished first.
+    const secondScore=firstIds.length===1
+      ? Math.max(-Infinity,...groups.filter(x=>x.id!==firstIds[0]).map(x=>x.score))
+      : -Infinity;
+    const secondIds=firstIds.length===1 && groups.length>=3
+      ? groups.filter(x=>x.score===secondScore).map(x=>x.id)
+      : [];
+    const splitAcrossPlayers=(uids,pool)=>{
+      const members=[...uids].sort();
+      if(!members.length) return;
+      const share=Math.floor(pool/members.length);
+      const remainder=pool%members.length;
+      members.forEach((uid,index)=>{awards[uid]=(awards[uid]||0)+share+(index<remainder?1:0);});
+    };
+    const splitAcrossAlliances=(ids,pool)=>{
+      const allianceIds=[...ids].sort();
+      if(!allianceIds.length) return;
+      const each=Math.floor(pool/allianceIds.length);
+      const leftover=pool%allianceIds.length;
+      allianceIds.forEach((id,index)=>{
+        const uids=Object.keys(vendettaAlliances[id]?.members||{});
+        splitAcrossPlayers(uids,each+(index<leftover?1:0));
+      });
+    };
+    splitAcrossAlliances(firstIds,VENDETTA_FIRST_PRIZE_POOL);
+    if(secondIds.length) splitAcrossAlliances(secondIds,VENDETTA_SECOND_PRIZE_POOL);
+    return {awards,firstPool:VENDETTA_FIRST_PRIZE_POOL,secondPool:secondIds.length?VENDETTA_SECOND_PRIZE_POOL:0,firstIds,secondIds};
+  }
+
   function vendettaTotals(finalScores){
     const totals={};
     Object.entries(vendettaAlliances||{}).forEach(([id,a])=>{
@@ -2548,9 +2597,11 @@ const db = getDatabase(firebaseApp);
     const tiles=state.tiles||{};
     const tileHtml=Object.entries(tiles).map(([id,t])=>{
       const known=t.revealed||t.cleared;
-      const canPick=isMyTurn && !t.cleared && (!t.revealed || t.move===target || t.move==="joker");
+      const ready=Boolean(t.revealed && !t.cleared && t.move===target);
+      const notTarget=Boolean(t.revealed && !t.cleared && t.move!==target);
+      const canPick=isMyTurn && !t.cleared && (!t.revealed || ready);
       const tileLabel=t.move==="joker"?"Joker":(t.move[0].toUpperCase()+t.move.slice(1));
-      return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""} ${state.botPendingTileId===id?"bot-selected":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${tileLabel} tile`:"Hidden tile"}">${t.cleared?`✓ ${countdownTileIcons[t.move]}`:(t.revealed?countdownTileIcons[t.move]:"?")}</button>`;
+      return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""} ${ready?"countdown-ready":""} ${notTarget?"countdown-not-target":""} ${state.botPendingTileId===id?"bot-selected":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${tileLabel} tile${ready?", ready to clear":""}`:"Hidden tile"}">${ready?'<span class="countdown-ready-label">READY</span>':""}${t.cleared?`✓ ${countdownTileIcons[t.move]}`:(t.revealed?countdownTileIcons[t.move]:"?")}</button>`;
     }).join("");
     if(state.status==="playing"){
       play.innerHTML=`
@@ -2560,6 +2611,7 @@ const db = getDatabase(firebaseApp);
           <div class="rule-card countdown-progress-card" style="text-align:center"><strong style="font-size:11px">BONUS OBJECTIVE PROGRESS</strong><div style="font-size:13px;font-weight:800;line-height:1.5;margin-top:10px">${escapeHtml(countdownObjectiveProgressText(currentUser?.uid,state))}</div></div>
         </div>
         <div class="rule-card countdown-turn-card" style="text-align:center"><div class="countdown-turn-heading"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span class="countdown-moves-left">${remaining} move${remaining===1?"":"s"} left</span></div><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span>${isMyTurn?`<button type="button" class="btn secondary" id="countdownPassBtn" style="margin-top:10px" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"}>↪ Pass Turn</button><span class="muted" style="margin-top:6px;font-size:12px">${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"You already passed once for this target."}</span>`:""}<div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
+        <p class="note" style="margin:10px 0 0;text-align:center;font-weight:750">Reveal a hidden tile or select a highlighted READY tile to clear your target. Both count as a turn.</p>
         <div class="countdown-board">${tileHtml}</div>
         <p class="note">Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
@@ -5881,8 +5933,12 @@ async function refreshTeamPowerUI() {
       })).sort((a,b)=>b.score-a.score);
       const top=entries[0]?.score??0;
       const winners=entries.filter(x=>x.score===top);
+      const vendettaPrizes=vendettaPrizeAwards(finalScores);
+      const rewardedSecond=new Set(vendettaPrizes.secondIds);
       $("winnerTitle").textContent=winners.length>1?"⚔️ Vendetta ends in a tie!":`⚔️ ${winners[0].name} win the Vendetta!`;
-      $("winnerSub").textContent=winners.length>1?`${winners.length} alliances tied at ${top} points.`:`${top} alliance points · ${vendettaLayout}`;
+      $("winnerSub").textContent=winners.length>1
+        ? `${winners.length} alliances tied at ${top} points · 150 CP first-place prize shared between tied alliances · No second-place prize.`
+        : `${top} alliance points · ${vendettaLayout} · 150 CP winning pool${vendettaPrizes.secondPool?" · 75 CP second-place pool":""}`;
       const myAllianceId=vendettaAllianceByPlayer[currentUser?.uid];
       $("finalScores").innerHTML=entries.map((a,i)=>{
         const isMyAlliance=a.id===myAllianceId;
@@ -5891,7 +5947,7 @@ async function refreshTeamPowerUI() {
             <b>${i===0&&winners.length===1?"👑 ":""}${escapeHtml(a.name)}${isMyAlliance?' <span style="display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;vertical-align:2px">YOUR ALLIANCE</span>':""}</b>
             <div class="muted" style="font-size:12px">${a.members.map(escapeHtml).join(" · ")}</div>
           </div>
-          <b class="score">${a.score} pts</b>
+          <div style="text-align:right"><b class="score">${a.score} pts</b>${(winners.some(w=>w.id===a.id) || rewardedSecond.has(a.id)) ? `<div class="muted" style="font-size:11px;margin-top:4px">${Object.keys(vendettaAlliances[a.id]?.members||{}).reduce((sum,uid)=>sum+Number(vendettaPrizes.awards[uid]||0),0)} CP alliance prize share</div>` : ""}</div>
         </div>`;
       }).join("");
       const box=$("teamEndMessage"); if(box) box.style.display="none";
