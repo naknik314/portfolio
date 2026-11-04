@@ -5188,12 +5188,17 @@ async function refreshTeamPowerUI() {
       const copied=gains.length?Math.max(...gains):0;
       reprintAwards.push({player:p,copied});
     }
+    // Track Reprint notices so Stonewall's later resolution can report the
+    // actual outcome for each player, including allied Reprints that survive.
+    const reprintNotices=[];
     // Apply only after every Reprint has chosen its copied value.
     reprintAwards.forEach(({player:p,copied})=>{
       if(copied>0){
         scores[p.uid]=Number(scores[p.uid]||0)+copied;
         positiveRoundPoints[p.uid]+=copied;
+        const noticeIndex=details.length;
         details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 📄 Reprint USED UP.`);
+        reprintNotices.push({player:p,copied,index:noticeIndex});
       } else {
         details.push(`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. NO EFFECT: nobody else earned positive points to copy. 🔒 📄 Reprint USED UP.`);
       }
@@ -5267,6 +5272,19 @@ async function refreshTeamPowerUI() {
       stonewallNoticeIndexes[p.uid]=details.length;
       details.push("");
       refreshStonewallNotice(p);
+    });
+
+    // Stonewall resolves after Reprint. Update Reprint's reveal to describe
+    // whether THAT player's copied points survived, rather than reporting a
+    // blanket Reprint success when their full positive gain was blocked.
+    const stonewallUsers=players.filter(p=>submissions[p.uid]?.teamPower==="reverseRock");
+    reprintNotices.forEach(({player:p,copied,index})=>{
+      const blockedBy=stonewallUsers.filter(sw=>stonewallBlockedPlayers[sw.uid]?.has(p.uid));
+      if(blockedBy.length){
+        details[index]=`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. BLOCKED: Copied points blocked by Stonewall. 🔒 📄 Reprint USED UP.`;
+      }else if(vendettaModeActive && stonewallUsers.some(sw=>vendettaAllianceByPlayer[sw.uid] && vendettaAllianceByPlayer[sw.uid]===vendettaAllianceByPlayer[p.uid])){
+        details[index]=`⚡ POWER USED — ${p.name} used 📄 Reprint, which copies the highest positive points another player earns that round. SUCCESS: copied +${copied} ${copied===1?"point":"points"}. 🔒 📄 Reprint USED UP.`;
+      }
     });
 
     // Preserve the true net result of the round before Casual mode applies its
