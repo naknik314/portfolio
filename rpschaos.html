@@ -382,6 +382,26 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 }
 @media(max-width:390px){.countdown-status-grid>.rule-card{padding:11px 7px}.countdown-chain-icons{font-size:16px}}
 
+
+
+/* Countdown: center the current turn between board progress and tiles remaining. */
+.game-top:has(.countdown-header-turn:not(.hidden)){display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);column-gap:12px}
+.countdown-header-turn{font-size:clamp(12px,1.7vw,17px);font-weight:950;white-space:nowrap;text-align:center;color:var(--purple)}
+.game-top:has(.countdown-header-turn:not(.hidden)) .timer{justify-self:end;text-align:right;white-space:nowrap}
+.countdown-chain-divider{height:1px;background:var(--line);margin:14px 0 11px;width:100%}
+.countdown-chain-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-height:33px}
+.countdown-chain-actions .btn{font-size:12px;padding:7px 10px}
+@media(max-width:620px){
+ .game-top:has(.countdown-header-turn:not(.hidden)){grid-template-columns:minmax(0,1fr) auto;row-gap:7px}
+ .game-top:has(.countdown-header-turn:not(.hidden)) .countdown-header-turn{grid-column:1/-1;grid-row:2}
+ .game-top:has(.countdown-header-turn:not(.hidden)) .timer{grid-column:2;grid-row:1;font-size:17px}
+ .game-top:has(.countdown-header-turn:not(.hidden)) .game-top-modifier{grid-column:1;grid-row:1}
+}
+
+/* Make the Find Next move counter visible from the board. */
+.countdown-moves-footer{font-size:clamp(18px,2.2vw,24px);font-weight:950;letter-spacing:.02em;color:var(--pink);line-height:1.15}
+.countdown-moves-footer.is-last-move{font-weight:1000;text-transform:uppercase}
+.round-intro-text.countdown-last-move-intro{font-size:clamp(26px,6vw,62px);letter-spacing:.01em;text-align:center;border-color:var(--pink);color:#b51c57;padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
 </style>
 </head>
 <body>
@@ -727,6 +747,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
             <b>Round 1 of 7: 🔮 Read the Room</b>
             <span>Standard round — pick your move and predict a rival's move.</span>
           </div>
+          <div id="countdownHeaderTurn" class="countdown-header-turn hidden" aria-live="polite"></div>
           <div class="timer" id="timer">20s</div>
         </div>
         <div class="progress"><div id="progressFill"></div></div>
@@ -899,7 +920,23 @@ const db = getDatabase(firebaseApp);
     lastRoundIntroShown=n;
     const intro=$("roundIntro"), label=$("roundIntroText");
     if(!intro || !label) return;
+    label.classList.remove("countdown-last-move-intro");
     label.textContent=`ROUND ${n}`;
+    intro.classList.remove("hidden");
+    clearTimeout(roundIntroTimer);
+    roundIntroTimer=setTimeout(()=>intro.classList.add("hidden"),1350);
+  }
+  // Present the last-move warning only once per target hunt, across rerenders.
+  let lastCountdownWarningKey=null;
+  function showCountdownLastMoveWarning(state,remaining){
+    if(state?.status!=="playing" || remaining!==1) return;
+    const key=`${room}:${state.attemptId||""}:${Number(state.clearedCount||0)}:${state.targetMove||""}`;
+    if(lastCountdownWarningKey===key) return;
+    lastCountdownWarningKey=key;
+    const intro=$("roundIntro"), label=$("roundIntroText");
+    if(!intro || !label) return;
+    label.textContent="ONLY 1 MOVE LEFT";
+    label.classList.add("countdown-last-move-intro");
     intro.classList.remove("hidden");
     clearTimeout(roundIntroTimer);
     roundIntroTimer=setTimeout(()=>intro.classList.add("hidden"),1350);
@@ -2600,6 +2637,11 @@ const db = getDatabase(firebaseApp);
     $("progressFill").style.width=`${Math.max(0,Number(state.clearedCount||0)/COUNTDOWN_TILE_COUNT*100)}%`;
     const top=$("topRoundModifier");
     if(top) top.innerHTML=`<b>⏳ Countdown Mode</b><span>Co-op board · ${Number(state.clearedCount||0)}/${COUNTDOWN_TILE_COUNT} tiles cleared</span>`;
+    const headerTurn=$("countdownHeaderTurn");
+    if(headerTurn){
+      headerTurn.classList.toggle("hidden",state.status!=="playing");
+      headerTurn.textContent=isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${current.name}'s turn`:"Waiting for next turn…";
+    }
     const tiles=state.tiles||{};
     const tileHtml=Object.entries(tiles).map(([id,t])=>{
       const known=t.revealed||t.cleared;
@@ -2618,11 +2660,13 @@ const db = getDatabase(firebaseApp);
               <div class="countdown-chain-icons">🪨 → ✂️ → 📄 → 🪨</div>
               <div class="muted" style="font-size:12px;margin-top:2px">❓ = Joker</div>
             </div>
-            <div class="countdown-card-footer countdown-turn-actions">
-              <strong class="countdown-turn-inline">${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong>
-              ${isMyTurn?`<button type="button" class="btn secondary countdown-inline-pass" id="countdownPassBtn" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"} title="${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"Already passed once this target"}">↪ Pass Turn</button>`:""}
+            <div>
+              <div class="countdown-chain-divider"></div>
+              <div class="countdown-chain-actions">
+                ${isMyTurn?`<button type="button" class="btn secondary countdown-inline-pass" id="countdownPassBtn" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"} title="${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"Already passed once this target"}">↪ Pass Turn</button>`:""}
+              </div>
+              <div class="muted countdown-last-message">${escapeHtml(state.lastMessage||"")}</div>
             </div>
-            <div class="muted countdown-last-message">${escapeHtml(state.lastMessage||"")}</div>
           </div>
           <div class="rule-card countdown-target-card" style="text-align:center">
             <div>
@@ -2632,7 +2676,7 @@ const db = getDatabase(firebaseApp);
               <span style="margin-top:5px;font-size:12px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span>
             </div>
             <div class="countdown-card-footer" style="justify-content:center">
-              <span class="countdown-moves-footer">${remaining} move${remaining===1?"":"s"} left</span>
+              <span class="countdown-moves-footer ${remaining===1?"is-last-move":""}">${remaining===1?"ONLY 1 MOVE LEFT":`${remaining} moves left`}</span>
             </div>
           </div>
           <div class="rule-card countdown-progress-card" style="text-align:center">
@@ -2651,6 +2695,7 @@ const db = getDatabase(firebaseApp);
         <p class="note">Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
       if($("countdownPassBtn")) $("countdownPassBtn").onclick=passCountdownTurn;
+      showCountdownLastMoveWarning(state,remaining);
       scheduleCountdownBotTurn(state);
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
@@ -3463,6 +3508,7 @@ async function refreshTeamPowerUI() {
       roundModifierHtml=`<b>Round ${round} of 7: 🔮 Read the Room</b><span>Standard round — pick your move and predict a rival's move.</span>`;
     }
     window.__roundModifierHtml=roundModifierHtml;
+    if($("countdownHeaderTurn")) $("countdownHeaderTurn").classList.add("hidden");
     if($("topRoundModifier")) $("topRoundModifier").innerHTML=roundModifierHtml;
     // Never block the Choose Your Move screen on the optional store-mode read.
     // Render immediately, then update the dice-mode state from Firebase.
