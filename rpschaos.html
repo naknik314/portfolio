@@ -2340,9 +2340,17 @@ const db = getDatabase(firebaseApp);
       const conflicts=hasSolo || Boolean(data.vendettaMode?.active) || Object.values(data.rollDiceMode||{}).some(Boolean) || Object.values(data.chaosBotChallenge||{}).some(Boolean) || Object.values(data.powerSwap||{}).some(Boolean) || Object.values(data.powerReversal||{}).some(Boolean) || Object.keys(data.doubleAgent||{}).length>0;
       if(conflicts) return toast("Countdown Mode is a separate co-op challenge and can't be combined with the other game extras yet.");
       if(players.length<2) return toast("Countdown Mode needs at least 2 players. Add a computer teammate or have another player join.");
-      await update(ref(db,`rooms/${room}`),{countdownMode:{active:true,enabledBy:currentUser.uid,enabledAt:Date.now()},updatedAt:Date.now()});
+      // Enabling Countdown is only a lobby selection, not a resume action.
+      // Discard any finished board from an earlier attempt before the host
+      // presses Start Countdown Mode.
+      await update(ref(db,`rooms/${room}`),{
+        status:"lobby",
+        countdownMode:{active:true,enabledBy:currentUser.uid,enabledAt:Date.now()},
+        countdownState:null,
+        updatedAt:Date.now()
+      });
       countdownModeActive=true;
-      toast("⏳ Countdown Mode active — work together to clear the board.");
+      toast("⏳ Countdown Mode selected — press Start Countdown Mode for a new board.");
     }
     renderLobby();
     await refreshCountdownModeLobby();
@@ -2750,7 +2758,19 @@ const db = getDatabase(firebaseApp);
     if(balance<COUNTDOWN_COST) return toast(`You need ${COUNTDOWN_COST} Chaos Points to try Countdown Mode again.`);
     if(COUNTDOWN_COST>0) await update(profileRef,{chaosPoints:balance-COUNTDOWN_COST,updatedAt:Date.now()});
     const teams=await loadCountdownPlayerTeams();
-    await set(ref(db,`rooms/${room}/countdownState`),freshCountdownState(teams));
+    const freshState=freshCountdownState(teams);
+    // Retry is a whole new attempt. Publish the mode, room phase and board
+    // together, so a prior auto-disable cannot leave a newly created board
+    // invisible or stuck on the previous completed result.
+    await update(ref(db,`rooms/${room}`),{
+      status:"playing",
+      countdownMode:{active:true,enabledBy:currentUser.uid,enabledAt:Date.now()},
+      countdownState:freshState,
+      updatedAt:Date.now()
+    });
+    countdownModeActive=true;
+    show("game");
+    renderCountdownGame(freshState);
     toast(COUNTDOWN_COST>0?`⏳ New Countdown challenge — ${COUNTDOWN_COST} CP spent by the host.`:"⏳ New Countdown challenge — free testing attempt.");
   }
 
@@ -2771,6 +2791,8 @@ const db = getDatabase(firebaseApp);
     const countdownSnap=await get(ref(db,`rooms/${room}/countdownMode`));
     countdownModeActive=Boolean(countdownSnap.exists() && countdownSnap.val()?.active);
     if(countdownModeActive){
+      const currentRoomSnap=await get(ref(db,`rooms/${room}/status`));
+      if(currentRoomSnap.val()!=="lobby") return toast("Return to the lobby before starting a new Countdown challenge.");
       if(players.length<2) return toast("Countdown Mode needs at least 2 players.");
       const profileRef=ref(db,`profiles/${currentUser.uid}`);
       const profileSnap=await get(profileRef);
