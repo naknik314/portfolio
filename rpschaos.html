@@ -368,7 +368,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 /* Keep the turn action next to the turn label within Follow the Chain. */
 .countdown-turn-actions{justify-content:space-between;flex-wrap:wrap}
 .countdown-inline-pass{font-size:12px;padding:7px 9px;white-space:nowrap;flex-shrink:0}
-.countdown-last-message{font-size:12px;line-height:1.35;text-align:left;margin-top:6px;overflow-wrap:anywhere}
+.countdown-last-message{font-size:14px;line-height:1.5;text-align:left;margin-top:7px;overflow-wrap:anywhere}
+.countdown-recap-heading{display:block;font-size:11px;font-weight:900;letter-spacing:.1em;text-align:left;color:var(--text)}
+.countdown-joker-legend{font-size:14px;margin-top:5px;font-weight:800}
 
 .countdown-turn-card{padding:11px 14px}
 .countdown-turn-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -707,9 +709,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⏳ Countdown Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
-                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>4 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
-                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 4-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
-                <span style="margin-top:7px">Find the target and the countdown resets to 4. Run out of moves before finding it and the challenge ends.</span>
+                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>3 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
+                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
+                <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves before finding it and the challenge ends.</span>
                 <span style="margin-top:7px">❓ <b>Jokers:</b> three Team Unpredictable wildcards are hidden on the board. If found, a Joker counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
                 <span style="margin-top:7px"><b>0 CP entry during testing:</b> Countdown is temporarily free to start or retry. The <b>75 CP win prize pool</b> is still split across player slots when the board is cleared.</span>
                 <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals a Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
@@ -2140,7 +2142,7 @@ const db = getDatabase(firebaseApp);
 
 
 
-  const COUNTDOWN_MOVES_PER_TARGET=4;
+  const COUNTDOWN_MOVES_PER_TARGET=3;
   const COUNTDOWN_COST=0; // Temporary free testing price; restore to 75 CP after testing.
   const COUNTDOWN_PRIZE_POOL=75; // Keep win rewards separate from the testing entry price.
   const COUNTDOWN_TEAM_BONUS=10;
@@ -2311,7 +2313,7 @@ const db = getDatabase(firebaseApp);
     btn.style.opacity=isHost?"1":".5";
     btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":`⏳ Enable Countdown Mode — ${COUNTDOWN_COST} CP (Test)`;
     status.textContent=countdownModeActive
-      ? `Co-op board active: 2–8 players share 4 moves per target. The entry costs ${COUNTDOWN_COST} CP during testing.`
+      ? `Co-op board active: 2–8 players share 3 moves per target. The entry costs ${COUNTDOWN_COST} CP during testing.`
       : (isHost?`Co-op challenge for 2–8 players. The entry costs ${COUNTDOWN_COST} CP during testing; only the host starts the challenge.`:"Only the host can change Countdown Mode.");
     const predictionSelect=$("predictionModeSelect");
     const predictionHelp=$("predictionModeHelp");
@@ -2701,11 +2703,11 @@ const db = getDatabase(firebaseApp);
             <div>
               <strong>FOLLOW THE CHAIN</strong>
               <div class="countdown-chain-icons">🪨 → ✂️ → 📄 → 🪨</div>
-              <div class="muted" style="font-size:12px;margin-top:2px">❓ = Joker</div>
+              <div class="muted countdown-joker-legend">❓ = Joker</div>
             </div>
             <div>
               <div class="countdown-chain-divider"></div>
-              <div class="countdown-chain-actions"></div>
+              <div class="countdown-recap-heading">TURN RECAP</div>
               <div class="muted countdown-last-message">${escapeHtml(state.lastMessage||"")}</div>
             </div>
           </div>
