@@ -717,7 +717,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
                 <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves and that attempt ends in failure. The host can start <b>one free retry</b> on a freshly shuffled board after the first failed attempt. Each attempt is recorded separately; winning ends the challenge.</span>
                 <span style="margin-top:7px">❓ <b>Jokers:</b> three Team Unpredictable wildcards are hidden on the board. If found, a Joker counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
-                <span style="margin-top:7px"><b>0 CP entry during testing:</b> Countdown is temporarily free. The planned 75 CP entry will cover up to two attempts (a free retry only after the first loss). The <b>75 CP win prize pool</b> is still split across player slots when the board is cleared.</span>
+                <span style="margin-top:7px"><b>75 CP entry (host only):</b> Includes the first attempt and one free retry if the team loses. The <b>75 CP winning prize pool</b> is split across player slots when the board is cleared; bonus objectives increase the shared reward.</span>
                 <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals a Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
                 <span style="margin-top:7px"><b>Co-op reward boost:</b> every player who completes their bonus objective adds <b>+5 CP</b> to the shared prize pool before it is split. If two Team Unpredictable players share a Joker objective, that counts as two completed objectives.</span>
               </details>
@@ -1545,6 +1545,15 @@ const db = getDatabase(firebaseApp);
         data.soloMoves!=null;
       soloModeActive = roomMarksSolo || soloPlayingFallback;
 
+      // Countdown has a separate terminal state and a host-controlled free retry.
+      // Never let generic lobby/finished routing hide KABOOM or its retry button.
+      // Explicit Back to Lobby clears countdownState, releasing this route.
+      if(data.countdownState && ["won","failed"].includes(data.countdownState.status)){
+        countdownModeActive=true;
+        show("game");
+        renderCountdownGame(data.countdownState);
+        return;
+      }
       if (data.status === "lobby") {
         renderLobby();
         show("lobby");
@@ -2147,8 +2156,8 @@ const db = getDatabase(firebaseApp);
 
 
   const COUNTDOWN_MOVES_PER_TARGET=3;
-  const COUNTDOWN_COST=0; // Temporary free testing price; restore to 75 CP after testing.
-  const COUNTDOWN_PRIZE_POOL=75; // Keep win rewards separate from the testing entry price.
+  const COUNTDOWN_COST=75; // Host-only entry; includes one free retry after a loss.
+  const COUNTDOWN_PRIZE_POOL=75; // Winning prize pool; independent of the entry cost.
   const COUNTDOWN_TEAM_BONUS=10;
   const COUNTDOWN_UNPREDICTABLE_BONUS=15;
   const COUNTDOWN_SHARED_OBJECTIVE_BONUS=5;
@@ -2317,10 +2326,10 @@ const db = getDatabase(firebaseApp);
     countdownModeActive=Boolean(snap.exists() && snap.val()?.active);
     btn.disabled=!isHost;
     btn.style.opacity=isHost?"1":".5";
-    btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":`⏳ Enable Countdown Mode — ${COUNTDOWN_COST} CP (Test)`;
+    btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":`⏳ Enable Countdown Mode — ${COUNTDOWN_COST} CP`;
     status.textContent=countdownModeActive
-      ? `Co-op board active: 2–8 players share 3 moves per target. The entry costs ${COUNTDOWN_COST} CP during testing.`
-      : (isHost?`Co-op challenge for 2–8 players. The entry costs ${COUNTDOWN_COST} CP during testing; only the host starts the challenge.`:"Only the host can change Countdown Mode.");
+      ? `Co-op board active: 2–8 players share 3 moves per target. The host pays ${COUNTDOWN_COST} CP for up to 2 attempts.`
+      : (isHost?`Co-op challenge for 2–8 players. The host pays ${COUNTDOWN_COST} CP to start, including one retry after a loss.`:"Only the host can change Countdown Mode.");
     const predictionSelect=$("predictionModeSelect");
     const predictionHelp=$("predictionModeHelp");
     if(predictionSelect){
@@ -2779,7 +2788,7 @@ const db = getDatabase(firebaseApp);
     const snap=await get(ref(db,`rooms/${room}`));
     const data=snap.val()||{};
     const previous=data.countdownState||{};
-    if(data.status!=="playing" || previous.status!=="failed" || Number(previous.attemptNumber||1)!==1){
+    if(previous.status!=="failed" || Number(previous.attemptNumber||1)!==1){
       return toast("Free Retry is available only after a failed first attempt.");
     }
     // The entry was paid when the first attempt started. This is the one
@@ -2830,7 +2839,7 @@ const db = getDatabase(firebaseApp);
       const teams=await loadCountdownPlayerTeams();
       const state=freshCountdownState(teams);
       await update(ref(db,`rooms/${room}`),{status:"playing",round:1,countdownState:state,scores:null,rounds:null,updatedAt:Date.now()});
-      toast(COUNTDOWN_COST>0?`⏳ Countdown started — ${COUNTDOWN_COST} CP spent by the host.`:"⏳ Countdown started — free testing attempt.");
+      toast(`⏳ Countdown started — ${COUNTDOWN_COST} CP spent by the host (up to 2 attempts).`);
       show("game");
       renderCountdownGame(state);
       return;
@@ -6274,7 +6283,11 @@ async function refreshTeamPowerUI() {
 
       // Route immediately instead of leaving the reconnect screen visible
       // while waiting for the realtime listener's first callback.
-      if(data.status==="lobby"){
+      if(data.countdownState && ["won","failed"].includes(data.countdownState.status)){
+        countdownModeActive=true;
+        show("game");
+        renderCountdownGame(data.countdownState);
+      }else if(data.status==="lobby"){
         show("lobby");
         renderLobby(data);
       }else if(data.status==="finished"){
