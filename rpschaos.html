@@ -1286,7 +1286,10 @@ const db = getDatabase(firebaseApp);
       <div class="results-list">${recent.length?recent.map(g=>{
         const modeLine=g.countdown?`${Number(g.players||0)} players · Countdown Mode`:(g.solo?"Solo":`${Number(g.players||0)} players`);
         const scoreLine=g.countdown?`${Number(g.tilesCleared||0)}/${Number(g.totalTiles||COUNTDOWN_TILE_COUNT)} tiles`:(g.solo?`${Number(g.roundsPlayed||7)} rounds`:`${Number(g.points||0)} pts`);
-        return `<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${modeLine}</div></div><b class="score">${scoreLine}</b></div>`;
+        const bonusNotes=[];
+        if(Number(g.rollDiceWinBonus||0)>0) bonusNotes.push(`🎲 Roll the Dice +${Number(g.rollDiceWinBonus)} CP`);
+        if(Number(g.chaosBotWinBonus||0)>0) bonusNotes.push(`🤖 Chaos Bot +${Number(g.chaosBotWinBonus)} CP`);
+        return `<div class="result-row"><div><b>${escapeHtml(g.result||"Game")}</b><div class="muted" style="font-size:12px">${modeLine}</div>${bonusNotes.length?`<div class="muted" style="font-size:12px;margin-top:4px">${bonusNotes.join(" · ")}</div>`:""}</div><b class="score">${scoreLine}</b></div>`;
       }).join(""):'<div class="rule-card"><span>No completed games yet.</span></div>'}</div>`;
     const statsStoreBtn=$("statsChaosStoreBtn");
     if(statsStoreBtn) statsStoreBtn.onclick=async()=>{
@@ -1319,8 +1322,10 @@ const db = getDatabase(firebaseApp);
     show("stats");
   }
 
-  async function saveFinishedGameStats(finalScores, gameMoveWinPoints) {
-    const gameId=room || `game_${Date.now()}`;
+  async function saveFinishedGameStats(finalScores, gameMoveWinPoints, matchId) {
+    // Each match (including a Run it back rematch) needs its own reward ID.
+    // Using the room code incorrectly treated future wins in that room as already paid.
+    const gameId=matchId ? `${room}:${matchId}` : (room || `game_${Date.now()}`);
     const maxScore=Math.max(...Object.values(finalScores).map(Number));
     const winners=Object.keys(finalScores).filter(uid=>Number(finalScores[uid])===maxScore);
     const isTie=winners.length>1;
@@ -1329,9 +1334,15 @@ const db = getDatabase(firebaseApp);
     await Promise.all(players.filter(p=>!p.bot).map(async p=>{
       const uid=p.uid;
       const profileRef=ref(db,`profiles/${uid}`);
-      const snap=await get(profileRef);
-      const old=snap.exists()?{...blankProfile(),...snap.val()}:blankProfile();
-      if(old.recentGames?.[gameId]) return; // prevents double-counting the same game
+      const [challengeSnap,diceSnap]=await Promise.all([
+        get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`)),
+        get(ref(db,`rooms/${room}/rollDiceMode/${uid}`))
+      ]);
+      const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
+      const rollDiceActive=diceSnap.exists() && diceSnap.val()===true;
+      await runTransaction(profileRef, rawProfile=>{
+      const old={...blankProfile(),...(rawProfile||{})};
+      if(old.recentGames?.[gameId]) return; // one award per player per match
 
       const moveWinPoints={
         rock:Number(old.moveWinPoints?.rock||0)+Number(gameMoveWinPoints?.[uid]?.rock||0),
@@ -1367,21 +1378,16 @@ const db = getDatabase(firebaseApp);
         vendettaTie=topIds.length>1 && allianceScore===top ? 1 : 0;
         vendettaWon=topIds.length===1 && allianceScore===top ? 1 : 0;
       }
-      const [challengeSnap,diceSnap]=await Promise.all([
-        get(ref(db,`rooms/${room}/chaosBotChallenge/${uid}`)),
-        get(ref(db,`rooms/${room}/rollDiceMode/${uid}`))
-      ]);
-      const challengeActive=challengeSnap.exists() && challengeSnap.val()===true;
+      // Independent purchased bonuses stack: +30 Roll the Dice and +40 Chaos Bot.
       const challengeBonus=(challengeActive && result==="Win" && players.some(x=>x.bot))?CHAOS_BOT_WIN_BONUS:0;
-      const rollDiceActive=diceSnap.exists() && diceSnap.val()===true;
       const rollDiceWinBonus=(rollDiceActive && result==="Win")?ROLL_DICE_WIN_BONUS:0;
       const vendettaPrize=Number(vendettaPrizes.awards[uid]||0);
       const recentGames={...(old.recentGames||{})};
-      recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now(),...(vendettaModeActive?{vendetta:true,vendettaPrize}: {})};
+      recentGames[gameId]={result,points:Number(finalScores[uid]||0),players:players.length,endedAt:Date.now(),rollDiceWinBonus,chaosBotWinBonus:challengeBonus,...(vendettaModeActive?{vendetta:true,vendettaPrize}: {})};
       const trimmed=Object.entries(recentGames).sort((a,b)=>Number(b[1].endedAt||0)-Number(a[1].endedAt||0)).slice(0,10);
       const trimmedObj=Object.fromEntries(trimmed);
 
-      await set(profileRef,{
+      return {
         gamesPlayed:Number(old.gamesPlayed||0)+1,
         wins:Number(old.wins||0)+(result==="Win"?1:0),
         ties:Number(old.ties||0)+(result==="Tie"?1:0),
@@ -1399,7 +1405,8 @@ const db = getDatabase(firebaseApp);
         vendettaTies:Number(old.vendettaTies||0)+vendettaTie,
         recentGames:trimmedObj,
         updatedAt:Date.now()
-      });
+      };
+      }, {applyLocally:false});
     }));
     await loadCommunityTeams();
   }
@@ -2859,7 +2866,7 @@ const db = getDatabase(firebaseApp);
     const quickDrawChoices=[1,3,5];
     quickDrawRound=soloModeActive?1:quickDrawChoices[Math.floor(Math.random()*quickDrawChoices.length)];
     await update(ref(db, `rooms/${room}`), {
-      status:"playing", round:1, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
+      status:"playing", round:1, matchId:`match_${Date.now()}_${Math.random().toString(36).slice(2,9)}`, scores, moveWinPoints:{}, rounds:null, statsSaved:false, teamPowerUsed:null, unpredictablePowers:null,
       quickDrawRound, predictionMode,
       soloMode:soloModeActive?{[currentUser.uid]:true}:null,
       soloMoves:soloModeActive?{rock:0,paper:0,scissors:0}:null,
@@ -4424,20 +4431,7 @@ async function refreshTeamPowerUI() {
     $("lockBtn").onclick=()=>{ if(ready) submitTurn(); };
   }
 
-  let submittingTurn=false;
   async function submitTurn() {
-    if(submittingTurn) return;
-    submittingTurn=true;
-    try{
-    await submitTurnOnce();
-    }catch(error){
-      console.error("Could not lock in move",error);
-      toast("Could not lock in. Please try again.");
-    }finally{
-      submittingTurn=false;
-    }
-  }
-  async function submitTurnOnce() {
     if(quickDrawTimer){ clearInterval(quickDrawTimer); quickDrawTimer=null; }
     const noPrediction = soloModeActive || round === 4;
     if (!selectedMove) return;
@@ -4458,60 +4452,64 @@ async function refreshTeamPowerUI() {
       }
     }
 
-    // Reserve a one-use power atomically BEFORE publishing the submission.
-    // A get() followed by set() is not safe against double taps / multiple tabs.
-    const powerPath=ref(db,`rooms/${room}/teamPowerUsed/${uid}`);
-    let canUseTeamPower=false;
-    let reservationMade=false;
-    const requestedPower=!soloModeActive && !noPrediction && teamPowerArmed && submissionPower;
-    if(requestedPower){
-      const reservation=await runTransaction(powerPath,current=>current===true?undefined:true,{applyLocally:false});
-      reservationMade=reservation.committed;
-      canUseTeamPower=reservationMade;
-      if(!canUseTeamPower){
-        teamPowerArmed=false;
-        toast("Team Power already used this game.");
-      }
-    }
-    // Verify funds before charging for a paid Power Swap. Vendetta swaps are free.
-    if(canUseTeamPower && String(submissionPower.key||"").startsWith("reverse") && !vendettaModeActive){
-      const profileRef=ref(db,`profiles/${uid}`);
-      const payment=await runTransaction(profileRef,profile=>{
-        if(!profile) return;
-        const balance=Number(profile.chaosPoints==null?profile.totalPoints||0:profile.chaosPoints);
-        if(balance<REVERSAL_COST) return;
-        return {...profile,chaosPoints:balance-REVERSAL_COST,updatedAt:Date.now()};
-      },{applyLocally:false});
-      if(!payment.committed){
-        await set(powerPath,false);
-        reservationMade=false;
-        canUseTeamPower=false;
-        toast(`You need ${REVERSAL_COST} Chaos Points to use Power Swap.`);
-      }
+    // Cut in Half chooses its target automatically during round resolution,
+    // after everyone's positive round points are known.
+    // Each player writes only under their own UID. The UI never displays submissions before reveal.
+    const powerUsedCheck=await get(ref(db,`rooms/${room}/teamPowerUsed/${uid}`));
+    const canUseTeamPower=!soloModeActive && !noPrediction && teamPowerArmed && submissionPower && !(powerUsedCheck.exists() && powerUsedCheck.val()===true);
+    if(teamPowerArmed && !canUseTeamPower){
+      teamPowerArmed=false;
+      toast("Your team power is already used up, so it was not submitted again.");
     }
     const submissionData={
       move:selectedMove,
       prediction:(!noPrediction && targetId && predictedMove)?{targetUid:targetId,move:predictedMove}:null,
       teamPower:canUseTeamPower?submissionPower.key:null,
       teamPowerTarget:null,
+      // IMPORTANT: do not publish locked:true until all power bookkeeping is
+      // finished. The host resolves as soon as every human is locked, so the
+      // old order could resolve a half-finished submission and intermittently
+      // lose the power notice or throw a resolution error.
       locked:false,
       submittedAt:Date.now()
     };
-    // If this write fails, release the reservation rather than leaving a
-    // phantom consumed power. Failed Cut in Half also gets released at reveal.
-    try{
-      await set(ref(db, `${roundPath()}/submissions/${uid}`), submissionData);
-    }catch(error){
-      if(reservationMade) await set(powerPath,false);
-      throw error;
-    }
-    teamPowerArmed=false;
+
+    // Cut in Half must not change room-level power state while players are
+    // still locking in. Submit it with the move; resolution decides consumption.
+    await set(ref(db, `${roundPath()}/submissions/${uid}`), submissionData);
     if(canUseTeamPower){
-      const powerBtn=$("teamPowerBtn");
-      if(powerBtn){
-        powerBtn.dataset.powerUsed="true";
-        powerBtn.disabled=true;
-        powerBtn.textContent="⚡ Power already used this game";
+      const isReversedPower=String(submissionPower?.key||"").startsWith("reverse");
+
+      if(isReversedPower && vendettaModeActive){
+        // Vendetta lets each player privately choose Normal or Swapped. A swapped
+        // choice is included in the 100 CP Vendetta mode and does not cost another
+        // 50 CP. Using it consumes that player's one Team Power use for the game.
+        await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+        teamPowerArmed=false;
+      } else if(isReversedPower){
+        // Outside Vendetta, reversed powers are the normal paid Power Swap.
+        // Charge the 50 CP only when the player actually uses it.
+        const profileRef=ref(db,`profiles/${uid}`);
+        const profileSnap=await get(profileRef);
+        const raw=profileSnap.exists()?profileSnap.val():blankProfile();
+        const balance=Number(raw.chaosPoints==null?raw.totalPoints||0:raw.chaosPoints);
+        if(balance<REVERSAL_COST){
+          // Safety fallback: don't consume/submit a paid swapped power if the
+          // balance changed before lock-in.
+          await update(ref(db,`${roundPath()}/submissions/${uid}`),{teamPower:null,teamPowerTarget:null});
+          teamPowerArmed=false;
+          toast(`You need ${REVERSAL_COST} Chaos Points to use Power Swap.`);
+        } else {
+          await update(profileRef,{chaosPoints:balance-REVERSAL_COST,updatedAt:Date.now()});
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+          teamPowerArmed=false;
+        }
+      } else {
+        // Cut in Half is consumed only if it actually succeeds at resolution.
+        if(submissionPower?.key!=="scissors"){
+          await set(ref(db,`rooms/${room}/teamPowerUsed/${uid}`),true);
+        }
+        teamPowerArmed=false;
       }
     }
 
@@ -4759,7 +4757,7 @@ async function refreshTeamPowerUI() {
           // rule as human players, including Chaos Bot Mode. A blocked or
           // no-effect Cut in Half may still be retained under the normal rule,
           // but a successfully consumed power cannot be used again this game.
-          const botPowerAvailable=(chaosBotMode && !vendettaModeActive) || !alreadyUsed;
+          const botPowerAvailable=!alreadyUsed;
           const useChance=chaosBotMode?(round>=7?1:round>=6?.92:round>=5?.72:round>=3?.50:.30):(round>=7?1:round>=6?.80:round>=5?.55:round>=3?.32:.18);
           let teamPower=null, teamPowerTarget=null;
 
@@ -5397,27 +5395,50 @@ async function refreshTeamPowerUI() {
       finalRoomUpdate[`vendettaAlliances/${id}/bonusPoints`]=Number(vendettaAlliances[id]?.bonusPoints||0);
     });
 
-    // Save resolver-determined power states in the SAME atomic update as
-    // the reveal, so next-round UI never sees an outdated used-power flag.
-    players.filter(p=>p.bot).forEach(p=>{
-      const power=submissions[p.uid]?.teamPower;
-      if(!power) return;
-      if(resolverChaosBotMode && !vendettaModeActive) return; // Chaos Bots can reuse powers.
-      if(power==="scissors"){
-        if(successfulScissorsPower.includes(p.uid)) finalRoomUpdate[`teamPowerUsed/${p.uid}`]=true;
-        else if(restoreScissorsPower.includes(p.uid)) finalRoomUpdate[`teamPowerUsed/${p.uid}`]=false;
-      }else finalRoomUpdate[`teamPowerUsed/${p.uid}`]=true;
-    });
-    successfulScissorsPower.forEach(uid=>{
-      if(resolverChaosBotMode && players.find(p=>p.uid===uid)?.bot && !vendettaModeActive) return;
-      finalRoomUpdate[`teamPowerUsed/${uid}`]=true;
-    });
-    restoreScissorsPower.forEach(uid=>{
-      if(resolverChaosBotMode && players.find(p=>p.uid===uid)?.bot && !vendettaModeActive) return;
-      finalRoomUpdate[`teamPowerUsed/${uid}`]=false;
-    });
     try{
+      // Reveal/results are authoritative and must not be blocked by secondary
+      // Cut in Half bookkeeping.
       await update(ref(db, `rooms/${room}`), finalRoomUpdate);
+
+      // Persist only the Cut in Half users that changed. Do these after the
+      // reveal so a bookkeeping failure can never turn a valid round into a
+      // "Round resolution error".
+      const powerStateUpdates={};
+
+      // Every computer rival gets ONE Team Power per game, including Chaos Bots.
+      // Bot submissions are created by the host, so the resolver persists their
+      // consumed state here rather than relying on the human submission UI.
+      players.filter(p=>p.bot).forEach(p=>{
+        const submittedPower=submissions[p.uid]?.teamPower;
+        if(!submittedPower) return;
+
+        // Cut in Half is special: BLOCKED / NO EFFECT keeps the power.
+        if(submittedPower==="scissors"){
+          if(successfulScissorsPower.includes(p.uid)){
+            powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
+          }else if(restoreScissorsPower.includes(p.uid)){
+            powerStateUpdates[`teamPowerUsed/${p.uid}`]=false;
+          }
+        }else{
+          // Barricade, Reprint, and swapped bot powers are consumed when used.
+          powerStateUpdates[`teamPowerUsed/${p.uid}`]=true;
+        }
+      });
+
+      // Keep Cut in Half bookkeeping authoritative for human players too.
+      successfulScissorsPower.forEach(uid=>{
+        powerStateUpdates[`teamPowerUsed/${uid}`]=true;
+      });
+      restoreScissorsPower.forEach(uid=>{
+        powerStateUpdates[`teamPowerUsed/${uid}`]=false;
+      });
+      if(Object.keys(powerStateUpdates).length){
+        try{
+          await update(ref(db, `rooms/${room}`), powerStateUpdates);
+        }catch(error){
+          console.warn("Round resolved, but Cut in Half used-state could not be saved",error);
+        }
+      }
     }finally{
       resolvingRounds.delete(resolvingKey);
     }
@@ -5990,7 +6011,7 @@ async function refreshTeamPowerUI() {
         // being written, which made the "See final results" button look stuck.
         try{
           if(!roomData.statsSaved){
-            await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{});
+            await saveFinishedGameStats(finalScores,roomData.moveWinPoints||{},roomData.matchId);
             await update(ref(db, `rooms/${room}`), {statsSaved:true});
           }
         }catch(error){
@@ -6375,7 +6396,7 @@ async function refreshTeamPowerUI() {
     try {
       await update(ref(db, `rooms/${room}`), {
         status:"lobby",round:1,rounds:null,scores:null,quickDrawRound:null,
-        moveWinPoints:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,vendettaMode:null,vendettaAlliances:null,vendettaAllianceByPlayer:null,vendettaPlayerTeams:null,countdownMode:null,countdownState:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null,soloPowerUpgraded:null,updatedAt:Date.now()
+        moveWinPoints:null,matchId:null,statsSaved:false,teamPowerUsed:null,unpredictablePowers:null,powerReversal:null,powerSwap:null,chaosBotChallenge:null,chaosBotPowerVariants:null,vendettaMode:null,vendettaAlliances:null,vendettaAllianceByPlayer:null,vendettaPlayerTeams:null,countdownMode:null,countdownState:null,rollDiceMode:null, doubleAgent:null,soloMode:null,soloMoves:null,soloResult:null,soloRewardPaid:null,soloPowerFamily:null,soloPowerUsed:null,soloPowerUpgraded:null,updatedAt:Date.now()
       });
       countdownModeActive=false;
       toast("Rematch ready! Countdown Mode is off until enabled again.");
@@ -6430,7 +6451,6 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
         user=credential.user;
       }
       currentUser=user;
-      listenToChaosPointsBalance(user.uid);
       await recoverAfterRefresh();
       loadCommunityTeams();
     }catch(error){
@@ -6470,24 +6490,6 @@ $("rollDiceBtn").onclick = async()=>{ await activateRollDiceMode(); await refres
       toast("Couldn’t load My Stats.");
     }
   };
-
-  // Keep device-specific CP displays in sync with Firebase on every device.
-  let profileBalanceUnsubscribe=null;
-  function listenToChaosPointsBalance(uid){
-    if(profileBalanceUnsubscribe){profileBalanceUnsubscribe();profileBalanceUnsubscribe=null;}
-    if(!uid) return;
-    profileBalanceUnsubscribe=onValue(ref(db,`profiles/${uid}/chaosPoints`),snap=>{
-      // Profiles created before CP was introduced can use totalPoints as fallback.
-      if(!snap.exists()){
-        refreshChaosPointsPageBalance().catch(console.warn);
-        return;
-      }
-      const cp=Number(snap.val()||0);
-      const text=`Current balance: ${cp} CP`;
-      if($("chaosPointsPageBalance")) $("chaosPointsPageBalance").textContent=text;
-      if($("lobbyChaosPointsBalance")) $("lobbyChaosPointsBalance").textContent=text;
-    },error=>console.warn("Live CP balance listener failed",error));
-  }
 
   async function refreshChaosPointsPageBalance(){
     const storeEl=$("chaosPointsPageBalance");
