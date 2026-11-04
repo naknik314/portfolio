@@ -360,7 +360,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-status-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.9fr) minmax(0,1.15fr);gap:10px;margin:12px 0;align-items:stretch}
 .countdown-status-grid>.rule-card{margin:0;padding:14px 10px;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
 .countdown-active-card{opacity:.87;grid-area:auto}
-.countdown-chain-icons{font-size:clamp(19px,2.1vw,29px);font-weight:900;margin:10px 0 6px;white-space:nowrap}
+.countdown-chain-icons{font-size:clamp(19px,2.1vw,29px);font-weight:900;margin:10px 0 6px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:clamp(1px,.4vw,6px)}
+.countdown-chain-step{display:inline-flex;align-items:center;justify-content:center;width:1.55em;height:1.55em;box-sizing:border-box;border:3px solid transparent;border-radius:50%;flex-shrink:0}
+.countdown-chain-step.is-target{border-color:var(--pink);background:color-mix(in srgb,var(--pink) 12%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--pink) 14%,transparent)}
+.countdown-chain-arrow{font-size:.72em;flex-shrink:0}
+.countdown-chain-loop{opacity:.6}
 .countdown-target-card{border:3px solid var(--pink);box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 14%,transparent);background:light-dark(#FFF7FB,#2A1C2B)}
 .countdown-target-card .countdown-target-name{font-size:19px;font-weight:950;margin-top:2px}
 .countdown-progress-card{background:var(--panel2)}
@@ -413,7 +417,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 /* Make the Find Next move counter visible from the board. */
 .countdown-moves-footer{font-size:clamp(18px,2.2vw,24px);font-weight:950;letter-spacing:.02em;color:var(--pink);line-height:1.15}
 .countdown-moves-footer.is-last-move{font-weight:1000;text-transform:uppercase}
-.round-intro-text.countdown-your-turn-intro{font-size:clamp(30px,6.5vw,64px);letter-spacing:.03em;text-align:center;border-color:var(--purple);color:var(--purple);padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
+/* Subtle, nonblocking turn cue; never overlays the board or interrupts input. */
+.countdown-board-your-turn{animation:countdownBoardYourTurn .95s ease-out 1;border-radius:12px}
+@keyframes countdownBoardYourTurn{
+  0%{box-shadow:0 0 0 0 rgba(34,197,94,.38)}
+  45%{box-shadow:0 0 0 6px rgba(34,197,94,.22)}
+  100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
+}
+@media(prefers-reduced-motion:reduce){.countdown-board-your-turn{animation:none}}
 .round-intro-text.countdown-last-move-intro{font-size:clamp(26px,6vw,62px);letter-spacing:.01em;text-align:center;border-color:var(--pink);color:#b51c57;padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
 /* Shared one-use rescue, offered only after the third wrong reveal. */
 .countdown-second-chance-panel{text-align:center;margin:12px 0;border:2px solid var(--pink);background:light-dark(#fff3f8,#382033)}
@@ -953,26 +964,20 @@ const db = getDatabase(firebaseApp);
     const intro=$("roundIntro"), label=$("roundIntroText");
     if(!intro || !label) return;
     label.textContent="ONLY 1 MOVE LEFT";
-    label.classList.remove("countdown-your-turn-intro");
     label.classList.add("countdown-last-move-intro");
     intro.classList.remove("hidden");
     clearTimeout(roundIntroTimer);
     roundIntroTimer=setTimeout(()=>intro.classList.add("hidden"),1350);
   }
-  let lastCountdownYourTurnKey=null;
-  function showCountdownYourTurnWarning(state,isMyTurn){
-    if(state?.status!=="playing" || !isMyTurn) return;
-    const key=`${room}:${state.attemptId||""}:${state.targetMove||""}:${Number(state.movesUsed||0)}:${state.currentTurnUid||""}`;
-    if(lastCountdownYourTurnKey===key) return;
-    lastCountdownYourTurnKey=key;
-    const intro=$("roundIntro"), label=$("roundIntroText");
-    if(!intro || !label) return;
-    label.textContent="YOUR TURN";
-    label.classList.remove("countdown-last-move-intro");
-    label.classList.add("countdown-your-turn-intro");
-    intro.classList.remove("hidden");
-    clearTimeout(roundIntroTimer);
-    roundIntroTimer=setTimeout(()=>intro.classList.add("hidden"),1050);
+  // A lightweight board highlight replaces the interrupting YOUR TURN splash.
+  // Keyed to the authoritative turn update so ordinary Firebase rerenders don't replay it.
+  let lastCountdownBoardTurnPulseKey=null;
+  function shouldPulseCountdownBoard(state,isMyTurn){
+    if(state?.status!=="playing" || !isMyTurn) return false;
+    const key=`${room}:${state.attemptId||""}:${state.currentTurnUid||""}:${state.updatedAt||""}`;
+    if(lastCountdownBoardTurnPulseKey===key) return false;
+    lastCountdownBoardTurnPulseKey=key;
+    return true;
   }
   let lastCountdownMovesBubbleKey=null;
   const LAST_ROOM_KEY="rockPaperChaosLastRoom";
@@ -2701,6 +2706,7 @@ const db = getDatabase(firebaseApp);
     // refactor referenced flashMovesBubble without declaring it; that exception
     // prevented the entire tile board from rendering.
     const movesBubbleKey=`${room}:${state.attemptId||""}:${state.targetMove||""}:${Number(state.clearedCount||0)}:${remaining}`;
+    const pulseMyCountdownBoard=shouldPulseCountdownBoard(state,isMyTurn);
     const flashMovesBubble=lastCountdownMovesBubbleKey!==movesBubbleKey;
     lastCountdownMovesBubbleKey=movesBubbleKey;
     // Never render an empty challenge as if it were a playable board.
@@ -2732,7 +2738,15 @@ const db = getDatabase(firebaseApp);
           <div class="rule-card countdown-active-card" style="text-align:center">
             <div>
               <strong>FOLLOW THE CHAIN</strong>
-              <div class="countdown-chain-icons">🪨 → ✂️ → 📄 → 🪨</div>
+              <div class="countdown-chain-icons" aria-label="Follow the chain; currently find ${target[0].toUpperCase()+target.slice(1)}">
+                <span class="countdown-chain-step ${target==="rock"?"is-target":""}" ${target==="rock"?'aria-current="step"':""}>🪨</span>
+                <span class="countdown-chain-arrow" aria-hidden="true">→</span>
+                <span class="countdown-chain-step ${target==="scissors"?"is-target":""}" ${target==="scissors"?'aria-current="step"':""}>✂️</span>
+                <span class="countdown-chain-arrow" aria-hidden="true">→</span>
+                <span class="countdown-chain-step ${target==="paper"?"is-target":""}" ${target==="paper"?'aria-current="step"':""}>📄</span>
+                <span class="countdown-chain-arrow" aria-hidden="true">→</span>
+                <span class="countdown-chain-step countdown-chain-loop" aria-hidden="true">🪨</span>
+              </div>
               <div class="muted countdown-joker-legend">❓ = Joker</div>
             </div>
             <div>
@@ -2766,12 +2780,11 @@ const db = getDatabase(firebaseApp);
         </div>
         <div class="countdown-meter"><div style="width:${remaining/movesForTarget*100}%"></div></div>
         <p class="note" style="margin:10px 0 0;text-align:center;font-weight:750">Reveal a hidden tile or select a highlighted READY tile to clear your target. Both count as a turn.</p>
-        <div class="countdown-board">${tileHtml}</div>
+        <div class="countdown-board ${pulseMyCountdownBoard?"countdown-board-your-turn":""}">${tileHtml}</div>
         <p class="note">A failed first attempt earns one fresh-board free retry. Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
       if($("countdownPassBtn")) $("countdownPassBtn").onclick=passCountdownTurn;
       showCountdownLastMoveWarning(state,remaining);
-      showCountdownYourTurnWarning(state,isMyTurn);
       scheduleCountdownBotTurn(state);
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
