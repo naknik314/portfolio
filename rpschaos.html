@@ -2664,6 +2664,17 @@ const db = getDatabase(firebaseApp);
     const tilesLeft=Math.max(0,COUNTDOWN_TILE_COUNT-Number(state.clearedCount||0));
     const current=players.find(p=>p.uid===state.currentTurnUid);
     const isMyTurn=state.status==="playing" && state.currentTurnUid===currentUser?.uid;
+    // Keep the bubble animation keyed to actual countdown changes. An earlier UI
+    // refactor referenced flashMovesBubble without declaring it; that exception
+    // prevented the entire tile board from rendering.
+    const movesBubbleKey=`${room}:${state.attemptId||""}:${state.targetMove||""}:${Number(state.clearedCount||0)}:${remaining}`;
+    const flashMovesBubble=lastCountdownMovesBubbleKey!==movesBubbleKey;
+    lastCountdownMovesBubbleKey=movesBubbleKey;
+    // Never render an empty challenge as if it were a playable board.
+    if(state.status==="playing" && Object.keys(state.tiles||{}).length!==COUNTDOWN_TILE_COUNT){
+      play.innerHTML='<div class="rule-card" style="text-align:center;padding:24px"><strong>⏳ Loading Countdown tiles…</strong><span style="margin-top:8px">Waiting for the full 18-tile board to sync.</span></div>';
+      return;
+    }
     $("timer").textContent=state.status==="playing"?`${tilesLeft} TILES LEFT`:state.status==="won"?"0 TILES LEFT":"GAME OVER";
     $("progressFill").style.width=`${Math.max(0,Number(state.clearedCount||0)/COUNTDOWN_TILE_COUNT*100)}%`;
     const top=$("topRoundModifier");
