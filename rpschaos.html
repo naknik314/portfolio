@@ -345,7 +345,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .hero-action{color:var(--site-primary)}
 
 /* Countdown Mode shared board */
-.countdown-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;margin:16px 0}
+.countdown-board{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:7px;margin:14px 0}
 .countdown-tile{aspect-ratio:1/1;min-height:64px;border:2px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);font-size:clamp(24px,5vw,38px);font-weight:950;display:grid;place-items:center;transition:transform .12s,border-color .12s,opacity .12s}
 .countdown-tile:not(:disabled):hover{transform:translateY(-2px);border-color:var(--purple)}
 .countdown-tile.revealed{background:var(--panel);border-color:var(--line)}
@@ -376,8 +376,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-turn-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .countdown-turn-heading strong{font-size:15px}
 .countdown-moves-left{color:var(--pink);font-size:15px;font-weight:950;white-space:nowrap}
+/* Keep nine tiles across on wide screens, then scale to six or three columns. */
+@media(max-width:1050px) and (min-width:721px){
+  .countdown-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+}
 @media(max-width:720px){
-  .countdown-board{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .countdown-board{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
   .countdown-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .countdown-target-card{grid-column:1/-1;grid-row:1}
   .countdown-chain-icons{font-size:clamp(17px,4vw,26px)}
