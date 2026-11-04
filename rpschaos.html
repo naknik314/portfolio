@@ -353,12 +353,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-tile.bot-selected{border-color:var(--pink);box-shadow:0 0 0 4px color-mix(in srgb,var(--pink) 22%,transparent);transform:translateY(-2px) scale(1.03)}
 .countdown-meter{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;margin-top:8px}
 .countdown-meter>div{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width .2s}
-.countdown-status-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px;margin:12px 0}
-.countdown-active-card{opacity:.82}
-.countdown-target-card{border:3px solid var(--pink);box-shadow:0 0 0 4px color-mix(in srgb,var(--pink) 14%,transparent);background:light-dark(#FFF7FB,#2A1C2B)}
-.countdown-target-card .countdown-target-name{font-size:18px;font-weight:950;margin-top:2px}
-.countdown-target-card .countdown-remaining{display:inline-block;margin-top:10px;padding:6px 10px;border-radius:999px;background:var(--pink);color:white;font-weight:950;font-size:13px}
-@media(max-width:620px){.countdown-board{grid-template-columns:repeat(3,minmax(0,1fr))}.countdown-status-grid{grid-template-columns:1fr}}
+.countdown-status-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.9fr) minmax(0,1.15fr);gap:10px;margin:12px 0;align-items:stretch}
+.countdown-status-grid>.rule-card{margin:0;padding:14px 10px;min-width:0}
+.countdown-active-card{opacity:.87;grid-area:auto}
+.countdown-chain-icons{font-size:clamp(19px,2.1vw,29px);font-weight:900;margin:10px 0 6px;white-space:nowrap}
+.countdown-target-card{border:3px solid var(--pink);box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 14%,transparent);background:light-dark(#FFF7FB,#2A1C2B)}
+.countdown-target-card .countdown-target-name{font-size:19px;font-weight:950;margin-top:2px}
+.countdown-progress-card{background:var(--panel2)}
+.countdown-turn-card{padding:11px 14px}
+.countdown-turn-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.countdown-turn-heading strong{font-size:15px}
+.countdown-moves-left{color:var(--pink);font-size:15px;font-weight:950;white-space:nowrap}
+@media(max-width:720px){
+  .countdown-board{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .countdown-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .countdown-target-card{grid-column:1/-1;grid-row:1}
+  .countdown-chain-icons{font-size:clamp(17px,4vw,26px)}
+}
+@media(max-width:390px){.countdown-status-grid>.rule-card{padding:11px 7px}.countdown-chain-icons{font-size:16px}}
 
 </style>
 </head>
@@ -658,9 +670,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
               <strong>⏳ Countdown Mode</strong>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
-                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>3 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
-                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
-                <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves before finding it and the challenge ends.</span>
+                <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>4 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
+                <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 4-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
+                <span style="margin-top:7px">Find the target and the countdown resets to 4. Run out of moves before finding it and the challenge ends.</span>
                 <span style="margin-top:7px">❓ <b>Jokers:</b> three Team Unpredictable wildcards are hidden on the board. If found, a Joker counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
                 <span style="margin-top:7px"><b>0 CP entry during testing:</b> Countdown is temporarily free to start or retry. The <b>75 CP win prize pool</b> is still split across player slots when the board is cleared.</span>
                 <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals a Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
@@ -2012,7 +2024,7 @@ const db = getDatabase(firebaseApp);
 
 
 
-  const COUNTDOWN_MOVES_PER_TARGET=3;
+  const COUNTDOWN_MOVES_PER_TARGET=4;
   const COUNTDOWN_COST=0; // Temporary free testing price; restore to 75 CP after testing.
   const COUNTDOWN_PRIZE_POOL=75; // Keep win rewards separate from the testing entry price.
   const COUNTDOWN_TEAM_BONUS=10;
@@ -2183,7 +2195,7 @@ const db = getDatabase(firebaseApp);
     btn.style.opacity=isHost?"1":".5";
     btn.textContent=countdownModeActive?"⏳ Countdown Mode Active — Disable":`⏳ Enable Countdown Mode — ${COUNTDOWN_COST} CP (Test)`;
     status.textContent=countdownModeActive
-      ? `Co-op board active: 2–8 players share 3 moves per target. The entry costs ${COUNTDOWN_COST} CP during testing.`
+      ? `Co-op board active: 2–8 players share 4 moves per target. The entry costs ${COUNTDOWN_COST} CP during testing.`
       : (isHost?`Co-op challenge for 2–8 players. The entry costs ${COUNTDOWN_COST} CP during testing; only the host starts the challenge.`:"Only the host can change Countdown Mode.");
     const predictionSelect=$("predictionModeSelect");
     const predictionHelp=$("predictionModeHelp");
@@ -2430,6 +2442,20 @@ const db = getDatabase(firebaseApp);
     return `❓ Bonus objective: if any Team Unpredictable player finds a Joker, every Unpredictable player gets +${COUNTDOWN_UNPREDICTABLE_BONUS} CP. Each Joker you find can also count as Rock, Paper, or Scissors objective credit wherever it helps the co-op most.`;
   }
 
+  function countdownObjectiveProgressText(uid,state){
+    const team=state.playerTeams?.[uid]||"unassigned";
+    const revealed=state.revealsByPlayer?.[uid]||{};
+    const total=["rock","paper","scissors","joker"].reduce((sum,move)=>sum+Number(revealed[move]||0),0);
+    if(["rock","paper","scissors"].includes(team)){
+      const matching=countdownObjectiveCount(uid,team,state);
+      const jokerCredits=Object.values(state.jokerObjectiveCredits||{}).filter(c=>c?.uid===uid && c?.move===team).length;
+      const teamName=team[0].toUpperCase()+team.slice(1);
+      return `${countdownTileIcons[team]} ${matching} ${teamName} tile${matching===1?"":"s"} out of ${total} total tile${total===1?"":"s"} you revealed${jokerCredits?` (includes ${jokerCredits} Joker credit${jokerCredits===1?"":"s"})`:""}.`;
+    }
+    const sharedJokers=Object.values(state.jokerFinders||{}).filter(finderUid=>(state.playerTeams?.[finderUid]||"unassigned")==="unassigned").length;
+    return `❓ ${sharedJokers} Joker${sharedJokers===1?"":"s"} found by Team Unpredictable · ${total} total tile${total===1?"":"s"} you revealed.`;
+  }
+
   async function settleCountdownRewards(state){
     if(!isHost || !room || state?.status!=="won" || state?.rewardPaid || countdownSettlementInFlight) return;
     countdownSettlementInFlight=true;
@@ -2529,10 +2555,11 @@ const db = getDatabase(firebaseApp);
     if(state.status==="playing"){
       play.innerHTML=`
         <div class="countdown-status-grid">
-          <div class="rule-card countdown-active-card" style="text-align:center"><strong>CHAIN</strong><div style="font-size:34px;font-weight:900;margin:7px 0;white-space:nowrap">🪨 → ✂️ → 📄 → 🪨</div><div class="muted" style="font-size:13px;margin-top:2px">❓ = Joker</div><div style="height:1px;background:var(--line);margin:13px 0 10px"></div><div style="font-size:10px;letter-spacing:.12em;font-weight:900;color:var(--muted);text-transform:uppercase">Your objective</div><div style="font-size:13px;font-weight:800;line-height:1.45;margin-top:6px">${escapeHtml(countdownObjectiveTextFor(currentUser?.uid,state))}</div></div>
-          <div class="rule-card countdown-target-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:44px;margin:6px 0 2px">${countdownTileIcons[target]}</div><div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div><span style="margin-top:5px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span><div class="countdown-remaining">${remaining} move${remaining===1?"":"s"} left · ${used}/${COUNTDOWN_MOVES_PER_TARGET} used</div></div>
+          <div class="rule-card countdown-active-card" style="text-align:center"><strong>FOLLOW THE CHAIN</strong><div class="countdown-chain-icons">🪨 → ✂️ → 📄 → 🪨</div><div class="muted" style="font-size:12px;margin-top:2px">❓ = Joker</div><div style="height:1px;background:var(--line);margin:11px 0 9px"></div><div style="font-size:10px;letter-spacing:.1em;font-weight:900;color:var(--muted);text-transform:uppercase">BONUS OBJECTIVE</div><div style="font-size:12px;font-weight:800;line-height:1.4;margin-top:6px">${escapeHtml(countdownObjectiveTextFor(currentUser?.uid,state).replace(/^.*?Bonus objective: /,""))}</div></div>
+          <div class="rule-card countdown-target-card" style="text-align:center"><strong>FIND NEXT</strong><div style="font-size:41px;margin:5px 0 2px">${countdownTileIcons[target]}</div><div class="countdown-target-name">${target[0].toUpperCase()+target.slice(1)}</div><span style="margin-top:5px;font-size:12px">${active[0].toUpperCase()+active.slice(1)} must ${countdownActionWord(active)} it</span></div>
+          <div class="rule-card countdown-progress-card" style="text-align:center"><strong style="font-size:11px">BONUS OBJECTIVE PROGRESS</strong><div style="font-size:13px;font-weight:800;line-height:1.5;margin-top:10px">${escapeHtml(countdownObjectiveProgressText(currentUser?.uid,state))}</div></div>
         </div>
-        <div class="rule-card" style="text-align:center"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span>${isMyTurn?`<button type="button" class="btn secondary" id="countdownPassBtn" style="margin-top:10px" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"}>↪ Pass Turn</button><span class="muted" style="margin-top:6px;font-size:12px">${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"You already passed once for this target."}</span>`:""}<div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
+        <div class="rule-card countdown-turn-card" style="text-align:center"><div class="countdown-turn-heading"><strong>${isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${escapeHtml(current.name)}'s turn`:"Waiting for next turn…"}</strong><span class="countdown-moves-left">${remaining} move${remaining===1?"":"s"} left</span></div><span style="margin-top:5px">${escapeHtml(state.lastMessage||"")}</span>${isMyTurn?`<button type="button" class="btn secondary" id="countdownPassBtn" style="margin-top:10px" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"}>↪ Pass Turn</button><span class="muted" style="margin-top:6px;font-size:12px">${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"You already passed once for this target."}</span>`:""}<div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div></div>
         <div class="countdown-board">${tileHtml}</div>
         <p class="note">Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
