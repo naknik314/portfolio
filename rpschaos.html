@@ -411,6 +411,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
 .countdown-moves-footer.is-last-move{font-weight:1000;text-transform:uppercase}
 .round-intro-text.countdown-your-turn-intro{font-size:clamp(30px,6.5vw,64px);letter-spacing:.03em;text-align:center;border-color:var(--purple);color:var(--purple);padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
 .round-intro-text.countdown-last-move-intro{font-size:clamp(26px,6vw,62px);letter-spacing:.01em;text-align:center;border-color:var(--pink);color:#b51c57;padding:22px clamp(16px,5vw,36px);max-width:calc(100vw - 32px)}
+/* Shared one-use rescue, offered only after the third wrong reveal. */
+.countdown-second-chance-panel{text-align:center;margin:12px 0;border:2px solid var(--pink);background:light-dark(#fff3f8,#382033)}
+.countdown-second-chance-panel strong{display:block;font-size:17px;letter-spacing:.03em;margin-bottom:7px}
+.countdown-second-chance-panel span{font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -711,7 +715,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--pink); outl
                 <summary style="cursor:pointer;font-weight:800">Learn about Countdown Mode</summary>
                 <span style="display:block;margin-top:10px">A cooperative shared-board challenge for <b>2–8 players</b>, including computer teammates. Start with 🪨 Rock and find a ✂️ Scissors tile within <b>3 team moves</b>. Then use Scissors to find 📄 Paper, Paper to find 🪨 Rock, and keep cycling until every tile is cleared.</span>
                 <span style="margin-top:7px">Players take turns revealing one tile at a time. Everyone shares the same 3-move countdown for each target. Wrong tiles stay revealed so the whole team can use the same information. Each player may <b>Pass Turn once per target hunt</b> for 0 moves to hand the reveal to a teammate; after everyone has passed once, the next player must reveal a tile. Computer teammates can pass strategically too and never know hidden tiles.</span>
-                <span style="margin-top:7px">Find the target and the countdown resets to 3. Run out of moves before finding it and the challenge ends.</span>
+                <span style="margin-top:7px">Find the target and the countdown resets to 3. If all 3 moves are used without finding it, the team may choose to use its <b>one Second Chance</b> for a 4th move. This rescue can be used only once per entire challenge; otherwise, running out of moves ends the game.</span>
                 <span style="margin-top:7px">❓ <b>Jokers:</b> three Team Unpredictable wildcards are hidden on the board. If found, a Joker counts as the current Find Next target, costs no move, and advances the chain immediately.</span>
                 <span style="margin-top:7px"><b>0 CP entry during testing:</b> Countdown is temporarily free to start or retry. The <b>75 CP win prize pool</b> is still split across player slots when the board is cleared.</span>
                 <span style="margin-top:7px"><b>Team bonus:</b> 🪨 Rock, 📄 Paper, and ✂️ Scissors players earn <b>+10 CP</b> if they reveal the most tiles matching their own team move. If any ❓ Team Unpredictable player reveals a Joker, <b>every Team Unpredictable player</b> in the game earns <b>+15 CP</b>.</span>
@@ -2143,6 +2147,7 @@ const db = getDatabase(firebaseApp);
 
 
   const COUNTDOWN_MOVES_PER_TARGET=3;
+  const COUNTDOWN_SECOND_CHANCE_MOVES=1; // Optional one-time team-wide fourth move.
   const COUNTDOWN_COST=0; // Temporary free testing price; restore to 75 CP after testing.
   const COUNTDOWN_PRIZE_POOL=75; // Keep win rewards separate from the testing entry price.
   const COUNTDOWN_TEAM_BONUS=10;
@@ -2282,6 +2287,8 @@ const db = getDatabase(firebaseApp);
       activeMove:"rock",
       targetMove:"scissors",
       movesUsed:0,
+      secondChanceUsed:false,
+      secondChanceTargetClearedCount:null,
       clearedCount:0,
       status:"playing",
       currentTurnUid:firstCountdownTurnUid(),
@@ -2523,12 +2530,20 @@ const db = getDatabase(firebaseApp);
     }else{
       state.movesUsed=Number(state.movesUsed||0)+1;
       state.lastMessage=`${actorName} revealed ${countdownTileIcons[tile.move]} ${tile.move[0].toUpperCase()+tile.move.slice(1)}. Keep looking for ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)}.`;
-      if(state.movesUsed>=COUNTDOWN_MOVES_PER_TARGET){
-        state.status="failed";
-        state.lastMessage=`KABOOM! The team did not find ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} within ${COUNTDOWN_MOVES_PER_TARGET} moves.`;
+      const extraActive=state.secondChanceUsed && Number(state.secondChanceTargetClearedCount)===Number(state.clearedCount||0);
+      const allowedMoves=COUNTDOWN_MOVES_PER_TARGET+(extraActive?COUNTDOWN_SECOND_CHANCE_MOVES:0);
+      if(state.movesUsed>=allowedMoves){
+        if(!state.secondChanceUsed && state.movesUsed===COUNTDOWN_MOVES_PER_TARGET){
+          // Pause before failure: the team can choose to spend its only extra move.
+          state.status="secondChanceDecision";
+          state.lastMessage=`${actorName} used the last regular move. The team can use its one Second Chance for an extra reveal, or end the challenge.`;
+        }else{
+          state.status="failed";
+          state.lastMessage=`KABOOM! The team did not find ${countdownTileIcons[target]} ${target[0].toUpperCase()+target.slice(1)} within the available moves.`;
+        }
       }
     }
-    if(state.status==="playing") state.currentTurnUid=nextCountdownTurnUid(actorUid);
+    if(state.status==="playing" || state.status==="secondChanceDecision") state.currentTurnUid=nextCountdownTurnUid(actorUid);
     state.updatedAt=Date.now();
     return state;
   }
@@ -2536,6 +2551,32 @@ const db = getDatabase(firebaseApp);
   async function chooseCountdownTile(tileId){
     if(!room || !currentUser || !countdownModeActive) return;
     await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>applyCountdownChoiceToState(state,tileId,currentUser.uid,false));
+  }
+
+  // All human teammates may claim the shared one-time rescue. Firebase transaction
+  // prevents two clients from claiming it twice. No additional CP is charged.
+  async function useCountdownSecondChance(){
+    if(!room || !currentUser || !countdownModeActive) return;
+    await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
+      if(!state || state.status!=="secondChanceDecision" || state.secondChanceUsed) return;
+      state.secondChanceUsed=true;
+      state.secondChanceTargetClearedCount=Number(state.clearedCount||0);
+      state.status="playing";
+      state.lastMessage="SECOND CHANCE ACTIVATED! The team gets ONE extra move for this target. This rescue cannot be used again this game.";
+      state.updatedAt=Date.now();
+      return state;
+    });
+  }
+
+  async function declineCountdownSecondChance(){
+    if(!room || !isHost || !countdownModeActive) return;
+    await runTransaction(ref(db,`rooms/${room}/countdownState`),state=>{
+      if(!state || state.status!=="secondChanceDecision") return;
+      state.status="failed";
+      state.lastMessage="KABOOM! The team ended the Countdown challenge without using its Second Chance.";
+      state.updatedAt=Date.now();
+      return state;
+    });
   }
 
   function countdownBaseShareForSeat(index,totalPlayers,pool=COUNTDOWN_PRIZE_POOL){
@@ -2663,7 +2704,11 @@ const db = getDatabase(firebaseApp);
     const active=renderStep.activeMove;
     const target=renderStep.targetMove;
     const used=Math.max(0,Number(state.movesUsed||0));
-    const remaining=Math.max(0,COUNTDOWN_MOVES_PER_TARGET-used);
+    const extraActive=Boolean(state.secondChanceUsed && Number(state.secondChanceTargetClearedCount)===Number(state.clearedCount||0));
+    const movesForTarget=COUNTDOWN_MOVES_PER_TARGET+(extraActive?COUNTDOWN_SECOND_CHANCE_MOVES:0);
+    const remaining=Math.max(0,movesForTarget-used);
+    const awaitingSecondChance=state.status==="secondChanceDecision";
+    const countdownShowingBoard=state.status==="playing" || awaitingSecondChance;
     const tilesLeft=Math.max(0,COUNTDOWN_TILE_COUNT-Number(state.clearedCount||0));
     const current=players.find(p=>p.uid===state.currentTurnUid);
     const isMyTurn=state.status==="playing" && state.currentTurnUid===currentUser?.uid;
@@ -2674,18 +2719,18 @@ const db = getDatabase(firebaseApp);
     const flashMovesBubble=lastCountdownMovesBubbleKey!==movesBubbleKey;
     lastCountdownMovesBubbleKey=movesBubbleKey;
     // Never render an empty challenge as if it were a playable board.
-    if(state.status==="playing" && Object.keys(state.tiles||{}).length!==COUNTDOWN_TILE_COUNT){
+    if(countdownShowingBoard && Object.keys(state.tiles||{}).length!==COUNTDOWN_TILE_COUNT){
       play.innerHTML='<div class="rule-card" style="text-align:center;padding:24px"><strong>⏳ Loading Countdown tiles…</strong><span style="margin-top:8px">Waiting for the full 18-tile board to sync.</span></div>';
       return;
     }
-    $("timer").textContent=state.status==="playing"?`${tilesLeft} TILES LEFT`:state.status==="won"?"0 TILES LEFT":"GAME OVER";
+    $("timer").textContent=countdownShowingBoard?`${tilesLeft} TILES LEFT`:state.status==="won"?"0 TILES LEFT":"GAME OVER";
     $("progressFill").style.width=`${Math.max(0,Number(state.clearedCount||0)/COUNTDOWN_TILE_COUNT*100)}%`;
     const top=$("topRoundModifier");
     if(top) top.innerHTML=`<b>⏳ Countdown Mode</b><span>Co-op board · ${Number(state.clearedCount||0)}/${COUNTDOWN_TILE_COUNT} tiles cleared</span>`;
     const headerTurn=$("countdownHeaderTurn");
     if(headerTurn){
-      headerTurn.classList.toggle("hidden",state.status!=="playing");
-      headerTurn.textContent=isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${current.name}'s turn`:"Waiting for next turn…";
+      headerTurn.classList.toggle("hidden",!countdownShowingBoard);
+      headerTurn.textContent=awaitingSecondChance?"⚡ SECOND CHANCE?":isMyTurn?"🎯 YOUR TURN":current?`${current.bot?"🤖 ":""}${current.name}'s turn`:"Waiting for next turn…";
     }
     const tiles=state.tiles||{};
     const tileHtml=Object.entries(tiles).map(([id,t])=>{
@@ -2696,7 +2741,7 @@ const db = getDatabase(firebaseApp);
       const tileLabel=t.move==="joker"?"Joker":(t.move[0].toUpperCase()+t.move.slice(1));
       return `<button type="button" class="countdown-tile ${t.revealed?"revealed":""} ${t.cleared?"cleared":""} ${ready?"countdown-ready":""} ${notTarget?"countdown-not-target":""} ${state.botPendingTileId===id?"bot-selected":""}" data-countdown-tile="${id}" ${canPick?"":"disabled"} aria-label="${known?`${tileLabel} tile${ready?", ready to clear":""}`:"Hidden tile"}">${ready?'<span class="countdown-ready-label">READY</span>':""}${t.cleared?`✓ ${countdownTileIcons[t.move]}`:(t.revealed?countdownTileIcons[t.move]:"?")}</button>`;
     }).join("");
-    if(state.status==="playing"){
+    if(countdownShowingBoard){
       play.innerHTML=`
         <div class="countdown-status-grid">
           <div class="rule-card countdown-active-card" style="text-align:center">
@@ -2720,7 +2765,7 @@ const db = getDatabase(firebaseApp);
             </div>
             <div class="countdown-card-footer">
               <div class="countdown-target-actions">
-                <span class="countdown-moves-bubble ${flashMovesBubble?"flash":""}">${remaining===1?"ONLY 1 MOVE LEFT":`${remaining} moves left`}</span>
+                <span class="countdown-moves-bubble ${flashMovesBubble?"flash":""}">${awaitingSecondChance?"0 moves left":remaining===1?"ONLY 1 MOVE LEFT":`${remaining} moves left`}</span>
                 ${isMyTurn?`<button type="button" class="btn secondary countdown-inline-pass" id="countdownPassBtn" ${countdownCanPass(state,currentUser?.uid)?"":"disabled"} title="${countdownCanPass(state,currentUser?.uid)?"Pass once per target hunt · costs 0 moves":"Already passed once this target"}">↪ Pass Turn</button>`:`<span class="muted" style="font-size:12px;text-align:right">Only the current player can pass.</span>`}
               </div>
             </div>
@@ -2735,15 +2780,20 @@ const db = getDatabase(firebaseApp);
             </div>
           </div>
         </div>
-        <div class="countdown-meter"><div style="width:${remaining/COUNTDOWN_MOVES_PER_TARGET*100}%"></div></div>
-        <p class="note" style="margin:10px 0 0;text-align:center;font-weight:750">Reveal a hidden tile or select a highlighted READY tile to clear your target. Both count as a turn.</p>
+        <div class="countdown-meter"><div style="width:${remaining/movesForTarget*100}%"></div></div>
+        ${awaitingSecondChance?`<div class="rule-card countdown-second-chance-panel" role="status"><strong>⚡ SECOND CHANCE AVAILABLE</strong><span>The team used its 3 regular moves. Spend your only extra move to continue this target? You can use this rescue once per game.</span><div class="actions" style="justify-content:center;margin-top:10px"><button type="button" class="btn" id="countdownSecondChanceBtn">⚡ Use Second Chance · +1 move</button>${isHost?`<button type="button" class="btn secondary" id="countdownDeclineChanceBtn">End Challenge</button>`:""}</div></div>`:""}
+        <p class="note" style="margin:10px 0 0;text-align:center;font-weight:750">${awaitingSecondChance?"Choose whether to use the team's one Second Chance before revealing another tile.":"Reveal a hidden tile or select a highlighted READY tile to clear your target. Both count as a turn."}</p>
         <div class="countdown-board">${tileHtml}</div>
-        <p class="note">Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
+        <p class="note">${state.secondChanceUsed?"⚡ Team Second Chance: USED.":"⚡ Team Second Chance: available once if all 3 regular moves are used."} Wrong tiles stay revealed so the whole team can use the same information. <b>Pass Turn</b> costs 0 moves and each player can pass once per target hunt; if everyone passes once, the next player must reveal a tile. Passes reset when the target is cleared. The ${COUNTDOWN_MOVES_PER_TARGET}-move counter also resets every time the correct tile is cleared. ❓ <b>Joker</b> counts as the current Find Next target, costs no move, and advances the chain immediately.</p>`;
       play.querySelectorAll("[data-countdown-tile]").forEach(btn=>btn.onclick=()=>chooseCountdownTile(btn.dataset.countdownTile));
       if($("countdownPassBtn")) $("countdownPassBtn").onclick=passCountdownTurn;
-      showCountdownLastMoveWarning(state,remaining);
-      showCountdownYourTurnWarning(state,isMyTurn);
-      scheduleCountdownBotTurn(state);
+      if($("countdownSecondChanceBtn")) $("countdownSecondChanceBtn").onclick=useCountdownSecondChance;
+      if($("countdownDeclineChanceBtn")) $("countdownDeclineChanceBtn").onclick=declineCountdownSecondChance;
+      if(!awaitingSecondChance){
+        showCountdownLastMoveWarning(state,remaining);
+        showCountdownYourTurnWarning(state,isMyTurn);
+        scheduleCountdownBotTurn(state);
+      }else if(countdownBotTimer){ clearTimeout(countdownBotTimer); countdownBotTimer=null; }
     }else{
       if(countdownBotTimer){clearTimeout(countdownBotTimer);countdownBotTimer=null;}
       saveMyCountdownRecentGame(state).catch(error=>console.warn("Countdown recent-game save failed",error));
